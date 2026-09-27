@@ -1,294 +1,37 @@
 /* 遊戲資料：角色（沿用原版數值）、篇章劇情、道具、公告 */
 const CHARACTERS = {
- luffy:{id:'luffy', name:'魯夫', title:'太陽神候補', types:['火','格鬥'], image:'assets/chars/luffy.webp', avatar:'assets/chars/luffy_face.webp', scale:.82, worldScale:.86, maxHp:1260, baseSpeed:118, desc:'近身爆發、高機率爆擊與覺醒後的持續壓制。', ultimateBg:'assets/chars/luffy.webp', ai:'aggressive', skills:[
-  {name:'橡膠手槍', type:'attack', pp:15, maxPP:15, power:95, accuracy:100, desc:'60% 機率造成 2.5 倍傷害。', tags:[['爆發','red']], anima:'punch', effect:{critBoost:0.6, critMult:2.5}},
-  {name:'橡膠火箭砲', type:'attack', pp:10, maxPP:10, power:0, accuracy:100, desc:'連續 5 次，每次造成對方最大 HP 1%～10% 傷害。', tags:[['五連擊','blue']], anima:'barrage', effect:{randomPercentHits:[5,0.01,0.10,false]}},
-  {name:'解放的鼓動', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'3 回合每回合回 20%，並免疫異常。', tags:[['回復','green'],['免疫','gold']], anima:'heal', effect:{regenTurns:3, regenRatio:0.20, immuneTurns:3}},
-  {name:'大蛇人', type:'attack', pp:6, maxPP:6, power:0, accuracy:100, desc:'扣當前 10% HP，下回合先制，並讓對手 2 回合有 50% 失敗率。', tags:[['先制','blue'],['封招','gold']], anima:'snake', effect:{currentHpCut:0.10, selfPriority:1, attackFailTurns:2, attackFailChance:0.5}},
-  {name:'太陽神尼卡覺醒', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'全能力 +1、全回復，2 回合傷害加倍。每多 1 位夥伴再加 2.5%。', tags:[['覺醒','gold']], anima:'awaken', ultimate:true, effect:{awaken:'nika', fullHeal:true, statUpAll:1, damageMultTurns:2, damageMultValue:2, allyBoostPer:0.025}}
- ]},
- luffy0:{id:'luffy0', name:'初登場魯夫', title:'草帽小子', types:['格鬥'], image:'assets/chars/luffy0.webp', avatar:'assets/chars/luffy0_face.webp', scale:.86, worldScale:.86, maxHp:1180, baseSpeed:112, desc:'剛從風車村出海的橡膠人，靠伸縮自如的拳腳和不服輸的鬥志戰鬥。', ultimateBg:'assets/chars/luffy0.webp', ai:'aggressive', skills:[
-  {name:'橡膠手槍', type:'attack', pp:15, maxPP:15, power:90, accuracy:100, desc:'伸長手臂的直拳，25% 機率造成 1.8 倍傷害。', tags:[['爆發','red']], anima:'punch', effect:{critBoost:0.25, critMult:1.8}},
-  {name:'橡膠鞭', type:'attack', pp:12, maxPP:12, power:100, accuracy:95, desc:'甩出伸長的腿橫掃，25% 機率使對手麻痺 1 回合。', tags:[['麻痺','gold']], anima:'whip', effect:{skipAttackChance:0.25, skipAttackTurns:1}},
-  {name:'橡膠加特林', type:'attack', pp:8, maxPP:8, power:0, accuracy:100, desc:'連續出拳 6 次，每次造成對手最大體力 1%～5% 傷害。', tags:[['六連擊','blue']], anima:'barrage', effect:{randomPercentHits:[6,0.01,0.05,false]}},
-  {name:'橡膠風船', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'把身體吹成氣球，下一次受到的攻擊以 1.5 倍反彈，並回復 10% 體力。', tags:[['反彈','gold'],['回復','green']], anima:'balloon', effect:{reflectTurns:1, reflectMultiplier:1.5, healRatio:0.10}},
-  {name:'橡膠巨人斧', type:'attack', pp:2, maxPP:2, power:100, accuracy:100, desc:'把腳伸到高空再劈落，造成 3.5 倍傷害，50% 機率使對手恐懼 1 回合。', tags:[['重擊','red'],['恐懼','gold']], anima:'axe', ultimate:true, effect:{forceMultiplier:3.5, skipAttackChance:0.5, skipAttackTurns:1, ccKind:'fear'}}
- ]},
- zoro:{id:'zoro', name:'初登場索隆', title:'三刀流劍士', types:['劍','格鬥'], image:'assets/chars/zoro.webp', avatar:'assets/chars/zoro_face.webp', scale:.9, worldScale:.9, maxHp:1340, baseSpeed:108, desc:'三把刀的斬擊、流血與霸氣纏繞的一擊必殺。', ultimateBg:'assets/chars/zoro.webp', ai:'aggressive', skills:[
-  {name:'三刀流 鬼斬', type:'attack', pp:15, maxPP:15, power:100, accuracy:100, desc:'三刀交叉斬擊，30% 機率造成 2 倍傷害。', tags:[['斬擊','red']], anima:'onigiri', effect:{critBoost:0.3, critMult:2}},
-  {name:'一刀流居合 獅子歌歌', type:'attack', pp:10, maxPP:10, power:90, accuracy:100, desc:'瞬間拔刀斬，50% 機率使對手流血 3 回合（每回合 6%）。', tags:[['居合','blue'],['流血','red']], anima:'shishi', effect:{dotChance:0.5, dotTurns:3, dotRatio:0.06, dotLabel:'流血'}},
-  {name:'霸氣纏繞', type:'support', pp:6, maxPP:6, power:0, accuracy:100, desc:'刀身纏上武裝色霸氣：攻擊 +2，下回合傷害 1.5 倍。', tags:[['強化','gold']], anima:'haki', effect:{selfBuffAtk:2, nextAttackMult:1.5, nextAttackMultTurns:2}},
-  {name:'三刀流 三千世界', type:'attack', pp:5, maxPP:5, power:130, accuracy:92, desc:'旋轉的刀刃斬出三千道斬擊，40% 使對手虛弱 2 回合。', tags:[['大招','red'],['虛弱','gold']], anima:'sanzen', effect:{weakChance:0.4, weakTurns:2, weakRange:[1.2,1.4]}},
-  {name:'九刀流 阿修羅', type:'attack', pp:2, maxPP:2, power:0, accuracy:100, desc:'化身三頭六臂的鬼神，連斬 9 次（每次最大體力 2%～5%），之後 2 回合傷害加倍。', tags:[['覺醒','gold'],['九連斬','red']], anima:'ashura', ultimate:true, effect:{randomPercentHits:[9,0.02,0.05,false], damageMultTurns:2, damageMultValue:2}}
- ]},
- sanji:{id:'sanji', name:'初登場香吉士', title:'黑足', types:['火','格鬥'], image:'assets/chars/sanji.webp', avatar:'assets/chars/sanji_face.webp', scale:.9, worldScale:.9, maxHp:1280, baseSpeed:122, desc:'只用腳的踢技、燃燒的惡魔風腳，還有能回復體力的料理。', ultimateBg:'assets/chars/sanji.webp', ai:'aggressive', skills:[
-  {name:'首肉踢', type:'attack', pp:15, maxPP:15, power:92, accuracy:100, desc:'瞄準頸部的迴旋踢，40% 機率使對手疲憊 1 回合。', tags:[['踢技','red'],['疲憊','gold']], anima:'collier', effect:{skipAttackChance:0.4, skipAttackTurns:1, ccKind:'fatigue'}},
-  {name:'惡魔風腳 畫龍點睛', type:'attack', pp:10, maxPP:10, power:110, accuracy:100, desc:'燃燒的腳踢出火焰，使對手燒傷 3 回合（每回合扣 4% 體力）。', tags:[['火焰','red'],['燒傷','gold']], anima:'diable', effect:{burnChance:1, burnTurns:3}},
-  {name:'特製海賊便當', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'一流廚師的料理：恢復 35% 體力並清除自身負面效果。', tags:[['回復','green'],['淨化','green']], anima:'cook', effect:{healRatio:0.35, clearSelfDebuffs:true}},
-  {name:'空中步行 連踢', type:'attack', pp:6, maxPP:6, power:0, accuracy:100, desc:'踩著空氣連續踢擊 4 次，每次造成對手當前體力 4%～9%，並提升速度 +1。', tags:[['四連擊','blue'],['加速','green']], anima:'skywalk', effect:{randomPercentHits:[4,0.04,0.09,true], selfBuffSpd:1}},
-  {name:'魔神風腳', type:'attack', pp:2, maxPP:2, power:160, accuracy:100, desc:'藍色火焰纏身的全力一踢，60% 使對手燒傷 3 回合，之後 2 回合傷害加倍、速度 +2。', tags:[['覺醒','gold'],['藍焰','blue']], anima:'ifrit', ultimate:true, effect:{damageMultTurns:2, damageMultValue:2, selfBuffSpd:2, burnChance:0.6, burnTurns:3}}
- ]},
- loki:{id:'loki', name:'洛基', title:'雷霆巨斧戰士', types:['雷電','冰'], image:'assets/chars/loki.webp', avatar:'assets/chars/loki_face.webp', scale:1.03, worldScale:1.08, maxHp:1560, baseSpeed:96, desc:'高耐久、極強控場與尼德霍格覺醒壓制。', ultimateBg:'assets/chars/loki.webp', ai:'control', skills:[
-  {name:'雷電噴吐', type:'attack', pp:10, maxPP:10, power:108, accuracy:95, desc:'命中後附加 5 回合每回合 10% 持續傷害。', tags:[['感電','blue']], anima:'beam', effect:{dotTurns:5, dotRatio:0.10, dotLabel:'雷電爆蝕'}},
-  {name:'鐵雷', type:'attack', pp:10, maxPP:10, power:108, accuracy:100, desc:'60% 機率造成 3 倍傷害並使對手麻痺 1 回合，30% 使對手破防 3 回合。', tags:[['重槌','red'],['麻痺','gold']], anima:'hammer', effect:{critBoost:0.6, critMult:3, skipAttackChance:0.6, skipAttackTurns:1, armorBreakChance:0.3, armorBreakTurns:3}},
-  {name:'原初世界', type:'attack', pp:5, maxPP:5, power:0, accuracy:100, desc:'清除對方全部強化與自身異常，50% 使對手冰凍 2 回合（每回合扣 2%、速度下降），並連續攻擊 10 次，接下來兩回合傷害加倍。', tags:[['清強化','gold'],['冰凍','blue'],['十連擊','red']], anima:'world', effect:{clearBuffs:true, clearSelfDebuffs:true, freezeChance:0.5, freezeTurns:2, fixedLightHits:[10,0.02], damageMultTurns:2, damageMultValue:2}},
-  {name:'鐵雷五矢', type:'attack', pp:4, maxPP:4, power:0, accuracy:100, desc:'連續攻擊 5 次，並使對方麻痺 1 回合；傷害與負面效果 2 倍反彈。', tags:[['五連擊','blue'],['反彈','gold']], anima:'thunderfive', effect:{fixedLightHits:[5,0.04], reflectTurns:1, reflectMultiplier:2, reflectNegative:true, skipAttackTurns:1}},
-  {name:'尼德霍格覺醒', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'全能力 +2，連續兩回合恢復滿血，接下來兩回合傷害 5 倍且 20% 機率直接秒殺，附加冰凍傷害並永久免疫異常。', tags:[['覺醒','gold']], anima:'awaken', ultimate:true, effect:{awaken:'nidhogg', fullHeal:true, fullRestoreTurns:2, statUpAll:2, damageMultTurns:2, damageMultValue:5, executeBuffTurns:2, executeBuffChance:0.20, frostBoostTurns:2, immunePermanent:true}}
- ]},
- crocodile:{id:'crocodile' , name:'沙·克洛克達爾', title:'砂暴霸主', types:['沙','格鬥'], image:'assets/chars/crocodile.webp', avatar:'assets/chars/crocodile_face.webp', scale:.9, worldScale:.92, maxHp:1320, baseSpeed:100, desc:'砂刃、乾涸吸收與持續沙塵暴壓制。', ultimateBg:'assets/chars/crocodile.webp', ai:'sand', skills:[
-  {name:'沙漠寶刀', type:'attack', pp:12, maxPP:12, power:92, accuracy:100, desc:'20% 機率直接減少對方當前 50% 血量，否則為普通攻擊。', tags:[['斬擊','red'],['削血','gold']], anima:'sandslash', effect:{chanceHalfHpCut:0.2}},
-  {name:'沙漠向日葵', type:'support', pp:6, maxPP:6, power:0, accuracy:100, desc:'使對方疲憊 1 回合（無法使用技能），並隨機扣除一個技能次數 1；自己下回合傷害 1.5 倍。', tags:[['封鎖','gold'],['強化','green']], anima:'sandtrap', effect:{skipAttackTurns:1, ccKind:'fatigue', randomPPDown:1, nextAttackMult:1.5, nextAttackMultTurns:2}},
-  {name:'金剛寶刀', type:'attack', pp:8, maxPP:8, power:0, accuracy:100, desc:'連續攻擊 3 次，每次造成對手當前 HP 1%～15% 傷害。', tags:[['三連擊','blue']], anima:'sandtriple', effect:{randomPercentHits:[3,0.01,0.15,true]}},
-  {name:'侵蝕輪迴 / 乾涸', type:'attack', pp:5, maxPP:5, power:0, accuracy:100, desc:'吸取對手部分血量，自己攻防各 +2，並有 50% 機率使對手固化 1 回合。', tags:[['吸取','green'],['固化','gold']], anima:'dry', effect:{drainCurrentHpRange:[0.12,0.22], selfBuffAtk:2, selfBuffDef:2, petrifyChance:0.5, petrifyTurns:1}},
-  {name:'沙嵐（沙塵暴）', type:'attack', pp:2, maxPP:2, power:100, accuracy:100, desc:'普通攻擊後，5 回合依序造成 5%、6%、7%、8%、最後 10%～20% 持續傷害。', tags:[['沙暴','gold']], anima:'sandstorm', ultimate:true, effect:{dotSequence:[[0.05,0.05],[0.06,0.06],[0.07,0.07],[0.08,0.08],[0.10,0.20]], dotLabel:'沙塵暴'}}
- ]},
- blackbeard:{id:'blackbeard', name:'馬歇爾·D·汀奇', title:'黑暗震震', types:['闇','格鬥'], image:'assets/chars/blackbeard.webp', avatar:'assets/chars/blackbeard_face.webp', scale:.92, worldScale:.95, maxHp:1460, baseSpeed:88, desc:'黑暗引力、震震爆發、技能奪取與護盾反打。', ultimateBg:'assets/chars/blackbeard.webp', ai:'dark', skills:[
-  {name:'引力吸入', type:'attack', pp:7, maxPP:7, power:96, accuracy:100, desc:'持續吸取對方血量，使對方能力提升失效；50% 機率使對方恐懼 2 回合，並持續扣除 10% 血量。', tags:[['吸收','green'],['封鎖','gold']], anima:'darkpull', effect:{drainMaxHp:0.10, clearBuffs:true, buffBlockTurns:2, skipAttackChance:0.5, skipAttackTurns:2, ccKind:'fear', dotTurns:2, dotRatio:0.10, dotLabel:'黑暗侵蝕'}},
-  {name:'引發震動', type:'attack', pp:5, maxPP:5, power:100, accuracy:100, desc:'30%傷害2.5倍、30%傷害5倍、20%傷害10倍、10%傷害20倍，其餘為普通震動傷害。', tags:[['震震','red']], anima:'quake', effect:{variableMultipliers:[[0.3,2.5],[0.3,5],[0.2,10],[0.1,20],[0.1,1]]}},
-  {name:'闇穴道', type:'attack', pp:5, maxPP:5, power:0, accuracy:100, desc:'隨機奪取對方其中一個可安全使用的攻擊技能並反打；若會造成自身傷害或負面效果則該次無效。', tags:[['技能奪取','blue']], anima:'darkcopy', effect:{copyOpponentSkillSafe:true}},
-  {name:'解放', type:'attack', pp:4, maxPP:4, power:0, accuracy:100, desc:'給予對手已損失血量2.5倍傷害，並獲得自身當前體力10%的護盾。', tags:[['終結','gold'],['護盾','green']], anima:'release', effect:{lostHpDamageMult:2.5, selfShieldCurrentHpRatio:0.10}},
-  {name:'假裝認輸', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'全能力+1、恢復全部血量，接下來兩回合傷害加倍；對方直接扣除50%當前血量，並追加使用對方一個安全技能。', tags:[['覺醒','gold']], anima:'awaken', ultimate:true, effect:{statUpAll:1, fullHeal:true, damageMultTurns:2, damageMultValue:2, enemyCurrentHpCut:0.50, copyOpponentSkillAfter:true}}
- ]},
- enel:{id:'enel', name:'艾涅爾', title:'雷神', types:['雷電','神'], image:'assets/chars/enel.webp', avatar:'assets/chars/enel_face.webp', scale:.9, worldScale:.92, maxHp:1280, baseSpeed:124, desc:'神速雷擊、秒殺機率與雷神型態。', ultimateBg:'assets/chars/enel.webp', ai:'lightning', skills:[
-  {name:'放電', type:'attack', pp:15, maxPP:15, power:0, accuracy:100, desc:'隨機放出 100～2000 萬伏特雷擊傷害。', tags:[['雷擊','blue']], anima:'lightning', effect:{randomPower:[70,300]}},
-  {name:'電療', type:'support', pp:4, maxPP:4, power:0, accuracy:100, desc:'恢復全部血量，並使對手麻痺 1 回合（無法使用技能）。', tags:[['回滿','green'],['麻痺','gold']], anima:'heal', effect:{fullHeal:true, skipAttackTurns:1}},
-  {name:'電光', type:'attack', pp:8, maxPP:8, power:112, accuracy:100, desc:'消除對手全部能力提升，清除自身全部負面效果，並給予光熱傷害。', tags:[['清強化','gold'],['淨化','green']], anima:'flash', effect:{clearBuffs:true, clearSelfDebuffs:true}},
-  {name:'神之制裁', type:'attack', pp:3, maxPP:3, power:0, accuracy:100, desc:'10% 機率直接秒殺，否則自動施放一次放電。', tags:[['制裁','gold']], anima:'judgment', effect:{executeChance:0.10, fallbackSkill:'放電'}},
-  {name:'二億伏特·雷神', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'進入巨大雷神戰鬥型態，接下來 2 回合傷害 5 倍，並減免 30% 所受傷害。', tags:[['雷神化','gold']], anima:'transform', ultimate:true, effect:{damageMultTurns:2, damageMultValue:5, damageReductionTurns:2, damageReductionValue:0.30}}
- ]},
- shirahoshi:{id:'shirahoshi', name:'白星', title:'海王波賽頓', types:['海王','神'], image:'assets/chars/shirahoshi.webp', avatar:'assets/chars/shirahoshi_face.webp', scale:.88, worldScale:.92, maxHp:1360, baseSpeed:96, desc:'高恢復、高護盾與海王類超大型爆發。', ultimateBg:'assets/chars/shirahoshi.webp', ai:'support', skills:[
-  {name:'波賽頓', type:'attack', pp:10, maxPP:10, power:90, accuracy:100, desc:'5%直接秒殺；未秒殺則恢復5%血量並進行一次打擊。', tags:[['海王','blue'],['秒殺','gold']], anima:'poseidon', effect:{executeChance:0.05, fallbackHealRatio:0.05, fallbackPower:90}},
-  {name:'聽見萬物的聲音', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'無視任何負面狀態皆可使用；使對手技能效果失效、恢復自身50%血量、清除對手能力提升與自身負面效果。', tags:[['必中使用','gold'],['淨化','green']], anima:'voice', effect:{unstoppable:true, healRatio:0.50, clearBuffs:true, clearSelfDebuffs:true, nullifyEnemySkillTurns:1}},
-  {name:'召喚', type:'attack', pp:6, maxPP:6, power:0, accuracy:100, desc:'獲得自身當前體力1/2的護盾，並造成自身當前體力1/4的傷害。', tags:[['護盾','green']], anima:'summonsea', effect:{damageFromSelfCurrentHpRatio:0.25, selfShieldCurrentHpRatio:0.50}},
-  {name:'命令海王類', type:'attack', pp:3, maxPP:3, power:100, accuracy:100, desc:'指揮超大型海王類造成10倍傷害，並獲得自身當前體力2倍護盾。', tags:[['海王類','blue'],['10倍','red']], anima:'seaking', effect:{forceMultiplier:10, selfShieldCurrentHpRatio:2.0}}
- ]},
- yamato:{id:'yamato', name:'大和', title:'光月御田的繼承者', types:['冰','神'], image:'assets/chars/yamato.webp', avatar:'assets/chars/yamato_face.webp', scale:.96, worldScale:.95, maxHp:1420, baseSpeed:114, desc:'纏繞霸氣的狼牙棒連打，與冰雪之神「大口真神」的守護。', ultimateBg:'assets/chars/yamato.webp', ai:'control', skills:[
-  {name:'無侍冰牙', type:'attack', pp:15, maxPP:15, power:45, accuracy:100, desc:'對敵人普通攻擊 2～5 次，每次有 20% 機率附加冰凍傷害。', tags:[['連擊','blue'],['冰凍','blue']], anima:'icefang', effect:{multiHitNormal:[2,5], perHitPower:45, extraIceChance:0.2, extraIceRatio:0.06}},
-  {name:'雷鳴八卦', type:'attack', pp:8, maxPP:8, power:110, accuracy:100, desc:'纏繞霸氣的狼牙棒高速突進，10% 機率打出 10 倍傷害；50% 使對手虛弱 2 回合（受到 1.2～1.5 倍傷害）。', tags:[['突進','red'],['虛弱','gold']], anima:'hakke', effect:{jackpotChance:0.1, jackpotMult:10, weakChance:0.5, weakTurns:2, weakRange:[1.2,1.5]}},
-  {name:'鳴鏑', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'全能力 +1，下回合攻擊威力翻倍，並把自身所有負面效果與負面能力轉移給對手。', tags:[['強化','green'],['轉移','gold']], anima:'narukabura', effect:{statUpAll:1, nextAttackMult:2, nextAttackMultTurns:2, transferDebuffs:true}},
-  {name:'鏡山', type:'attack', pp:5, maxPP:5, power:80, accuracy:100, desc:'獲得自身體力 50% 的護盾，3 回合內每回合回復 15% 體力，並對敵人普通攻擊一次。', tags:[['護盾','green'],['回復','green']], anima:'kagamiyama', effect:{selfShieldCurrentHpRatio:0.5, regenTurns:3, regenRatio:0.15}},
-  {name:'大口真神形態', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'體力全滿，獲得最大體力 100% 的護盾，強制使對手冰凍 2 回合（每回合扣 2%、速度下降），下回合攻擊威力翻倍。', tags:[['覺醒','gold'],['冰凍','blue']], anima:'okuchi', ultimate:true, effect:{fullHeal:true, selfShieldMaxHpRatio:1, freezeForce:2, nextAttackMult:2, nextAttackMultTurns:2}}
- ]},
- robin:{id:'robin', name:'妮可·羅賓', title:'惡魔之子', types:['花花','格鬥'], image:'assets/chars/robin.webp', avatar:'assets/chars/robin_face.webp', scale:.90, worldScale:.92, maxHp:1280, baseSpeed:110, desc:'超多段攻擊、閃避、反彈與惡魔開花高倍率爆發。', ultimateBg:'assets/chars/robin.webp', ai:'control', skills:[
-  {name:'繁衍肢體', type:'attack', pp:12, maxPP:12, power:0, accuracy:100, desc:'隨機進行1～100次普通攻擊。', tags:[['多段','blue']], anima:'limbs', effect:{randomHitCount:[1,100], perHitPower:10}},
-  {name:'幻之翼', type:'support', pp:6, maxPP:6, power:0, accuracy:100, desc:'下回合躲避對方攻擊，並恢復10%血量。', tags:[['閃避','green']], anima:'wings', effect:{dodgeTurns:1, healRatio:0.10}},
-  {name:'百花繚亂', type:'support', pp:5, maxPP:5, power:0, accuracy:100, desc:'反彈下一次敵人攻擊，並以2倍傷害返還。', tags:[['反彈','gold']], anima:'petals', effect:{reflectTurns:1, reflectMultiplier:2}},
-  {name:'惡魔開花', type:'attack', pp:4, maxPP:4, power:100, accuracy:100, desc:'隨機造成10～100倍傷害，並有3%機率直接秒殺。', tags:[['惡魔','red'],['高倍率','gold']], anima:'demonflower', effect:{randomMultiplierRange:[10,100], executeChance:0.03}},
-  {name:'萬紫千紅·巨大人形', type:'support', pp:2, maxPP:2, power:0, accuracy:100, desc:'威攝對手，使其接下來3回合傷害降低50%；若羅賓遭高額傷害後血量低於10%，立即回滿血一次。', tags:[['威攝','gold'],['瀕死回滿','green']], anima:'gigante', ultimate:true, effect:{enemyDamageReductionTurns:3, enemyDamageReductionValue:0.50, clutchHealThreshold:0.10, clutchHealCharges:1}}
- ]}
-
+ luffy0:{"id":"luffy0","name":"初登場魯夫","title":"草帽小子","types":["格鬥"],"image":"assets/chars/luffy0.webp","avatar":"assets/chars/luffy0_face.webp","scale":0.86,"worldScale":0.86,"maxHp":1180,"baseSpeed":112,"desc":"剛從風車村出海的橡膠人，靠伸縮自如的拳腳和不服輸的鬥志戰鬥。","ultimateBg":"assets/chars/luffy0.webp","ai":"aggressive","skills":[{"name":"橡膠手槍","type":"attack","pp":15,"maxPP":15,"power":90,"accuracy":100,"desc":"伸長手臂的直拳，25% 機率造成 1.8 倍傷害。","tags":[["爆發","red"]],"anima":"punch","effect":{"critBoost":0.25,"critMult":1.8}},{"name":"橡膠鞭","type":"attack","pp":12,"maxPP":12,"power":100,"accuracy":95,"desc":"甩出伸長的腿橫掃，25% 機率使對手麻痺 1 回合。","tags":[["麻痺","gold"]],"anima":"whip","effect":{"skipAttackChance":0.25,"skipAttackTurns":1}},{"name":"橡膠加特林","type":"attack","pp":8,"maxPP":8,"power":0,"accuracy":100,"desc":"連續出拳 6 次，每次造成對手最大體力 1%～5% 傷害。","tags":[["六連擊","blue"]],"anima":"barrage","effect":{"randomPercentHits":[6,0.01,0.05,false]}},{"name":"橡膠風船","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"把身體吹成氣球，下一次受到的攻擊以 1.5 倍反彈，並回復 10% 體力。","tags":[["反彈","gold"],["回復","green"]],"anima":"balloon","effect":{"reflectTurns":1,"reflectMultiplier":1.5,"healRatio":0.1}},{"name":"二檔","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"血液加速流動、全身冒出蒸氣：接下來的攻擊傷害 3.5 倍，50% 使對手恐懼 1 回合。","tags":[["強化","gold"],["恐懼","gold"]],"anima":"gear2","ultimate":true,"effect":{"nextAttackMult":3.5,"nextAttackMultTurns":2,"fearChance":0.5,"fearTurns":1}}],"no":1},
+ zoro:{"id":"zoro","name":"初登場索隆","title":"三刀流劍士","types":["劍","格鬥"],"image":"assets/chars/zoro.webp","avatar":"assets/chars/zoro_face.webp","scale":0.9,"worldScale":0.9,"maxHp":1340,"baseSpeed":108,"desc":"三把刀的斬擊、流血與霸氣纏繞的一擊必殺。","ultimateBg":"assets/chars/zoro.webp","ai":"aggressive","skills":[{"name":"三刀流 鬼斬","type":"attack","pp":15,"maxPP":15,"power":100,"accuracy":100,"desc":"三刀交叉斬擊，30% 機率造成 2 倍傷害。","tags":[["斬擊","red"]],"anima":"onigiri","effect":{"critBoost":0.3,"critMult":2}},{"name":"一刀流居合 獅子歌歌","type":"attack","pp":10,"maxPP":10,"power":90,"accuracy":100,"desc":"瞬間拔刀斬，50% 機率使對手流血 3 回合（每回合 6%）。","tags":[["居合","blue"],["流血","red"]],"anima":"shishi","effect":{"dotChance":0.5,"dotTurns":3,"dotRatio":0.06,"dotLabel":"流血"}},{"name":"霸氣纏繞","type":"support","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"刀身纏上武裝色霸氣：攻擊 +2，下回合傷害 1.5 倍。","tags":[["強化","gold"]],"anima":"haki","effect":{"selfBuffAtk":2,"nextAttackMult":1.5,"nextAttackMultTurns":2}},{"name":"三刀流 三千世界","type":"attack","pp":5,"maxPP":5,"power":40,"accuracy":92,"desc":"連續普通攻擊 9 次，40% 使對手虛弱 2 回合。","tags":[["九連擊","red"],["虛弱","gold"]],"anima":"sanzen","effect":{"multiHitNormal":[9,9],"perHitPower":40,"weakChance":0.4,"weakTurns":2,"weakRange":[1.2,1.4]}},{"name":"九刀流 阿修羅","type":"attack","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"化身三頭六臂的鬼神，連斬 9 次（每次最大體力 2%～5%），之後 2 回合傷害加倍。","tags":[["覺醒","gold"],["九連斬","red"]],"anima":"ashura","ultimate":true,"effect":{"randomPercentHits":[9,0.02,0.05,false],"damageMultTurns":2,"damageMultValue":2}}],"no":2},
+ sanji:{"id":"sanji","name":"初登場香吉士","title":"黑足","types":["火","格鬥"],"image":"assets/chars/sanji.webp","avatar":"assets/chars/sanji_face.webp","scale":0.9,"worldScale":0.9,"maxHp":1280,"baseSpeed":122,"desc":"只用腳的踢技、燃燒的惡魔風腳，還有能回復體力的料理。","ultimateBg":"assets/chars/sanji.webp","ai":"aggressive","skills":[{"name":"首肉踢","type":"attack","pp":15,"maxPP":15,"power":55,"accuracy":100,"desc":"攻擊敵人 2 次；40% 使對手疲憊 1 回合，若沒有觸發，則 50% 使對手防禦 -1。","tags":[["二連擊","red"],["疲憊","gold"]],"anima":"collier","effect":{"multiHitNormal":[2,2],"perHitPower":55,"ccOr":{"kind":"fatigue","chance":0.4,"turns":1,"elseStat":"def","elseChance":0.5,"elseAmount":-1}}},{"name":"惡魔風腳 畫龍點睛","type":"attack","pp":10,"maxPP":10,"power":110,"accuracy":100,"desc":"攻擊敵人並造成燒傷 2 回合（每回合扣 4% 體力）。","tags":[["火焰","red"],["燒傷","gold"]],"anima":"diable","effect":{"burnChance":1,"burnTurns":2}},{"name":"特製海賊便當","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"一流廚師的料理：恢復 35% 體力並清除自身負面效果。","tags":[["回復","green"],["淨化","green"]],"anima":"cook","effect":{"healRatio":0.35,"clearSelfDebuffs":true}},{"name":"空中步行 連踢","type":"attack","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"踩著空氣連續踢擊 4 次，每次造成對手當前體力 4%～9%，並提升速度 +1。","tags":[["四連擊","blue"],["加速","green"]],"anima":"skywalk","effect":{"randomPercentHits":[4,0.04,0.09,true],"selfBuffSpd":1}},{"name":"魔神風腳","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"全能力 +1，接下來 2 回合傷害 3 倍，且每回合回復自身 5% 體力。","tags":[["覺醒","gold"],["回復","green"]],"anima":"ifrit","ultimate":true,"effect":{"statUpAll":1,"damageMultTurns":2,"damageMultValue":3,"regenTurns":2,"regenRatio":0.05}}],"no":3},
+ robin:{"id":"robin","name":"妮可·羅賓","title":"惡魔之子","types":["花花","格鬥"],"image":"assets/chars/robin.webp","avatar":"assets/chars/robin_face.webp","scale":0.9,"worldScale":0.92,"maxHp":1280,"baseSpeed":110,"desc":"超多段攻擊、閃避、反彈與惡魔開花高倍率爆發。","ultimateBg":"assets/chars/robin.webp","ai":"control","skills":[{"name":"繁衍肢體","type":"attack","pp":12,"maxPP":12,"power":0,"accuracy":100,"desc":"隨機進行1～100次普通攻擊。","tags":[["多段","blue"]],"anima":"limbs","effect":{"randomHitCount":[1,100],"perHitPower":10}},{"name":"幻之翼","type":"support","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"下回合躲避對方攻擊，並恢復10%血量。","tags":[["閃避","green"]],"anima":"wings","effect":{"dodgeTurns":1,"healRatio":0.1}},{"name":"百花繚亂","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"反彈下一次敵人攻擊，並以2倍傷害返還。","tags":[["反彈","gold"]],"anima":"petals","effect":{"reflectTurns":1,"reflectMultiplier":2}},{"name":"惡魔開花","type":"attack","pp":4,"maxPP":4,"power":100,"accuracy":100,"desc":"隨機造成 5～20 倍傷害，並有 3% 機率直接秒殺。","tags":[["惡魔","red"],["高倍率","gold"]],"anima":"demonflower","effect":{"randomMultiplierRange":[5,20],"executeChance":0.03}},{"name":"萬紫千紅·巨大人形","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"威攝對手，使其接下來3回合傷害降低50%；若羅賓遭高額傷害後血量低於10%，立即回滿血一次。","tags":[["威攝","gold"],["瀕死回滿","green"]],"anima":"gigante","ultimate":true,"effect":{"enemyDamageReductionTurns":3,"enemyDamageReductionValue":0.5,"clutchHealThreshold":0.1,"clutchHealCharges":1}}],"no":6},
+ crocodile:{"id":"crocodile","name":"沙·克洛克達爾","title":"砂暴霸主","types":["沙","格鬥"],"image":"assets/chars/crocodile.webp","avatar":"assets/chars/crocodile_face.webp","scale":0.9,"worldScale":0.92,"maxHp":1320,"baseSpeed":100,"desc":"砂刃、乾涸吸收與持續沙塵暴壓制。","ultimateBg":"assets/chars/crocodile.webp","ai":"sand","skills":[{"name":"沙漠寶刀","type":"attack","pp":12,"maxPP":12,"power":92,"accuracy":100,"desc":"20% 機率直接減少對方當前 50% 血量，否則為普通攻擊。","tags":[["斬擊","red"],["削血","gold"]],"anima":"sandslash","effect":{"chanceHalfHpCut":0.2}},{"name":"沙漠向日葵","type":"support","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"使對方疲憊 1 回合（無法使用技能），並隨機扣除一個技能次數 1；自己下回合傷害 1.5 倍。","tags":[["封鎖","gold"],["強化","green"]],"anima":"sandtrap","effect":{"skipAttackTurns":1,"ccKind":"fatigue","randomPPDown":1,"nextAttackMult":1.5,"nextAttackMultTurns":2}},{"name":"金剛寶刀","type":"attack","pp":8,"maxPP":8,"power":0,"accuracy":100,"desc":"連續攻擊 3 次，每次造成對手當前 HP 1%～15% 傷害。","tags":[["三連擊","blue"]],"anima":"sandtriple","effect":{"randomPercentHits":[3,0.01,0.15,true]}},{"name":"侵蝕輪迴 / 乾涸","type":"attack","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"吸取對手部分血量，自己攻防各 +2，並有 50% 機率使對手固化 1 回合。","tags":[["吸取","green"],["固化","gold"]],"anima":"dry","effect":{"drainCurrentHpRange":[0.12,0.22],"selfBuffAtk":2,"selfBuffDef":2,"petrifyChance":0.5,"petrifyTurns":1}},{"name":"沙嵐（沙塵暴）","type":"attack","pp":2,"maxPP":2,"power":100,"accuracy":100,"desc":"全能力 +1，普通攻擊後 3 回合依序扣對手 10%、20%、30%～50% 體力。","tags":[["沙暴","gold"]],"anima":"sandstorm","ultimate":true,"effect":{"statUpAll":1,"dotSequence":[[0.1,0.1],[0.2,0.2],[0.3,0.5]],"dotLabel":"沙塵暴"}}],"no":12},
+ lucci:{"id":"lucci","no":13,"name":"羅布·路奇","title":"CP9 最強的殺手","types":["獸","格鬥"],"image":"assets/chars/lucci.webp","avatar":"assets/chars/lucci_face.webp","scale":0.95,"worldScale":0.95,"maxHp":1380,"baseSpeed":120,"desc":"世界政府諜報機關 CP9 的王牌，精通「六式」，能化身為豹的冷血殺手。","ultimateBg":"assets/chars/lucci.webp","ai":"aggressive","skills":[{"name":"指槍","type":"attack","pp":12,"maxPP":12,"power":20,"accuracy":100,"desc":"普通攻擊對手 15～30 次。","tags":[["連擊","red"]],"anima":"shigan","effect":{"multiHitNormal":[15,30],"perHitPower":20}},{"name":"飛指槍","type":"attack","pp":6,"maxPP":6,"power":20,"accuracy":100,"desc":"連續普通攻擊對手 20～30 次，每一次都有 0.5% 機率直接秒殺對手（各自獨立判定）。","tags":[["連擊","red"],["秒殺","gold"]],"anima":"tobishigan","effect":{"multiHitNormal":[20,30],"perHitPower":20,"perHitExecute":0.005}},{"name":"六式","type":"support","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"全能力 +1，接下來 2 回合使用的技能，效果裡的攻擊次數全部加倍。","tags":[["強化","gold"],["次數加倍","red"]],"anima":"rokushiki","effect":{"statUpAll":1,"hitDoubleTurns":3}},{"name":"六王槍","type":"attack","pp":4,"maxPP":4,"power":100,"accuracy":100,"desc":"無視護盾，直接對敵人造成 2～30 倍傷害，並把對手損失的體力回復到自己身上。","tags":[["無視護盾","gold"],["吸血","green"]],"anima":"rokuogan","effect":{"randomMultiplierRange":[2,30],"ignoreShield":true,"lifestealAll":true}},{"name":"生命歸還","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"全能力 +1，恢復 80% 體力；2 回合內速度變為 1.2～1.5 倍，對手的攻擊有 35% 機率無效。","tags":[["回復","green"],["加速","gold"]],"anima":"seimeikikan","ultimate":true,"effect":{"statUpAll":1,"healRatio":0.8,"speedMulRange":[1.2,1.5],"speedMulTurns":3,"attackFailTurns":2,"attackFailChance":0.35}}]},
+ blackbeard:{"id":"blackbeard","name":"馬歇爾·D·汀奇","title":"四皇","types":["闇","格鬥"],"image":"assets/chars/blackbeard.webp","avatar":"assets/chars/blackbeard_face.webp","scale":0.92,"worldScale":0.95,"maxHp":1460,"baseSpeed":88,"desc":"黑暗引力、震震爆發、技能奪取與護盾反打。","ultimateBg":"assets/chars/blackbeard.webp","ai":"dark","skills":[{"name":"引力吸入","type":"attack","pp":7,"maxPP":7,"power":0,"accuracy":100,"desc":"吸取對手 5～25% 體力、清除對手能力提升；50% 使對手恐懼 2 回合；對手 2 回合每回合扣 10% 體力。","tags":[["吸收","green"],["恐懼","gold"]],"anima":"darkpull","effect":{"drainCurrentHpRange":[0.05,0.25],"clearBuffs":true,"skipAttackChance":0.5,"skipAttackTurns":2,"ccKind":"fear","dotTurns":2,"dotRatio":0.1,"dotLabel":"引力"}},{"name":"引發震動","type":"attack","pp":5,"maxPP":5,"power":100,"accuracy":100,"desc":"30% → 2.5 倍、30% → 5 倍、20% → 10～20 倍、10% → 20～100 倍，其餘為普通震動傷害。","tags":[["震震","red"]],"anima":"quake","effect":{"variableMultipliers":[[0.3,2.5],[0.3,5],[0.2,[10,20]],[0.1,[20,100]],[0.1,1]]}},{"name":"闇穴道","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"隨機複製對手一個技能（第 5 技能除外），成功率 100%。複製後，這個技能會變成被複製技能的名稱與效果，威力、使用次數與效果完全相同。","tags":[["複製","blue"]],"anima":"darkcopy","effect":{"copyReplace":true}},{"name":"解放","type":"attack","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"給予對手已損失血量2.5倍傷害，並獲得自身當前體力10%的護盾。","tags":[["終結","gold"],["護盾","green"]],"anima":"release","effect":{"lostHpDamageMult":2.5,"selfShieldCurrentHpRatio":0.1}},{"name":"假裝認輸","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"全能力+1、恢復全部血量，接下來兩回合傷害加倍；對方直接扣除50%當前血量，並追加使用對方一個安全技能。","tags":[["覺醒","gold"]],"anima":"awaken","ultimate":true,"effect":{"statUpAll":1,"fullHeal":true,"damageMultTurns":2,"damageMultValue":2,"enemyCurrentHpCut":0.5,"copyOpponentSkillAfter":true}}],"no":16},
+ enel:{"id":"enel","name":"艾涅爾","title":"雷神","types":["雷電","神"],"image":"assets/chars/enel.webp","avatar":"assets/chars/enel_face.webp","scale":0.9,"worldScale":0.92,"maxHp":1280,"baseSpeed":124,"desc":"神速雷擊、秒殺機率與雷神型態。","ultimateBg":"assets/chars/enel.webp","ai":"lightning","skills":[{"name":"放電","type":"attack","pp":15,"maxPP":15,"power":0,"accuracy":100,"desc":"隨機放出 100～2000 萬伏特雷擊傷害。","tags":[["雷擊","blue"]],"anima":"lightning","effect":{"randomPower":[70,300]}},{"name":"電療","type":"support","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"回復 30～50% 體力，並使對手麻痺 1 回合。","tags":[["回滿","green"],["麻痺","gold"]],"anima":"heal","effect":{"healRange":[0.3,0.5],"skipAttackTurns":1,"ccKind":"paralyze"}},{"name":"電光","type":"attack","pp":8,"maxPP":8,"power":112,"accuracy":100,"desc":"消除對手全部能力提升，清除自身全部負面效果，並給予光熱傷害。","tags":[["清強化","gold"],["淨化","green"]],"anima":"flash","effect":{"clearBuffs":true,"clearSelfDebuffs":true}},{"name":"神之制裁","type":"attack","pp":3,"maxPP":3,"power":0,"accuracy":100,"desc":"10% 直接秒殺，否則施放 2 次放電。","tags":[["制裁","gold"]],"anima":"judgment","effect":{"executeChance":0.1,"fallbackSkill":"放電","fallbackTimes":2}},{"name":"二億伏特·雷神","type":"attack","pp":2,"maxPP":2,"power":100,"accuracy":100,"desc":"給予對手 20～30 倍傷害，下回合受到的傷害 -30%。","tags":[["雷神化","gold"],["減傷","green"]],"anima":"transform","ultimate":true,"effect":{"randomMultiplierRange":[20,30],"damageReductionTurns":2,"damageReductionValue":0.3}}],"no":18},
+ shirahoshi:{"id":"shirahoshi","name":"白星","title":"海王波賽頓","types":["海王","神"],"image":"assets/chars/shirahoshi.webp","avatar":"assets/chars/shirahoshi_face.webp","scale":0.88,"worldScale":0.92,"maxHp":1360,"baseSpeed":96,"desc":"高恢復、高護盾與海王類超大型爆發。","ultimateBg":"assets/chars/shirahoshi.webp","ai":"support","skills":[{"name":"波賽頓","type":"attack","pp":10,"maxPP":10,"power":90,"accuracy":100,"desc":"5%直接秒殺；未秒殺則恢復5%血量並進行一次打擊。","tags":[["海王","blue"],["秒殺","gold"]],"anima":"poseidon","effect":{"executeChance":0.05,"fallbackHealRatio":0.05,"fallbackPower":90}},{"name":"聽見萬物的聲音","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"無視任何負面狀態皆可使用；使對手技能效果失效、恢復自身50%血量、清除對手能力提升與自身負面效果。","tags":[["必中使用","gold"],["淨化","green"]],"anima":"voice","effect":{"unstoppable":true,"healRatio":0.5,"clearBuffs":true,"clearSelfDebuffs":true,"nullifyEnemySkillTurns":1}},{"name":"海王之盾","type":"attack","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"獲得自身當前體力1/2的護盾，並造成自身當前體力1/4的傷害。","tags":[["護盾","green"]],"anima":"summonsea","effect":{"damageFromSelfCurrentHpRatio":0.25,"selfShieldCurrentHpRatio":0.5}},{"name":"命令海王類","type":"attack","pp":3,"maxPP":3,"power":100,"accuracy":100,"desc":"指揮超大型海王類造成10倍傷害，並獲得自身當前體力2倍護盾。","tags":[["海王類","blue"],["10倍","red"]],"anima":"seaking","effect":{"forceMultiplier":10,"selfShieldCurrentHpRatio":2}},{"name":"召喚","type":"support","pp":1,"maxPP":1,"power":0,"accuracy":100,"desc":"復活一位已倒下的隊友（恢復 50% 體力）。復活成功後，自身 10% 機率直接倒下，90% 獲得 1000 點護盾。無法用藥水恢復次數，一場戰鬥限用一次。","tags":[["復活","green"],["限一次","gold"]],"anima":"revive","ultimate":true,"effect":{"reviveAlly":0.5,"reviveSelfDeath":0.1,"reviveShield":1000,"noRestore":true}}],"no":20},
+ hody:{"id":"hody","no":21,"name":"荷帝·瓊斯","title":"新魚人海賊團船長","types":["魚人","格鬥"],"image":"assets/chars/hody.webp","avatar":"assets/chars/hody_face.webp","scale":0.95,"worldScale":0.95,"maxHp":1400,"baseSpeed":110,"desc":"對人類懷著扭曲仇恨的大白鯊魚人，率領新魚人海賊團發動政變。","ultimateBg":"assets/chars/hody.webp","ai":"aggressive","skills":[{"name":"粗鮫·滔擊","type":"attack","pp":12,"maxPP":12,"power":70,"accuracy":100,"desc":"強力攻擊對手 2～5 次。","tags":[["連擊","red"]],"anima":"hody1","effect":{"multiHitNormal":[2,5],"perHitPower":70}},{"name":"矢武鮫","type":"attack","pp":6,"maxPP":6,"power":20,"accuracy":100,"desc":"連續普通攻擊對手 20～30 次，每一次都有 0.5% 機率直接秒殺對手（各自獨立判定）。","tags":[["連擊","red"],["秒殺","gold"]],"anima":"hody2","effect":{"multiHitNormal":[20,30],"perHitPower":20,"perHitExecute":0.005}},{"name":"水心·群鮫","type":"support","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"全能力 +1，接下來 2 回合使用的技能，效果裡的攻擊次數全部加倍。","tags":[["強化","gold"],["次數加倍","red"]],"anima":"hody3","effect":{"statUpAll":1,"hitDoubleTurns":3}},{"name":"水之盾","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"30% 使對手麻痺 1 回合；自身回復 20% 體力，並獲得自身體力 20% 的護盾。","tags":[["回復","green"],["護盾","green"]],"anima":"hody4","effect":{"skipAttackChance":0.3,"skipAttackTurns":1,"ccKind":"paralyze","healRatio":0.2,"selfShieldCurrentHpRatio":0.2}}]},
+ yamato:{"id":"yamato","name":"大和","title":"光月御田的繼承者","types":["冰","神"],"image":"assets/chars/yamato.webp","avatar":"assets/chars/yamato_face.webp","scale":0.96,"worldScale":0.95,"maxHp":1420,"baseSpeed":114,"desc":"纏繞霸氣的狼牙棒連打，與冰雪之神「大口真神」的守護。","ultimateBg":"assets/chars/yamato.webp","ai":"control","skills":[{"name":"無侍冰牙","type":"attack","pp":15,"maxPP":15,"power":45,"accuracy":100,"desc":"對敵人普通攻擊 2～5 次，每次有 20% 機率附加冰凍傷害。","tags":[["連擊","blue"],["冰凍","blue"]],"anima":"icefang","effect":{"multiHitNormal":[2,5],"perHitPower":45,"extraIceChance":0.2,"extraIceRatio":0.06}},{"name":"雷鳴八卦","type":"attack","pp":8,"maxPP":8,"power":110,"accuracy":100,"desc":"纏繞霸氣的狼牙棒高速突進，10% 機率打出 10 倍傷害；50% 使對手虛弱 2 回合（受到 1.2～1.5 倍傷害）。","tags":[["突進","red"],["虛弱","gold"]],"anima":"hakke","effect":{"jackpotChance":0.1,"jackpotMult":10,"weakChance":0.5,"weakTurns":2,"weakRange":[1.2,1.5]}},{"name":"鳴鏑","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"全能力 +1，下回合攻擊威力翻倍，並把自身所有負面效果與負面能力轉移給對手。","tags":[["強化","green"],["轉移","gold"]],"anima":"narukabura","effect":{"statUpAll":1,"nextAttackMult":2,"nextAttackMultTurns":2,"transferDebuffs":true}},{"name":"鏡山","type":"attack","pp":5,"maxPP":5,"power":80,"accuracy":100,"desc":"獲得自身體力 50% 的護盾，3 回合內每回合回復 15% 體力，並對敵人普通攻擊一次。","tags":[["護盾","green"],["回復","green"]],"anima":"kagamiyama","effect":{"selfShieldCurrentHpRatio":0.5,"regenTurns":3,"regenRatio":0.15}},{"name":"大口真神形態","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"體力全滿，獲得最大體力 100% 的護盾，強制使對手冰凍 2 回合（每回合扣 2%、速度下降），下回合攻擊威力翻倍。","tags":[["覺醒","gold"],["冰凍","blue"]],"anima":"okuchi","ultimate":true,"effect":{"fullHeal":true,"selfShieldMaxHpRatio":1,"freezeForce":2,"nextAttackMult":2,"nextAttackMultTurns":2}}],"no":25},
+ kaido:{"id":"kaido","name":"凱多","title":"百獸","types":["龍","格鬥"],"image":"assets/chars/kaido.webp","avatar":"assets/chars/kaido_face.webp","scale":0.95,"worldScale":0.95,"maxHp":1700,"baseSpeed":100,"desc":"被稱為「陸海空最強生物」的四皇，能化身青龍，狼牙棒纏繞霸王色的雷光。","ultimateBg":"assets/chars/kaido.webp","ai":"aggressive","skills":[{"name":"壞風","type":"attack","pp":12,"maxPP":12,"power":30,"accuracy":100,"desc":"普通攻擊 1～25 次，50% 使對手麻痺 1 回合，造成傷害的 50% 轉為自身回復。","tags":[["連擊","red"],["吸血","green"]],"anima":"kaifu","effect":{"multiHitNormal":[1,25],"perHitPower":30,"skipAttackChance":0.5,"skipAttackTurns":1,"ccKind":"paralyze","lifesteal":0.5}},{"name":"酒龍八卦","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"全能力 +1，下回合攻擊傷害 5 倍。","tags":[["強化","gold"]],"anima":"shuryu","effect":{"statUpAll":1,"nextAttackMult":5,"nextAttackMultTurns":2}},{"name":"大威德·雷鳴八卦","type":"attack","pp":6,"maxPP":6,"power":110,"accuracy":100,"desc":"10% 直接秒殺對手；否則 20% 打出 8 倍傷害。","tags":[["秒殺","gold"],["8倍","red"]],"anima":"raimei","effect":{"executeChance":0.1,"jackpotChance":0.2,"jackpotMult":8}},{"name":"降三世·引奈落","type":"attack","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"強力攻擊 3～5 次，每次造成對手最大體力 10%（可累積）；50% 使對手麻痺 1 回合。","tags":[["重擊","red"],["麻痺","gold"]],"anima":"naraku","effect":{"fixedLightHitsRange":[[3,5],0.1],"skipAttackChance":0.5,"skipAttackTurns":1,"ccKind":"paralyze"}},{"name":"升龍·火焰八卦","type":"attack","pp":2,"maxPP":2,"power":30,"accuracy":100,"desc":"2% 機率造成 1000 倍傷害，否則普通攻擊 10～50 次；獲得自身當前體力 2 倍的護盾，80% 使對手燒傷 3 回合。","tags":[["龍化","gold"],["燒傷","red"]],"anima":"karyu","ultimate":true,"effect":{"jackpotChance":0.02,"jackpotMult":1000,"elseHits":[10,50],"perHitPower":30,"selfShieldCurrentHpRatio":2,"burnChance":0.8,"burnTurns":3}}],"no":26},
+ luffy:{"id":"luffy","name":"魯夫（巨人篇）","title":"太陽神候補","types":["火","格鬥"],"image":"assets/chars/luffy.webp","avatar":"assets/chars/luffy_face.webp","scale":0.82,"worldScale":0.86,"maxHp":1260,"baseSpeed":118,"desc":"近身爆發、高機率爆擊與覺醒後的持續壓制。","ultimateBg":"assets/chars/luffy.webp","ai":"aggressive","skills":[{"name":"橡膠手槍","type":"attack","pp":15,"maxPP":15,"power":95,"accuracy":100,"desc":"60% 機率造成 2.5 倍傷害。","tags":[["爆發","red"]],"anima":"punch","effect":{"critBoost":0.6,"critMult":2.5}},{"name":"橡膠火箭砲","type":"attack","pp":10,"maxPP":10,"power":0,"accuracy":100,"desc":"連續 5 次，每次造成對方最大 HP 1%～10% 傷害。","tags":[["五連擊","blue"]],"anima":"barrage","effect":{"randomPercentHits":[5,0.01,0.1,false]}},{"name":"解放的鼓動","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"3 回合每回合回 20%，並免疫異常。","tags":[["回復","green"],["免疫","gold"]],"anima":"heal","effect":{"regenTurns":3,"regenRatio":0.2,"immuneTurns":3}},{"name":"大蛇人","type":"attack","pp":6,"maxPP":6,"power":0,"accuracy":100,"desc":"扣當前 10% HP，下回合先制，並讓對手 2 回合有 50% 失敗率。","tags":[["先制","blue"],["封招","gold"]],"anima":"snake","effect":{"currentHpCut":0.1,"selfPriority":1,"attackFailTurns":2,"attackFailChance":0.5}},{"name":"太陽神尼卡覺醒","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"全能力 +1、體力全回復，2 回合傷害加倍；只要還有 1 位夥伴活著，傷害再 +5%。","tags":[["覺醒","gold"]],"anima":"awaken","ultimate":true,"effect":{"awaken":"nika","fullHeal":true,"statUpAll":1,"damageMultTurns":2,"damageMultValue":2,"allyAliveBoost":0.05}}],"no":35},
+ loki:{"id":"loki","name":"洛基","title":"雷霆巨斧戰士","types":["雷電","冰"],"image":"assets/chars/loki.webp","avatar":"assets/chars/loki_face.webp","scale":1.03,"worldScale":1.08,"maxHp":1560,"baseSpeed":96,"desc":"高耐久、極強控場與尼德霍格覺醒壓制。","ultimateBg":"assets/chars/loki.webp","ai":"control","skills":[{"name":"雷電噴吐","type":"attack","pp":10,"maxPP":10,"power":50,"accuracy":95,"desc":"對手受到 1～5 次普通攻擊，並追加自身當前體力 10% 的附加傷害。","tags":[["連擊","blue"],["附加傷害","red"]],"anima":"beam","effect":{"multiHitNormal":[1,5],"perHitPower":50,"bonusSelfHpRatio":0.1}},{"name":"鐵雷","type":"attack","pp":10,"maxPP":10,"power":108,"accuracy":100,"desc":"60% 機率造成 3 倍傷害並使對手麻痺 1 回合，30% 使對手破防 3 回合。","tags":[["重槌","red"],["麻痺","gold"]],"anima":"hammer","effect":{"critBoost":0.6,"critMult":3,"skipAttackChance":0.6,"skipAttackTurns":1,"armorBreakChance":0.3,"armorBreakTurns":3}},{"name":"原初世界","type":"attack","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"清除對方全部強化與自身異常，50% 使對手冰凍 2 回合（每回合扣 2%、速度下降），並連續攻擊 10 次，接下來兩回合傷害加倍。","tags":[["清強化","gold"],["冰凍","blue"],["十連擊","red"]],"anima":"world","effect":{"clearBuffs":true,"clearSelfDebuffs":true,"freezeChance":0.5,"freezeTurns":2,"fixedLightHits":[10,0.02],"damageMultTurns":2,"damageMultValue":2}},{"name":"鐵雷五矢","type":"attack","pp":4,"maxPP":4,"power":0,"accuracy":100,"desc":"連續攻擊 5 次，並使對方麻痺 1 回合；傷害與負面效果 2 倍反彈。","tags":[["五連擊","blue"],["反彈","gold"]],"anima":"thunderfive","effect":{"fixedLightHits":[5,0.04],"reflectTurns":1,"reflectMultiplier":2,"reflectNegative":true,"skipAttackTurns":1}},{"name":"尼德霍格覺醒","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"全能力 +2，連續兩回合恢復滿血，接下來兩回合傷害 5 倍且 20% 機率直接秒殺，附加冰凍傷害並永久免疫異常。","tags":[["覺醒","gold"]],"anima":"awaken","ultimate":true,"effect":{"awaken":"nidhogg","fullHeal":true,"fullRestoreTurns":2,"statUpAll":2,"damageMultTurns":2,"damageMultValue":5,"executeBuffTurns":2,"executeBuffChance":0.2,"frostBoostTurns":2,"immunePermanent":true}}],"no":36}
 };
-const CHARACTER_ORDER = ['luffy0','zoro','sanji','luffy','yamato','robin','shirahoshi','crocodile','enel','blackbeard','loki'];
+/* 取得方式：boss = 擊敗該角色（BOSS）時加入的機率，0 表示只能抽獎；未列出者依後台預設機率 */
+const CHAR_OBTAIN = {"robin":{"boss":0,"npc":"阿拉巴斯坦篇 NPC"},"crocodile":{"boss":0.15},"enel":{"boss":0},"shirahoshi":{"boss":0,"npc":"魚人島篇 NPC"},"yamato":{"boss":0,"npc":"和之國篇 NPC"},"kaido":{"boss":0},"luffy":{"boss":0},"hody":{"boss":0},"lucci":{"boss":0}};
+const CHARACTER_ORDER = ["luffy0","zoro","sanji","robin","crocodile","lucci","blackbeard","enel","shirahoshi","hody","yamato","kaido","luffy","loki"];
 const STARTERS = ['luffy0','zoro','sanji'];
-const TYPE_COLORS = {'劍':'#7fb08a','火':'#e8553b','格鬥':'#c9973a','雷電':'#6fc3ff','冰':'#9fe6ff','沙':'#d9b064','闇':'#8a5cd6','神':'#f3d36b','海王':'#3fb6c9','花花':'#ef7fa8'};
+const TYPE_COLORS = {"劍":"#7fb08a","火":"#e8553b","格鬥":"#c9973a","雷電":"#6fc3ff","冰":"#9fe6ff","沙":"#d9b064","闇":"#8a5cd6","神":"#f3d36b","海王":"#3fb6c9","花花":"#ef7fa8","龍":"#3f7fe8","魚人":"#2f9fb0","獸":"#c9973a"};
 
 /* 篇章：依漫畫時序排列。任務類型：talk 對話／talkAll 打聽多人／goto 前往地點／collect 收集／timedCollect 限時收集／
    defeat 擊敗／gauntlet 連戰（體力不回復）／choice 選擇題／boss。對白依原作情節改寫。 */
 const CHAPTERS = [
- { id:'east', name:'東海篇', subtitle:'風車村的出航之日', art:'assets/chapters/east.webp', boss:'luffy', bossTitle:'戴草帽的少年',
-   blurb:'十年前，紅髮香克斯把草帽託付給一個少年。今天，那個少年要從風車村出海了，而他想在出發前找個強者試試身手。',
-   rhythm:'輕快的入門篇章：跑腿、聊天，再來一場送行之戰。',
-   env:{sky:'#9fd6f5', fog:'#bfe3f6', ground:'#6c7f4a', sun:[0.55,0.9,0.35], fogR:[70,230]},
-   spawn:[0,52], bossPos:[0,-58],
-   npcs:[
-    {id:'makino', name:'瑪琪諾', role:'港口酒館老闆娘', look:'makino', pos:[-10,40]},
-    {id:'mayor', name:'村長', role:'風車村村長', look:'mayor', pos:[18,26]},
-    {id:'roux', name:'紅髮海賊團的船員', role:'留下來喝一杯的老海賊', look:'crew', pos:[-24,18], chat:['老大把那頂帽子交出去的時候，我就知道這小子會出海。','近海霸主？那傢伙十年前就被老大一眼瞪跑了。']},
-    {id:'kid', name:'村裡的孩子', role:'魯夫的小跟班', look:'kid', pos:[8,48], chat:['魯夫說他要找到一個大祕寶！','他每天都在岬角對著海揍空氣，好奇怪。']}
-   ],
-   steps:[
-    {type:'talk', npc:'makino', title:'港口酒館', desc:'到酒館門口找瑪琪諾。', reward:1, lines:[
-      ['makino','你是剛靠岸的航海者嗎？今天村子有點吵，魯夫終於要出海了。'],
-      ['makino','那孩子從小就在我店裡喊著要當海賊王。可是他的小船上……除了草帽，什麼都沒帶。'],
-      ['makino','他最愛吃肉了。能幫我把準備好的肉找回來嗎？剛才被海鷗叼走，掉在村子各處了。']]},
-    {type:'collect', title:'出航用的肉', desc:'找回被海鷗叼走的 3 塊肉。', item:'出航用的肉', icon:'meat', count:3, spots:[[34,30],[-40,6],[22,-12]], reward:2},
-    {type:'talk', npc:'mayor', title:'村長的嘆氣', desc:'把肉交給村長，請他轉交。', reward:2, unlockBoss:true, lines:[
-      ['mayor','哼，又一個想當海賊的笨蛋。從那個紅髮的傢伙來過之後，這村子就沒安寧過。'],
-      ['mayor','……不過，那小子是認真的。他在岬角等著，說出海前要跟一個真正的強者交手。'],
-      ['mayor','去吧。打贏他，或者被他打飛，都算是替他送行了。']]},
-    {type:'boss', title:'岬角的送行之戰', desc:'前往北方岬角，和戴草帽的少年交手。', reward:5}
-   ]},
- { id:'alabasta', name:'阿拉巴斯坦篇', subtitle:'被偷走的雨', art:'assets/chapters/alabasta.webp', boss:'crocodile', bossTitle:'王下七武海 沙鱷魚',
-   blurb:'三年沒有下雨，綠洲一座座乾涸，叛亂軍即將與王國軍開戰。人們把他當成英雄，沒人知道乾旱正是他一手造成的。',
-   rhythm:'和時間賽跑：沙暴來襲前找回證據，再潛入敵人的大本營。',
-   env:{sky:'#f2cf94', fog:'#efd3a4', ground:'#a27b45', sun:[0.4,0.95,0.2], fogR:[60,210]},
-   spawn:[0,55], bossPos:[0,-60],
-   npcs:[
-    {id:'toto', name:'托托', role:'在尤巴挖井的老人', look:'toto', pos:[-18,30]},
-    {id:'vivi', name:'薇薇', role:'阿拉巴斯坦公主', look:'vivi', pos:[12,40]},
-    {id:'koza', name:'寇沙', role:'叛亂軍首領', look:'koza', pos:[26,12], chat:['國王偷走了雨，我們只能拿起武器。','……如果你說的是真的，那我們一直在跟誰打仗？']},
-    {id:'kid', name:'尤巴的孩子', role:'綠洲的孩子', look:'kid', pos:[-6,50], chat:['爺爺每天都在挖，他說水一定還在沙子底下。']}
-   ],
-   steps:[
-    {type:'talk', npc:'toto', title:'乾涸的尤巴', desc:'和在沙中挖井的托托說話。', reward:1, lines:[
-      ['toto','旅人啊……尤巴被沙暴埋了，可我不相信這片土地會背叛我們。'],
-      ['toto','最近常看到奇怪的人在夜裡往空中撒粉，隔天別的城市就下雨了。他們丟下了幾個袋子在沙丘間。'],
-      ['toto','糟了，沙暴又要來了！趁袋子還沒被沙埋住，快去把它們挖出來！']]},
-    {type:'timedCollect', title:'沙暴前的證據', desc:'沙暴來襲前，找回 3 袋能偷走雨水的「舞粉」。', item:'舞粉袋', icon:'sack', count:3, seconds:75, spots:[[-38,-4],[40,-10],[4,10]], reward:3},
-    {type:'goto', title:'潛入雨地', desc:'循著舞粉的去向，前往東邊的賭場「雨宴」。', pos:[42,-26], r:7, label:'雨宴', reward:1, lines:[
-      [null,'賭場地下傳出鱷魚的低吼。牆上掛著一張寫滿代號的名單。'],
-      [null,'Mr.0……巴洛克工作社的老闆，就是克洛克達爾。他的特工發現你了！']]},
-    {type:'defeat', title:'巴洛克工作社', desc:'擊退追上來的 2 位特工。', count:2, reward:3},
-    {type:'talk', npc:'vivi', title:'公主的決心', desc:'把真相告訴薇薇公主。', reward:1, unlockBoss:true, lines:[
-      ['vivi','偷走雨的不是父王，是巴洛克工作社……是被人民當成英雄的克洛克達爾。'],
-      ['vivi','叛亂軍和王國軍就要在阿爾巴那開戰了。我要去阻止大家流血。'],
-      ['vivi','拜託你，擋住那個男人！']]},
-    {type:'boss', title:'阿爾巴那的決戰', desc:'前往王宮前廣場，擊敗克洛克達爾。', reward:5}
-   ]},
- { id:'skypiea', name:'空島篇', subtitle:'神之國的鐘聲', art:'assets/chapters/skypiea.webp', boss:'enel', bossTitle:'自稱為神的男人',
-   blurb:'在一萬公尺高的空島，聽得見所有聲音的男人自稱為神。四百年前沉默的黃金鐘，正等著再次響起。',
-   rhythm:'先學會空島的規矩，再撐過神官的連續試煉。',
-   env:{sky:'#bfe4ff', fog:'#e2f2ff', ground:'#c8d7e8', sun:[0.35,1.0,0.5], fogR:[80,260]},
-   spawn:[0,55], bossPos:[0,-62],
-   npcs:[
-    {id:'conis', name:'柯妮絲', role:'天使島的少女', look:'conis', pos:[-14,40]},
-    {id:'ganfall', name:'甘·福爾', role:'前任之神・空之騎士', look:'ganfall', pos:[16,30]},
-    {id:'wiper', name:'懷帕', role:'香迪亞戰士', look:'wiper', pos:[-28,12], chat:['這片大地是我們祖先的故鄉，四百年來我們只想回家。','黃金鐘響起的那天，大戰士卡爾格拉的約定才算完成。']},
-    {id:'pagaya', name:'帕加亞', role:'柯妮絲的父親', look:'pagaya', pos:[6,50], chat:['貝殼是空島的寶物，能存下聲音、風，甚至衝擊。','小聲點，神聽得見一切。']}
-   ],
-   steps:[
-    {type:'choice', npc:'conis', title:'空島的規矩', desc:'聽柯妮絲說明空島，回答她的問題。', reward:2, lines:[
-      ['conis','歡迎來到天使島……對不起，我得小聲說話，神‧艾涅爾能聽見整座島的聲音。'],
-      ['conis','在這裡生活，得先懂得空島的東西。我考考你吧？']],
-     questions:[
-      {q:'空島上能儲存聲音、風、甚至衝擊的貝殼叫做什麼？', options:[{label:'貝（Dial）', correct:true},{label:'海樓石'},{label:'電話蟲'}], right:'答對了！貝是空島人的生活必需品。', wrong:'不對喔，那是青海的東西。再想想？'},
-      {q:'神‧艾涅爾為什麼能聽見整座島的聲音？', options:[{label:'他在島上裝了電話蟲'},{label:'他擁有能感知聲音的「心綱」', correct:true},{label:'因為他的耳朵很大'}], right:'沒錯……所以大家都不敢說真心話。', wrong:'嘻……才不是呢。再想想看。'}]},
-    {type:'collect', title:'香朵拉的黃金', desc:'在雲上遺跡找到 3 塊黃金碎片。', item:'香朵拉黃金', icon:'gold', count:3, spots:[[-36,-8],[36,-2],[0,14]], reward:2},
-    {type:'gauntlet', title:'神官的連續試煉', desc:'連續擊敗 2 位神官，中途體力不會回復。輸掉要從頭再來。', count:2, reward:4},
-    {type:'talk', npc:'ganfall', title:'前任之神', desc:'向甘·福爾報告。', reward:1, unlockBoss:true, lines:[
-      ['ganfall','你撐過了試煉……那個男人六年前奪走了我的國家，現在又要把它毀掉。'],
-      ['ganfall','他打造的方舟準備升空，要把空島所有的地面都劈成碎片。'],
-      ['ganfall','雲門已經打開。記住，他的雷再快，也有他看不見的東西。']]},
-    {type:'boss', title:'神之社的審判', desc:'登上神之社，擊敗艾涅爾。', reward:5}
-   ]},
- { id:'enies', name:'司法島篇', subtitle:'向世界政府宣戰', art:'assets/chapters/enies.webp', boss:'robin', bossTitle:'不願被救的考古學家',
-   blurb:'為了保護同伴，羅賓獨自走進了世界政府的司法島。她說她不想再被救了，可所有人都知道，那不是她的真心話。',
-   rhythm:'一路強攻：連續突破正門，衝上司法之塔，對她喊出真心話。',
-   env:{sky:'#a8c8e8', fog:'#c9dcee', ground:'#8a8f86', sun:[0.4,0.9,0.4], fogR:[70,230]},
-   spawn:[0,55], bossPos:[0,-60],
-   npcs:[
-    {id:'franky', name:'佛朗基', role:'改造人・水之七島的船匠', look:'franky', pos:[-12,40]},
-    {id:'kokoro', name:'可可羅婆婆', role:'海列車站長', look:'kokoro', pos:[16,34], chat:['喝喝喝！海列車可是冒著暴風浪把你們送來的。','司法島從來沒有被人攻破過……在今天之前。']},
-    {id:'sogeking', name:'戴面具的狙擊手', role:'自稱來自狙擊之島的英雄', look:'sogeking', pos:[-26,14], chat:['我、我可不是誰的同伴！我是狙擊王！','我在八千人的島上……總之，我會掩護你的。']}
-   ],
-   steps:[
-    {type:'talk', npc:'franky', title:'搶回同伴', desc:'和佛朗基商量攻島計畫。', reward:1, lines:[
-      ['franky','超——！你也是來搶人的？那女人被政府帶走，全是因為她想保護別人。'],
-      ['franky','正門的守衛一個接一個衝上來，停下來喘氣就完了。'],
-      ['franky','一口氣殺進去吧！我在後面替你擋著！']]},
-    {type:'gauntlet', title:'突破正門', desc:'連續擊敗 2 名守衛，途中體力不會回復。', count:2, reward:4},
-    {type:'goto', title:'衝向司法之塔', desc:'穿過審判所，跑到司法之塔前的高台。', pos:[0,-34], r:8, label:'司法之塔前', reward:1, lines:[
-      [null,'高塔上站著羅賓。她看見你們，臉色一下子變了。'],
-      [null,'「為什麼要來！我不是說過，不要再管我了嗎！」']]},
-    {type:'choice', npc:null, title:'說出真心話', desc:'對塔上的羅賓喊話。', reward:2, unlockBoss:true, lines:[],
-     questions:[
-      {q:'你要對羅賓喊出什麼？', options:[{label:'「妳說得對，我們回去了。」'},{label:'「只要妳說想活下去，我們就一定救妳！」', correct:true},{label:'「政府比較可怕，算了吧。」'}], right:'羅賓的肩膀在發抖。她想開口，卻先舉起了手——「那就先證明你們有那個本事！」', wrong:'這不是你真正想說的話。再喊一次。'}]},
-    {type:'boss', title:'司法之塔的淚水', desc:'和想趕走大家的羅賓交手，讓她說出真心話。', reward:5}
-   ]},
- { id:'dark', name:'黑暗海域', subtitle:'班納羅島的黑火', art:'assets/chapters/dark.webp', boss:'blackbeard', bossTitle:'黑鬍子 馬歇爾·D·汀奇',
-   blurb:'他殺了自己的同伴，奪走傳說中的惡魔果實，逃出白鬍子海賊團。追著他的火拳，最後在這座島上追上了他。',
-   rhythm:'推理調查：四處打聽目擊證詞，拼出黑鬍子的去向。',
-   env:{sky:'#2a1d44', fog:'#231a39', ground:'#2c2440', sun:[0.3,0.8,0.5], fogR:[35,160]},
-   spawn:[0,55], bossPos:[0,-60],
-   npcs:[
-    {id:'ace', name:'艾斯', role:'白鬍子海賊團二番隊隊長', look:'ace', pos:[-12,40]},
-    {id:'elder', name:'島上的老人', role:'班納羅島居民', look:'elder', pos:[18,30]},
-    {id:'girl', name:'逃難的少女', role:'被燒毀城鎮的孩子', look:'girl', pos:[-26,8]},
-    {id:'fisher', name:'漁夫', role:'港口的倖存者', look:'fisher', pos:[30,4]}
-   ],
-   steps:[
-    {type:'talk', npc:'ace', title:'追擊者', desc:'和追到島上的艾斯說話。', reward:1, lines:[
-      ['ace','你也是來找他的？我叫艾斯。汀奇殺了我的隊員薩奇，那是船上最不能犯的罪。'],
-      ['ace','身為隊長，我得親手把他帶回去。可這霧太濃了。'],
-      ['ace','島上還有倖存的人，去問問他們看到了什麼。']]},
-    {type:'talkAll', npcs:['elder','girl','fisher'], title:'倖存者的證詞', desc:'向島上 3 位倖存者打聽黑鬍子的下落。', reward:3, lines:{
-      elder:[['elder','那傢伙一笑，房子就像被吸進黑洞一樣消失了。'],['elder','被他碰到的人，身上的果實能力會失效。']],
-      girl:[['girl','我看到一個很胖的人，一邊吃派一邊說「時代要變了」……'],['girl','他往北邊的廢墟走了。']],
-      fisher:[['fisher','他的船員說，要拿火拳的人頭去換七武海的位子。'],['fisher','他是故意在這裡等艾斯的！']]}},
-    {type:'defeat', title:'霧中的伏兵', desc:'擊敗 2 位在霧裡伏擊的對手。', count:2, reward:3},
-    {type:'goto', title:'廢墟入口', desc:'前往北方的廢墟入口與艾斯會合。', pos:[0,-38], r:8, label:'廢墟入口', reward:1, unlockBoss:true, lines:[
-      ['ace','你來了。他就在裡面，笑得很開心。'],
-      ['ace','別被他的黑暗抓住。……這是我的戰鬥，但我不介意多一個幫手。']]},
-    {type:'boss', title:'廢墟中的黑暗', desc:'擊敗黑鬍子。', reward:5}
-   ]},
- { id:'fishman', name:'魚人島篇', subtitle:'海底一萬公尺的哭泣公主', art:'assets/chapters/fishman.webp', boss:'shirahoshi', bossTitle:'暴走的海之力',
-   blurb:'陽光透過樹根照進海底的魚人島。躲在硬殼塔十年的公主一哭，整片海的海王類都會回應她。',
-   rhythm:'海底探索：沒有連戰，只有尋找與傾聽，最後平息暴走的海王類。',
-   env:{sky:'#5fc4dc', fog:'#1f7f9f', ground:'#9a8a6a', sun:[0.2,1.0,0.3], fogR:[25,150]},
-   spawn:[0,55], bossPos:[0,-60],
-   npcs:[
-    {id:'camie', name:'凱米', role:'章魚燒店的人魚', look:'camie', pos:[-12,40]},
-    {id:'jinbe', name:'甚平', role:'前七武海・魚人空手道高手', look:'jinbe', pos:[20,26]},
-    {id:'neptune', name:'尼普頓國王', role:'龍宮王國國王', look:'neptune', pos:[-28,10]},
-    {id:'shyarly', name:'夏莉', role:'人魚咖啡廳的占卜師', look:'shyarly', pos:[8,48], chat:['我看見了……一團火焰，正在吞噬這座島。','預言從不說謊，只是人們不願意聽。']}
-   ],
-   steps:[
-    {type:'talk', npc:'camie', title:'海底的樂園', desc:'和人魚凱米打招呼。', reward:1, lines:[
-      ['camie','哇！是人類！你是怎麼游下來的？這裡可是海底一萬公尺喔！'],
-      ['camie','魚人島的陽光全靠陽光樹伊布的樹根送下來。帶你去看看吧！']]},
-    {type:'goto', title:'陽光樹伊布', desc:'游到島中央的陽光樹根部。', pos:[-34,-20], r:8, label:'陽光樹伊布', reward:1, lines:[
-      [null,'樹根把海面的陽光一路送進海底，在沙地上灑下晃動的光斑。'],
-      [null,'遠處傳來啜泣聲……海王類的影子在光斑外盤旋。']]},
-    {type:'talkAll', npcs:['jinbe','neptune'], title:'公主的祕密', desc:'向甚平與尼普頓國王打聽哭聲的來源。', reward:2, lines:{
-      jinbe:[['jinbe','那是白星公主。她被一個叫范德‧戴肯的男人糾纏了十年，只能躲在硬殼塔。'],['jinbe','她的聲音能呼喚海王類。這份力量，連她自己都控制不了。']],
-      neptune:[['neptune','咩哈哈……那孩子今天被逼得太緊了，一哭起來，海王類全都聚過來了。'],['neptune','龍宮城附近有她最喜歡的珍珠。帶給她，也許能讓她安心。']]}},
-    {type:'collect', title:'公主的珍珠', desc:'在珊瑚礁間找到 3 顆珍珠。', item:'珍珠', icon:'pearl', count:3, spots:[[36,-6],[-8,8],[42,24]], reward:2, unlockBoss:true},
-    {type:'boss', title:'平息海王類', desc:'前往龍宮城前，平息暴走的海之力。', reward:5}
-   ]},
- { id:'wano', name:'和之國篇', subtitle:'火祭之夜的鬼之島', art:'assets/chapters/wano.webp', boss:'yamato', bossTitle:'自稱光月御田的少女',
-   blurb:'鎖國的武士之國，被百獸凱多統治了二十年。光月御田留下的話說：二十年後，九名武士將會歸來。',
-   rhythm:'最長的篇章：幫助村民、召集同志、突破百獸海賊團，在火祭之夜渡海。',
-   env:{sky:'#f0b8a0', fog:'#e8c0b0', ground:'#5f6b3a', sun:[0.5,0.8,0.3], fogR:[60,220]},
-   spawn:[0,56], bossPos:[0,-62],
-   npcs:[
-    {id:'tama', name:'阿玉', role:'兔丼的小女忍者', look:'tama', pos:[-10,42]},
-    {id:'kinemon', name:'錦衛門', role:'光月家的武士', look:'kinemon', pos:[20,30]},
-    {id:'hiyori', name:'日和', role:'花之都的花魁', look:'hiyori', pos:[-30,14]},
-    {id:'denjiro', name:'傳次郎', role:'潛伏二十年的武士', look:'denjiro', pos:[32,6]},
-    {id:'kawamatsu', name:'河松', role:'河童武士', look:'kawamatsu', pos:[-38,-12]}
-   ],
-   steps:[
-    {type:'talk', npc:'tama', title:'兔丼的孩子', desc:'和餓著肚子的阿玉說話。', reward:1, lines:[
-      ['tama','你、你是外國人嗎？……阿玉沒事，阿玉只是有點餓。'],
-      ['tama','兔丼的河被工廠的毒水污染了，米都種不出來。'],
-      ['tama','山上還長著一些黍，做成黍糰子的話，大家就能吃飽了！']]},
-    {type:'collect', title:'黍糰子的材料', desc:'在山坡上採集 3 束黍。', item:'黍', icon:'grain', count:3, spots:[[-40,-26],[38,-20],[10,-4]], reward:2},
-    {type:'talk', npc:'kinemon', title:'光月家的武士', desc:'和錦衛門商量討伐計畫。', reward:1, lines:[
-      ['kinemon','在下錦衛門。二十年前，主公光月御田被凱多處決，我們穿越時空來到了今天。'],
-      ['kinemon','火祭之夜，凱多會在鬼之島開宴，那是唯一的機會。'],
-      ['kinemon','散落各地的同志腳踝上都有「月牙」記號。請幫在下找到他們！']]},
-    {type:'talkAll', npcs:['hiyori','denjiro','kawamatsu'], title:'月牙的同志', desc:'找到腳踝上刻著月牙的 3 位同志。', reward:3, lines:{
-      hiyori:[['hiyori','你是錦衛門派來的？……我是光月日和，二十年來一直以花魁的身分等待這一天。'],['hiyori','我會帶著父親的刀，前往鬼之島。']],
-      denjiro:[['denjiro','噓……在下在大蛇身邊忍了二十年，就是為了這一晚。'],['denjiro','火祭之夜，在下的人會在渡口接應。']],
-      kawamatsu:[['kawamatsu','啊嚼……這條魚真好吃。你說月牙？呵呵，在下從沒忘記過。'],['kawamatsu','在監獄裡關了二十年，刀還是一樣利。']]}},
-    {type:'defeat', title:'百獸海賊團的真打', desc:'擊退擋路的 2 名敵人。', count:2, reward:3},
-    {type:'goto', title:'火祭之夜', desc:'前往北方渡口，準備渡海到鬼之島。', pos:[0,-40], r:8, label:'鬼之島渡口', reward:1, unlockBoss:true, lines:[
-      [null,'煙火照亮了夜空。渡口邊站著一個頭上長角的少女，手裡握著狼牙棒。'],
-      ['@yamato','我是光月御田！……不，我想成為御田。你就是那個會打倒凱多的人嗎？'],
-      ['@yamato','在跟你一起去鬼之島之前，讓我親手確認你的覺悟！']]},
-    {type:'boss', title:'渡口的試煉', desc:'和大和交手，證明你的覺悟。', reward:6}
-   ]},
- { id:'giant', name:'巨人篇', subtitle:'艾爾巴夫的詛咒王子', art:'assets/chapters/giant.webp', boss:'loki', bossTitle:'詛咒王子 洛基',
-   blurb:'戰士之國艾爾巴夫，寶樹亞當撐起了整片天空。王子洛基被鎖鏈困在樹下，巨人們說，他是這個國家的詛咒。',
-   rhythm:'戰士之國的試煉：先打一場決鬥，再贏得巨人們的認可。',
-   env:{sky:'#a9d8c8', fog:'#b9dccd', ground:'#3f5a2c', sun:[0.5,0.9,0.3], fogR:[60,220]},
-   spawn:[0,58], bossPos:[0,-62],
-   npcs:[
-    {id:'dorry', name:'多利', role:'巨兵海賊團船長', look:'dorry', pos:[-16,38]},
-    {id:'hajrudin', name:'哈吉爾汀', role:'新巨兵海賊團船長', look:'hajrudin', pos:[20,26]},
-    {id:'brogy', name:'布洛基', role:'巨兵海賊團船長', look:'brogy', pos:[-4,48]}
-   ],
-   steps:[
-    {type:'talk', npc:'dorry', title:'戰士之國', desc:'和巨人多利說話。', reward:1, lines:[
-      ['dorry','葛基基基！是從海上來的小戰士啊。歡迎來到艾爾巴夫。'],
-      ['dorry','在這裡，戰士用決鬥說話。先讓大家看看你的實力吧！']]},
-    {type:'defeat', title:'戰士的決鬥', desc:'在森林中擊敗 1 位挑戰者。', count:1, reward:2},
-    {type:'collect', title:'寶樹之果', desc:'採集 3 顆寶樹亞當的果實，獻給巨人們。', item:'寶樹之果', icon:'fruit', count:3, spots:[[-42,-6],[40,-8],[2,12]], reward:2},
-    {type:'talkAll', npcs:['brogy','hajrudin'], title:'巨人們的認可', desc:'讓布洛基與哈吉爾汀認可你。', reward:2, unlockBoss:true, lines:{
-      brogy:[['brogy','嘎巴巴巴！好吃的果實！我和多利在小花園決鬥了一百年，看人很準的。'],['brogy','你是真正的戰士。']],
-      hajrudin:[['hajrudin','你想見洛基？那傢伙被鎖在寶樹底下，大家都說他是詛咒。'],['hajrudin','可最近鎖鏈一直在響……去吧，我替你解開外圍的封印。']]}},
-    {type:'boss', title:'寶樹下的王子', desc:'前往寶樹亞當，擊敗洛基。', reward:6}
-   ]}
+ {"id":"east","name":"東海篇","subtitle":"風車村的出航之日","art":"assets/chapters/east.webp","boss":"luffy","bossTitle":"戴草帽的少年","blurb":"十年前，紅髮香克斯把草帽託付給一個少年。今天，那個少年要從風車村出海了，而他想在出發前找個強者試試身手。","rhythm":"輕快的入門篇章：跑腿、聊天，再來一場送行之戰。","env":{"sky":"#9fd6f5","fog":"#bfe3f6","ground":"#6c7f4a","sun":[0.55,0.9,0.35],"fogR":[70,230]},"spawn":[0,52],"bossPos":[0,-58],"npcs":[{"id":"makino","name":"瑪琪諾","role":"港口酒館老闆娘","look":"makino","pos":[-10,40]},{"id":"mayor","name":"村長","role":"風車村村長","look":"mayor","pos":[18,26]},{"id":"roux","name":"紅髮海賊團的船員","role":"留下來喝一杯的老海賊","look":"crew","pos":[-24,18],"chat":["老大把那頂帽子交出去的時候，我就知道這小子會出海。","近海霸主？那傢伙十年前就被老大一眼瞪跑了。"]},{"id":"kid","name":"村裡的孩子","role":"魯夫的小跟班","look":"kid","pos":[8,48],"chat":["魯夫說他要找到一個大祕寶！","他每天都在岬角對著海揍空氣，好奇怪。"]}],"steps":[{"type":"talk","npc":"makino","title":"港口酒館","desc":"到酒館門口找瑪琪諾。","reward":1,"lines":[["makino","你是剛靠岸的航海者嗎？今天村子有點吵，魯夫終於要出海了。"],["makino","那孩子從小就在我店裡喊著要當海賊王。可是他的小船上……除了草帽，什麼都沒帶。"],["makino","他最愛吃肉了。能幫我把準備好的肉找回來嗎？剛才被海鷗叼走，掉在村子各處了。"]]},{"type":"collect","title":"出航用的肉","desc":"找回被海鷗叼走的 3 塊肉。","item":"出航用的肉","icon":"meat","count":3,"spots":[[34,30],[-40,6],[22,-12]],"reward":2},{"type":"talk","npc":"roux","title":"紅髮的往事","desc":"聽紅髮海賊團的船員說起十年前的事。","reward":1,"lines":[["roux","你想知道那頂草帽的來歷？……好吧，喝完這杯我就說。"],["roux","那天山賊跑來酒館找碴，把酒淋在老大頭上，老大只是笑。倒是那個小鬼氣得不得了。"],["roux","後來小鬼被山賊抓走、丟進海裡，近海霸主張開大嘴就要把他吞下去。"],["roux","是老大跳下海救了他，代價是一條左手臂。"],["roux","老大把草帽戴在小鬼頭上，要他等成為了不起的海賊，再來還給他。"]]},{"type":"goto","title":"碼頭邊的小船","desc":"到東邊的碼頭看看魯夫準備好的小船。","pos":[40,40],"r":7,"label":"碼頭","reward":1,"lines":[[null,"碼頭邊綁著一艘小小的木船，船上只有一個木桶和一根槳。"],["kid","就、就這樣要出海喔？連地圖都沒有耶！"],[null,"船頭刻著歪歪扭扭的字：「我要成為海賊王」。"]]},{"type":"talk","npc":"mayor","title":"村長的嘆氣","desc":"把肉交給村長，請他轉交。","reward":2,"unlockBoss":true,"lines":[["mayor","十年前，我看著那孩子被海賊迷得團團轉，一直想把他拉回正路。"],["mayor","哼，又一個想當海賊的笨蛋。從那個紅髮的傢伙來過之後，這村子就沒安寧過。"],["mayor","……不過，那小子是認真的。他在岬角等著，說出海前要跟一個真正的強者交手。"],["mayor","去吧。打贏他，或者被他打飛，都算是替他送行了。"]]},{"type":"boss","title":"岬角的送行之戰","desc":"前往北方岬角，和戴草帽的少年交手。","reward":5}],"prologue":[[null,"風車村・東海"],[null,"海風吹過金黃的麥田，山丘上的風車慢慢地轉。"],[null,"十年前，一個叫香克斯的海賊在這裡停泊了一年。他離開時，把最重要的草帽留給了一個愛吹牛的孩子。"],[null,"今天，那個孩子十七歲了。"]],"epilogue":[["@luffy","嘻嘻嘻！你好強啊！"],["@luffy","我要出海找夥伴了。在偉大航路上再見吧，到時候我可不會再輸！"],[null,"草帽少年跳上小船，朝著大海用力揮手。"],[null,"你的航路，也從這裡開始了。"]]},
+ {"id":"alabasta","name":"阿拉巴斯坦篇","subtitle":"被偷走的雨","art":"assets/chapters/alabasta.webp","boss":"crocodile","bossTitle":"王下七武海 沙鱷魚","blurb":"三年沒有下雨，綠洲一座座乾涸，叛亂軍即將與王國軍開戰。人們把他當成英雄，沒人知道乾旱正是他一手造成的。","rhythm":"和時間賽跑：沙暴來襲前找回證據，再潛入敵人的大本營。","env":{"sky":"#f2cf94","fog":"#efd3a4","ground":"#a27b45","sun":[0.4,0.95,0.2],"fogR":[60,210]},"spawn":[0,55],"bossPos":[0,-60],"npcs":[{"id":"toto","name":"托托","role":"在尤巴挖井的老人","look":"toto","pos":[-18,30]},{"id":"vivi","name":"薇薇","role":"阿拉巴斯坦公主","look":"vivi","pos":[12,40]},{"id":"koza","name":"寇沙","role":"叛亂軍首領","look":"koza","pos":[26,12],"chat":["國王偷走了雨，我們只能拿起武器。","……如果你說的是真的，那我們一直在跟誰打仗？"]},{"id":"kid","name":"尤巴的孩子","role":"綠洲的孩子","look":"kid","pos":[-6,50],"chat":["爺爺每天都在挖，他說水一定還在沙子底下。"]},{"id":"robin","name":"Miss.All Sunday","role":"巴洛克工作社副社長（妮可·羅賓）","look":"robinNpc","pos":[-32,44],"chat":["我是 Miss.All Sunday，巴洛克工作社的副社長。","我在找的東西，叫做「歷史本文」。至於我站在哪一邊……你猜呢？","別太相信 Mr.0。他想要的不只是這個國家。"]}],"steps":[{"type":"talk","npc":"toto","title":"乾涸的尤巴","desc":"和在沙中挖井的托托說話。","reward":1,"lines":[["toto","旅人啊……尤巴被沙暴埋了，可我不相信這片土地會背叛我們。"],["toto","最近常看到奇怪的人在夜裡往空中撒粉，隔天別的城市就下雨了。他們丟下了幾個袋子在沙丘間。"],["toto","糟了，沙暴又要來了！趁袋子還沒被沙埋住，快去把它們挖出來！"]]},{"type":"timedCollect","title":"沙暴前的證據","desc":"沙暴來襲前，找回 3 袋能偷走雨水的「舞粉」。","item":"舞粉袋","icon":"sack","count":3,"seconds":75,"spots":[[-38,-4],[40,-10],[4,10]],"reward":3},{"type":"goto","title":"潛入雨地","desc":"循著舞粉的去向，前往東邊的賭場「雨宴」。","pos":[42,-26],"r":7,"label":"雨宴","reward":1,"lines":[[null,"賭場地下傳出鱷魚的低吼。牆上掛著一張寫滿代號的名單。"],[null,"Mr.0……巴洛克工作社的老闆，就是克洛克達爾。他的特工發現你了！"]]},{"type":"defeat","title":"巴洛克工作社","desc":"擊退追上來的 2 位特工。","count":2,"reward":3},{"type":"talk","npc":"koza","title":"叛亂軍的首領","desc":"找到叛亂軍首領寇沙，告訴他真相。","reward":2,"lines":[["koza","你是誰？……雨宴的名單？"],["koza","國王偷走了雨，這是全國都知道的事。我的父親、朋友，都在乾旱裡倒下了。"],["koza","……舞粉、代號、Mr.0。如果這些是真的，那我們這三年到底在為誰拚命？"],["koza","叛亂軍已經往阿爾巴那出發，我攔不住了。但我會去見國王一面，親口問他。"]]},{"type":"talk","npc":"vivi","title":"公主的決心","desc":"把真相告訴薇薇公主。","reward":1,"unlockBoss":true,"lines":[["vivi","寇沙是我從小一起長大的朋友……他願意聽，就還有機會。"],["vivi","偷走雨的不是父王，是巴洛克工作社……是被人民當成英雄的克洛克達爾。"],["vivi","叛亂軍和王國軍就要在阿爾巴那開戰了。我要去阻止大家流血。"],["vivi","拜託你，擋住那個男人！"]]},{"type":"boss","title":"阿爾巴那的決戰","desc":"前往王宮前廣場，擊敗克洛克達爾。","reward":5}],"prologue":[[null,"阿拉巴斯坦・沙之國"],[null,"這個國家已經三年沒有下過一滴雨。"],[null,"人民相信是國王偷走了雨，而王下七武海克洛克達爾，被當成趕走海賊的英雄。"],[null,"公主薇薇潛入犯罪組織巴洛克工作社兩年，只為了查出真相。"]],"epilogue":[[null,"克洛克達爾倒下的那一刻，天空開始落下雨滴。"],["vivi","是雨……是真的雨！"],[null,"雨水落在叛亂軍與王國軍之間，所有人都放下了武器。"],["vivi","謝謝你。總有一天，我也想和你們一起去看看大海。"]]},
+ {"id":"skypiea","name":"空島篇","subtitle":"神之國的鐘聲","art":"assets/chapters/skypiea.webp","boss":"enel","bossTitle":"自稱為神的男人","blurb":"在一萬公尺高的空島，聽得見所有聲音的男人自稱為神。四百年前沉默的黃金鐘，正等著再次響起。","rhythm":"先學會空島的規矩，再撐過神官的連續試煉。","env":{"sky":"#bfe4ff","fog":"#e2f2ff","ground":"#c8d7e8","sun":[0.35,1,0.5],"fogR":[80,260]},"spawn":[0,55],"bossPos":[0,-62],"npcs":[{"id":"conis","name":"柯妮絲","role":"天使島的少女","look":"conis","pos":[-14,40]},{"id":"ganfall","name":"甘·福爾","role":"前任之神・空之騎士","look":"ganfall","pos":[16,30]},{"id":"wiper","name":"懷帕","role":"香迪亞戰士","look":"wiper","pos":[-28,12],"chat":["這片大地是我們祖先的故鄉，四百年來我們只想回家。","黃金鐘響起的那天，大戰士卡爾格拉的約定才算完成。"]},{"id":"pagaya","name":"帕加亞","role":"柯妮絲的父親","look":"pagaya","pos":[6,50],"chat":["貝殼是空島的寶物，能存下聲音、風，甚至衝擊。","小聲點，神聽得見一切。"]}],"steps":[{"type":"choice","npc":"conis","title":"空島的規矩","desc":"聽柯妮絲說明空島，回答她的問題。","reward":2,"lines":[["conis","歡迎來到天使島……對不起，我得小聲說話，神‧艾涅爾能聽見整座島的聲音。"],["conis","在這裡生活，得先懂得空島的東西。我考考你吧？"]],"questions":[{"q":"空島上能儲存聲音、風、甚至衝擊的貝殼叫做什麼？","options":[{"label":"貝（Dial）","correct":true},{"label":"海樓石"},{"label":"電話蟲"}],"right":"答對了！貝是空島人的生活必需品。","wrong":"不對喔，那是青海的東西。再想想？"},{"q":"神‧艾涅爾為什麼能聽見整座島的聲音？","options":[{"label":"他在島上裝了電話蟲"},{"label":"他擁有能感知聲音的「心綱」","correct":true},{"label":"因為他的耳朵很大"}],"right":"沒錯……所以大家都不敢說真心話。","wrong":"嘻……才不是呢。再想想看。"}]},{"type":"collect","title":"香朵拉的黃金","desc":"在雲上遺跡找到 3 塊黃金碎片。","item":"香朵拉黃金","icon":"gold","count":3,"spots":[[-36,-8],[36,-2],[0,14]],"reward":2},{"type":"talk","npc":"wiper","title":"大戰士的約定","desc":"聽香迪亞戰士懷帕說起四百年前的故事。","reward":2,"lines":[["wiper","那塊黃金……你從遺跡裡拿出來的？"],["wiper","四百年前，這塊大地還在青海。我們的祖先香迪亞人守著黃金鐘，直到一個叫諾蘭德的探險家出現。"],["wiper","大戰士卡爾格拉和他成了朋友。後來大地被衝上天空，諾蘭德再回來時，什麼都找不到了，被當成騙子處死。"],["wiper","卡爾格拉一直想敲響黃金鐘，告訴他的朋友：我們在這裡。"],["wiper","艾涅爾把鐘藏了起來。擊敗他，鐘聲才會響。"]]},{"type":"gauntlet","title":"神官的連續試煉","desc":"連續擊敗 2 位神官，中途體力不會回復。輸掉要從頭再來。","count":2,"reward":4},{"type":"goto","title":"雲上遺跡","desc":"前往遺跡中央，尋找黃金鐘的線索。","pos":[34,-18],"r":7,"label":"黃金遺跡","reward":1,"lines":[[null,"倒塌的黃金柱上刻著古老的文字。"],[null,"和世界各地的「歷史本文」一樣，沒有人讀得懂——除了某位考古學家。"]]},{"type":"talk","npc":"ganfall","title":"前任之神","desc":"向甘·福爾報告。","reward":1,"unlockBoss":true,"lines":[["ganfall","你撐過了試煉……那個男人六年前奪走了我的國家，現在又要把它毀掉。"],["ganfall","他打造的方舟準備升空，要把空島所有的地面都劈成碎片。"],["ganfall","雲門已經打開。記住，他的雷再快，也有他看不見的東西。"]]},{"type":"boss","title":"神之社的審判","desc":"登上神之社，擊敗艾涅爾。","reward":5}],"prologue":[[null,"空島・一萬公尺的高空"],[null,"衝天的海流帶著船隻穿過積帝雲，眼前是一整片白色的雲之海。"],[null,"這裡有會說話的貝殼、走在雲上的人，還有一個自稱為神的男人。"],[null,"四百年前，探險家諾蘭德說他看見了黃金之鄉——沒有人相信他。"]],"epilogue":[[null,"艾涅爾墜入雲海的那一刻，巨大的黃金鐘從雲中露了出來。"],[null,"鐘聲響徹天空，一路傳到下方的青海。"],["wiper","……卡爾格拉，你聽見了嗎？"],["conis","謝謝你。這是四百年來，空島第一次這麼安靜。"]]},
+ {"id":"enies","exclude":["robin"],"name":"司法島篇","subtitle":"向世界政府宣戰","art":"assets/chapters/enies.webp","boss":"lucci","bossTitle":"CP9 羅布·路奇","blurb":"為了保護同伴，羅賓獨自走進了世界政府的司法島。她說她不想再被救了，可所有人都知道，那不是她的真心話。","rhythm":"一路強攻：連續突破正門，衝上司法之塔，對她喊出真心話。","env":{"sky":"#a8c8e8","fog":"#c9dcee","ground":"#8a8f86","sun":[0.4,0.9,0.4],"fogR":[70,230]},"spawn":[0,55],"bossPos":[0,-60],"npcs":[{"id":"franky","name":"佛朗基","role":"改造人・水之七島的船匠","look":"franky","pos":[-12,40]},{"id":"kokoro","name":"可可羅婆婆","role":"海列車站長","look":"kokoro","pos":[16,34],"chat":["喝喝喝！海列車可是冒著暴風浪把你們送來的。","司法島從來沒有被人攻破過……在今天之前。"]},{"id":"sogeking","name":"戴面具的狙擊手","role":"自稱來自狙擊之島的英雄","look":"sogeking","pos":[-26,14],"chat":["我、我可不是誰的同伴！我是狙擊王！","我在八千人的島上……總之，我會掩護你的。"]}],"steps":[{"type":"talk","npc":"franky","title":"搶回同伴","desc":"和佛朗基商量攻島計畫。","reward":1,"lines":[["franky","超——！你也是來搶人的？那女人被政府帶走，全是因為她想保護別人。"],["franky","正門的守衛一個接一個衝上來，停下來喘氣就完了。"],["franky","一口氣殺進去吧！我在後面替你擋著！"]]},{"type":"talk","npc":"sogeking","title":"狙擊王的計畫","desc":"和戴面具的狙擊手商量突破方式。","reward":1,"lines":[["sogeking","我、我是狙擊王！從狙擊之島來的！"],["sogeking","正門的守衛交給你，我會從遠處掩護……真的，我的彈弓超準。"],["sogeking","看到塔頂的旗子了嗎？那是世界政府的旗子。"],["sogeking","燒掉它，就等於向整個世界宣戰。……我會瞄準的。"]]},{"type":"gauntlet","title":"突破正門","desc":"連續擊敗 2 名守衛，途中體力不會回復。","count":2,"reward":4},{"type":"goto","title":"衝向司法之塔","desc":"穿過審判所，跑到司法之塔前的高台。","pos":[0,-34],"r":8,"label":"司法之塔前","reward":1,"lines":[[null,"高塔上站著羅賓。她看見你們，臉色一下子變了。"],[null,"「為什麼要來！我不是說過，不要再管我了嗎！」"]]},{"type":"talk","npc":"kokoro","title":"海列車的站長","desc":"聽可可羅婆婆說羅賓的事。","reward":1,"lines":[["kokoro","喝喝喝……那孩子被帶上海列車的時候，一句話都沒說。"],["kokoro","她不是背叛你們，是為了換你們平安，把自己交了出去。"],["kokoro","去吧，喊到她聽見為止。"]]},{"type":"choice","npc":null,"title":"說出真心話","desc":"對塔上的羅賓喊話。","reward":2,"unlockBoss":true,"lines":[],"questions":[{"q":"你要對羅賓喊出什麼？","options":[{"label":"「妳說得對，我們回去了。」"},{"label":"「只要妳說想活下去，我們就一定救妳！」","correct":true},{"label":"「政府比較可怕，算了吧。」"}],"right":"「……我想活下去！帶我一起出海！」羅賓終於哭著喊了出來。可是在她身後，一個戴白色高帽的男人慢慢走了出來。","wrong":"這不是你真正想說的話。再喊一次。"}]},{"type":"boss","title":"司法之塔的決戰","desc":"擊敗 CP9 最強的殺手羅布·路奇，救出羅賓。","reward":5}],"prologue":[[null,"司法島・世界政府的正義之門"],[null,"這座島永遠是白天，從來沒有犯人活著逃出去。"],[null,"妮可・羅賓八歲時，故鄉歐哈拉被政府下令燒成灰燼，只因為那裡的學者研究了「空白的一百年」。"],[null,"從那天起她一直在逃，直到遇見一群願意為她對抗世界的人。"]],"epilogue":[[null,"路奇倒在司法之塔的瓦礫中，再也站不起來。"],["@robin","謝謝你們……來接我。"],[null,"塔頂的世界政府旗子燃起了火。"],[null,"從今天起，她不再是一個人。"]]},
+ {"id":"dark","name":"蜂巢島篇","subtitle":"海賊島的英雄","art":"assets/chapters/dark.webp","boss":"blackbeard","bossTitle":"四皇 黑鬍子","blurb":"黑鬍子海賊團占據了傳說中的海賊島「蜂巢島」，在這裡訓練新人、收留亡命之徒。海軍中將克比被他們抓走了。","rhythm":"潛入海賊島：先打聽情報，再和海軍英雄一起殺進港口。","env":{"sky":"#2a1d44","fog":"#231a39","ground":"#2c2440","sun":[0.3,0.8,0.5],"fogR":[35,160]},"spawn":[0,55],"bossPos":[0,-60],"npcs":[{"id":"garp","name":"卡普","role":"海軍英雄・前中將","look":"garp","pos":[-12,40]},{"id":"helmeppo","name":"海爾梅波","role":"海軍 SWORD 成員","look":"helmeppo","pos":[18,30]},{"id":"prisoner","name":"被抓來的新人","role":"海賊學校的學生","look":"elder","pos":[-26,8]},{"id":"barkeep","name":"酒館老闆","role":"蜂巢島的酒保","look":"fisher","pos":[30,4],"chat":["在這座島上，誰拳頭硬誰就是規矩。","那個戴墨鏡的冰人？他以前可是海軍大將呢。"]}],"steps":[{"type":"talk","npc":"garp","title":"老兵出航","desc":"和登島的卡普說話。","reward":1,"lines":[["garp","噗哈哈哈！你也是來湊熱鬧的？"],["garp","我那個笨徒弟克比被黑鬍子抓走了。海軍高層說要「從長計議」……哼，等他們想完，人都沒了。"],["garp","所以我就自己來了。先幫我打聽克比被關在哪裡。"]]},{"type":"talkAll","npcs":["helmeppo","prisoner","barkeep"],"title":"海賊島的情報","desc":"向島上 3 個人打聽克比的下落。","reward":3,"lines":{"helmeppo":[["helmeppo","你是卡普先生帶來的？太好了……克比那傢伙，是為了保護別人才被抓的。"],["helmeppo","他被關在北邊港口的船上。守衛裡有個很難纏的人物。"]],"prisoner":[["prisoner","我、我只是來海賊學校報名的……沒想到他們連海軍都抓。"],["prisoner","他們說，要用那個海軍小子去換一大筆贖金。"]],"barkeep":[["barkeep","黑鬍子最喜歡收集惡魔果實，還有「強者」。"],["barkeep","他現在身邊有個前海軍大將。那傢伙跟卡普……以前是師徒。"]]}},{"type":"talk","npc":"garp","title":"師徒的決裂","desc":"把情報告訴卡普。","reward":1,"lines":[["garp","庫山嗎……那小子還是選了這條路。"],["garp","沒關係，教訓學生是老師的工作。我去對付他。"],["garp","克比就交給你了。"]]},{"type":"defeat","title":"港口的守衛","desc":"擊敗 2 名擋路的敵人。","count":2,"reward":3},{"type":"goto","title":"北方港口","desc":"衝到北方港口救出克比。","pos":[0,-38],"r":8,"label":"北方港口","reward":1,"unlockBoss":true,"lines":[[null,"港口的船上傳出克比的聲音：「不要管我！快走！」"],[null,"甲板上，一個肥胖的男人咧嘴大笑。"],["@blackbeard","澤哈哈哈！送上門來的獵物又多了一個！"]]},{"type":"boss","title":"四皇的港口","desc":"擊敗黑鬍子，救出克比。","reward":6}],"prologue":[[null,"蜂巢島・四皇黑鬍子的海賊島"],[null,"這座島曾是傳說中的海賊洛克斯的據點，如今插滿了黑鬍子的旗子。"],[null,"海軍的年輕英雄克比被抓走當作人質。"],[null,"打破規矩、抗命出航的，是一個退休的老人——海軍英雄卡普。"]],"epilogue":[[null,"黑鬍子被打退，港口的船鎖應聲斷裂。"],[null,"克比被海爾梅波扶上了小船。"],["garp","噗哈哈……幹得好。剩下的，就交給我這個老頭子吧。"],[null,"遠處傳來天崩地裂的戰鬥聲。那是一個老兵，最後的教誨。"]]},
+ {"id":"fishman","name":"魚人島篇","subtitle":"海底一萬公尺的政變","art":"assets/chapters/fishman.webp","boss":"hody","bossTitle":"新魚人海賊團 荷帝·瓊斯","blurb":"陽光透過樹根照進海底的魚人島。可是繼承了仇恨的新魚人海賊團，正打算推翻龍宮王國，把人類和「親人類派」全部趕出去。","rhythm":"海底調查：打聽陰謀、找出禁藥的證據，最後在龍宮城前阻止政變。","env":{"sky":"#5fc4dc","fog":"#1f7f9f","ground":"#9a8a6a","sun":[0.2,1,0.3],"fogR":[25,150]},"spawn":[0,55],"bossPos":[0,-60],"npcs":[{"id":"camie","name":"凱米","role":"章魚燒店的人魚","look":"camie","pos":[-12,40]},{"id":"jinbe","name":"甚平","role":"前七武海・魚人空手道高手","look":"jinbe","pos":[20,26]},{"id":"neptune","name":"尼普頓國王","role":"龍宮王國國王","look":"neptune","pos":[-28,10]},{"id":"shyarly","name":"夏莉","role":"人魚咖啡廳的占卜師","look":"shyarly","pos":[8,48],"chat":["我看見了……一團火焰，正在吞噬這座島。","預言從不說謊，只是人們不願意聽。"]},{"id":"shirahoshi","name":"白星","role":"龍宮王國公主","look":"shirahoshiNpc","pos":[-10,-34],"chat":["對、對不起……我好害怕……","母親說過，人類和魚人一定能成為朋友。"]}],"steps":[{"type":"talk","npc":"camie","title":"海底的樂園","desc":"和人魚凱米打招呼。","reward":1,"lines":[["camie","哇！是人類！你是怎麼游下來的？這裡可是海底一萬公尺喔！"],["camie","魚人島的陽光全靠陽光樹伊布的樹根送下來。帶你去看看吧！"],["camie","……不過最近不太平靜。有一群叫「新魚人海賊團」的人，到處在說人類的壞話。"]]},{"type":"goto","title":"陽光樹伊布","desc":"游到島中央的陽光樹根部。","pos":[-34,-20],"r":8,"label":"陽光樹伊布","reward":1,"lines":[[null,"樹根把海面的陽光一路送進海底，在沙地上灑下晃動的光斑。"],[null,"樹根後面傳來低沉的說話聲：「只要吃下那個藥，我們就能得到十倍的力量……」"],[null,"幾個魚人發現了你，轉身消失在陰影裡。"]]},{"type":"talkAll","npcs":["jinbe","neptune"],"title":"仇恨的根源","desc":"向甚平與尼普頓國王打聽新魚人海賊團。","reward":2,"lines":{"jinbe":[["jinbe","新魚人海賊團的船長，叫荷帝·瓊斯。"],["jinbe","他從沒被人類傷害過，卻比誰都恨人類。那份仇恨，是從大人們口中「學」來的。"],["jinbe","……這也是我們這一代的罪。"]],"neptune":[["neptune","咩哈哈……十年前，乙姬為了讓魚人與人類共存，四處奔走連署。"],["neptune","她在演講時被槍殺。兇手……大家都以為是人類。"],["neptune","如果荷帝要推翻王國，他的目標一定是我，還有白星。"]]}},{"type":"talk","npc":"shyarly","title":"占卜師的預言","desc":"聽人魚咖啡廳的夏莉說出她看見的未來。","reward":1,"lines":[["shyarly","你來了。……我的水晶球裡，有一個戴草帽的男人。"],["shyarly","我看見他將會毀滅這座島。"],["shyarly","可是今天，水晶球裡出現的是一群吞下紅色藥丸、雙眼充血的魚人。"],["shyarly","也許真正會毀滅這座島的，不是人類。"]]},{"type":"collect","title":"禁藥「能量鋼彈」","desc":"在珊瑚礁間找到 3 瓶新魚人海賊團藏起來的禁藥。","item":"能量鋼彈","icon":"pearl","count":3,"spots":[[36,-6],[-8,8],[42,24]],"reward":2},{"type":"goto","title":"龍宮城前的廣場","desc":"帶著證據趕到龍宮城前。","pos":[0,-40],"r":8,"label":"龍宮城前","reward":1,"lines":[[null,"廣場上擠滿了魚人，新魚人海賊團包圍了龍宮城。"],[null,"尼普頓國王被綁在高台上，巨大的公主白星在一旁哭泣。"],["@hody","聽好了，魚人島的居民！今天起，這座島只屬於真正的魚人！"]]},{"type":"talk","npc":"shirahoshi","title":"哭泣的公主","desc":"和白星公主說話。","reward":2,"unlockBoss":true,"lines":[["shirahoshi","對、對不起……我好沒用，只會哭……"],["shirahoshi","母親說過，不要被仇恨牽著走。我一直記得，可是我一個人……做不到。"],["shirahoshi","拜託你……請救救父王，救救大家！"],[null,"荷帝轉過頭來，吞下了一整把紅色的藥丸。"]]},{"type":"boss","title":"龍宮城前的決戰","desc":"擊敗荷帝·瓊斯，阻止政變。","reward":6}],"prologue":[[null,"魚人島・海底一萬公尺"],[null,"穿過巨大的泡泡，陽光沿著樹根一路灑進海底的樂園。"],[null,"十年前，主張與人類共存的乙姬王妃被人暗殺。從那天起，仇恨就在海底悄悄長大。"],[null,"如今，一群以大白鯊魚人荷帝·瓊斯為首的年輕魚人，正在策劃一場政變。"]],"epilogue":[[null,"荷帝倒下的那一刻，禁藥的效果消退了，他的身體迅速衰老。"],["jinbe","仇恨是會傳下去的……但我們可以選擇，不再傳下去。"],["@shirahoshi","謝謝你……母親的心願，今天好像實現了一點點。"],["neptune","咩哈哈哈！今晚龍宮城要大開宴會！"],[null,"海王類在遠處低聲鳴叫，像是在回應公主的聲音。"]]},
+ {"id":"wano","name":"和之國篇","subtitle":"火祭之夜的鬼之島","art":"assets/chapters/wano.webp","boss":"kaido","bossTitle":"四皇 百獸凱多","blurb":"鎖國的武士之國，被百獸凱多統治了二十年。光月御田留下的話說：二十年後，九名武士將會歸來。","rhythm":"最長的篇章：幫助村民、召集同志，在火祭之夜與大和一起殺上鬼之島。","env":{"sky":"#f0b8a0","fog":"#e8c0b0","ground":"#5f6b3a","sun":[0.5,0.8,0.3],"fogR":[60,220]},"spawn":[0,56],"bossPos":[0,-62],"npcs":[{"id":"tama","name":"阿玉","role":"兔丼的小女忍者","look":"tama","pos":[-10,42]},{"id":"kinemon","name":"錦衛門","role":"光月家的武士","look":"kinemon","pos":[20,30]},{"id":"hiyori","name":"日和","role":"花之都的花魁","look":"hiyori","pos":[-30,14]},{"id":"denjiro","name":"傳次郎","role":"潛伏二十年的武士","look":"denjiro","pos":[32,6]},{"id":"kawamatsu","name":"河松","role":"河童武士","look":"kawamatsu","pos":[-38,-12]},{"id":"yamato","name":"大和","role":"凱多的孩子・自稱光月御田","look":"yamatoNpc","pos":[10,-34],"chat":["御田的航海日誌，我已經讀了一百遍！","我是凱多的孩子……但我要成為御田。"]}],"steps":[{"type":"talk","npc":"tama","title":"兔丼的孩子","desc":"和餓著肚子的阿玉說話。","reward":1,"lines":[["tama","你、你是外國人嗎？……阿玉沒事，阿玉只是有點餓。"],["tama","兔丼的河被工廠的毒水污染了，米都種不出來。"],["tama","山上還長著一些黍，做成黍糰子的話，大家就能吃飽了！"]]},{"type":"collect","title":"黍糰子的材料","desc":"在山坡上採集 3 束黍。","item":"黍","icon":"grain","count":3,"spots":[[-40,-26],[38,-20],[10,-4]],"reward":2},{"type":"talk","npc":"tama","title":"黍糰子","desc":"把做好的黍糰子分給阿玉。","reward":1,"lines":[["tama","好香……是黍糰子！"],["tama","阿玉的糰子給動物吃了，牠們就會變成阿玉的朋友喔。"],["tama","謝謝你……以前有個戴帽子的大哥哥，也這樣把飯分給阿玉吃。"],["tama","他說會回來的。阿玉會一直等。"]]},{"type":"talk","npc":"kinemon","title":"光月家的武士","desc":"和錦衛門商量討伐計畫。","reward":1,"lines":[["kinemon","在下錦衛門。二十年前，主公光月御田被凱多處決，我們穿越時空來到了今天。"],["kinemon","火祭之夜，凱多會在鬼之島開宴，那是唯一的機會。"],["kinemon","散落各地的同志腳踝上都有「月牙」記號。請幫在下找到他們！"]]},{"type":"talkAll","npcs":["hiyori","denjiro","kawamatsu"],"title":"月牙的同志","desc":"找到腳踝上刻著月牙的 3 位同志。","reward":3,"lines":{"hiyori":[["hiyori","你是錦衛門派來的？……我是光月日和，二十年來一直以花魁的身分等待這一天。"],["hiyori","我會帶著父親的刀，前往鬼之島。"]],"denjiro":[["denjiro","噓……在下在大蛇身邊忍了二十年，就是為了這一晚。"],["denjiro","火祭之夜，在下的人會在渡口接應。"]],"kawamatsu":[["kawamatsu","啊嚼……這條魚真好吃。你說月牙？呵呵，在下從沒忘記過。"],["kawamatsu","在監獄裡關了二十年，刀還是一樣利。"]]}},{"type":"talk","npc":"kinemon","title":"赤鞘九俠","desc":"向錦衛門回報同志的消息。","reward":1,"lines":[["kinemon","日和大人、傳次郎、河松……全都還活著！"],["kinemon","二十年了。主公，您看見了嗎？"],["kinemon","火祭之夜就是決戰。渡口有人在等……在下只聽說，那人自稱是御田。"]]},{"type":"defeat","title":"百獸海賊團的真打","desc":"擊退擋路的 2 名敵人。","count":2,"reward":3},{"type":"goto","title":"火祭之夜","desc":"前往北方渡口，準備渡海到鬼之島。","pos":[0,-40],"r":8,"label":"鬼之島渡口","reward":1,"unlockBoss":false,"lines":[[null,"煙火照亮了夜空。渡口邊站著一個頭上長角的少女，手裡握著狼牙棒。"],[null,"她的腳上戴著爆炸手銬——那是她的父親凱多，為了不讓她離開鬼之島而鎖上的。"]]},{"type":"talk","npc":"yamato","title":"鬼之島的少女","desc":"和渡口邊的大和說話。","reward":2,"unlockBoss":true,"lines":[["yamato","我是光月御田！……不，我想成為御田。你就是那個要去打倒凱多的人嗎？"],["yamato","二十年前，我親眼看著御田被處決。從那天起，我就決定要繼承他的意志。"],["yamato","我的手銬已經解開了。這一次，我要和你們一起打開和之國的國門！"],["yamato","凱多就在鬼之島頂端的屋頂上。走吧！"]]},{"type":"boss","title":"鬼之島屋頂的決戰","desc":"擊敗四皇百獸凱多。","reward":6}],"prologue":[[null,"和之國・鎖國的武士之國"],[null,"二十年前，光月御田為了讓家臣逃走，在滾燙的油鍋上撐了整整一小時。"],[null,"他留下話語：二十年後，九名赤鞘武士將會歸來。"],[null,"如今，河流被工廠污染，人民餓著肚子，百獸海賊團的旗子插滿每一座山頭。"]],"epilogue":[[null,"青龍從鬼之島的屋頂墜落，熔岩般的火光照亮了整片夜空。"],["yamato","……我們贏了！和之國自由了！"],["kinemon","主公……二十年的約定，終於實現了。"],[null,"花之都下起了粉紅色的雪。那是屬於和之國的，新的黎明。"]]},
+ {"id":"giant","name":"巨人篇","subtitle":"艾爾巴夫的詛咒王子","art":"assets/chapters/giant.webp","boss":"loki","bossTitle":"詛咒王子 洛基","blurb":"戰士之國艾爾巴夫，寶樹亞當撐起了整片天空。王子洛基被鎖鏈困在樹下，巨人們說，他是這個國家的詛咒。","rhythm":"戰士之國的試煉：先打一場決鬥，再贏得巨人們的認可。","env":{"sky":"#a9d8c8","fog":"#b9dccd","ground":"#3f5a2c","sun":[0.5,0.9,0.3],"fogR":[60,220]},"spawn":[0,58],"bossPos":[0,-62],"npcs":[{"id":"dorry","name":"多利","role":"巨兵海賊團船長","look":"dorry","pos":[-16,38]},{"id":"hajrudin","name":"哈吉爾汀","role":"新巨兵海賊團船長","look":"hajrudin","pos":[20,26]},{"id":"brogy","name":"布洛基","role":"巨兵海賊團船長","look":"brogy","pos":[-4,48]}],"steps":[{"type":"talk","npc":"dorry","title":"戰士之國","desc":"和巨人多利說話。","reward":1,"lines":[["dorry","葛基基基！是從海上來的小戰士啊。歡迎來到艾爾巴夫。"],["dorry","在這裡，戰士用決鬥說話。先讓大家看看你的實力吧！"]]},{"type":"defeat","title":"戰士的決鬥","desc":"在森林中擊敗 1 位挑戰者。","count":1,"reward":2},{"type":"collect","title":"寶樹之果","desc":"採集 3 顆寶樹亞當的果實，獻給巨人們。","item":"寶樹之果","icon":"fruit","count":3,"spots":[[-42,-6],[40,-8],[2,12]],"reward":2},{"type":"talk","npc":"dorry","title":"小花園的百年決鬥","desc":"把寶樹之果交給多利。","reward":1,"lines":[["dorry","葛基基基！這就是寶樹的果實！"],["dorry","我和布洛基在小花園決鬥了一百年，理由早就忘了。"],["dorry","艾爾巴夫的戰士就是這樣：比起勝負，更在乎有沒有抬頭挺胸地戰鬥。"],["dorry","去見布洛基和哈吉爾汀吧。他們會認可你的。"]]},{"type":"talkAll","npcs":["brogy","hajrudin"],"title":"巨人們的認可","desc":"讓布洛基與哈吉爾汀認可你。","reward":2,"unlockBoss":false,"lines":{"brogy":[["brogy","嘎巴巴巴！好吃的果實！我和多利在小花園決鬥了一百年，看人很準的。"],["brogy","你是真正的戰士。"]],"hajrudin":[["hajrudin","你想見洛基？那傢伙被鎖在寶樹底下，大家都說他是詛咒。"],["hajrudin","可最近鎖鏈一直在響……去吧，我替你解開外圍的封印。"]]}},{"type":"goto","title":"冥界的鎖鏈","desc":"前往寶樹亞當的根部。","pos":[0,-40],"r":8,"label":"寶樹根部","reward":1,"unlockBoss":true,"lines":[[null,"巨大的樹根間，傳來鎖鏈拖動的聲音。"],["@loki","……又有人來看熱鬧了？"],["@loki","聽好了，渺小的傢伙。我從不後悔自己做過的事。想知道真相，就用拳頭來問我！"]]},{"type":"boss","title":"寶樹下的王子","desc":"前往寶樹亞當，擊敗洛基。","reward":6}],"prologue":[[null,"艾爾巴夫・戰士之國"],[null,"世界上最高大的種族——巨人族的故鄉。"],[null,"寶樹亞當撐起了整片天空，樹根深處被稱為「冥界」。"],[null,"巨人們說，被鎖在那裡的王子洛基，是這個國家的詛咒。"]],"epilogue":[[null,"洛基跪倒在寶樹根部，鎖鏈應聲斷裂。"],["@loki","……哈，好久沒有這麼痛快了。"],["hajrudin","你讓王子開口了。艾爾巴夫會記住你的名字。"],[null,"偉大航路的盡頭，就在前方。"]]}
 ];
 
 const CHAPTER_DIFFICULTY = {
@@ -304,17 +47,62 @@ const CHAPTER_DIFFICULTY = {
 const GAME_SETTINGS = {turnSeconds:20, stageStep:0.20, bossRevives:1, itemsPerBattle:3, startTokens:5, clearBonus:3, dailyLimit:2, unlockAll:false, charRate:0.03, charLv:20, shareExp:0.3, bossJoinFirst:0.5, bossJoinRepeat:0.2, bossJoinLv:20, lineupMax:3, atkStep:0.10, defStep:0.10, spdStep:0.05, freezeDot:0.02, burnDot:0.04, freezeSlow:0.25, weakDealt:0.15, armorBreak:0.05};
 
 const ENCOUNTER_LINES = {
- luffy0:['我是要成為海賊王的男人！來打一場吧！','你很強嗎？那就讓我試試看！'],
- luffy:['嘿！你看起來很強嘛，跟我打一場！','我要成為海賊王，所以不會輸給你！'],
- loki:['渺小的東西，也敢來看被詛咒的王子？','這條鎖鏈困不住我，你也一樣。'],
- crocodile:['英雄？那不過是讓蠢貨聽話的稱號。','在沙漠裡，連你的血都會被曬乾。'],
- blackbeard:['澤哈哈哈！運氣真好，又一個送上門的！','時代要變了，擋路的全都吞掉！'],
- enel:['凡人啊，你的心跳聲，神都聽得一清二楚。','跪下吧，否則雷會替我審判你。'],
- shirahoshi:['對、對不起……可是我不能讓你過去！','海王類們，請借我一點勇氣。'],
- robin:['我想知道的歷史，不會讓任何人擋住。','開花吧。'],
- zoro:['我不會再輸給任何人了。','拔刀吧。'],
- sanji:['對女士以外的傢伙，我可不會手下留情。','抽根菸的時間，就能解決你。'],
- yamato:['我是光月御田！你就是那個會打倒凱多的人嗎？','讓我看看你的覺悟吧！']
+ "luffy0": [
+  "我是要成為海賊王的男人！來打一場吧！",
+  "你很強嗎？那就讓我試試看！"
+ ],
+ "luffy": [
+  "嘿！你看起來很強嘛，跟我打一場！",
+  "我要成為海賊王，所以不會輸給你！"
+ ],
+ "loki": [
+  "渺小的東西，也敢來看被詛咒的王子？",
+  "這條鎖鏈困不住我，你也一樣。"
+ ],
+ "crocodile": [
+  "英雄？那不過是讓蠢貨聽話的稱號。",
+  "在沙漠裡，連你的血都會被曬乾。"
+ ],
+ "blackbeard": [
+  "澤哈哈哈！運氣真好，又一個送上門的！",
+  "時代要變了，擋路的全都吞掉！"
+ ],
+ "enel": [
+  "凡人啊，你的心跳聲，神都聽得一清二楚。",
+  "跪下吧，否則雷會替我審判你。"
+ ],
+ "shirahoshi": [
+  "對、對不起……可是我不能讓你過去！",
+  "海王類們，請借我一點勇氣。"
+ ],
+ "robin": [
+  "我想知道的歷史，不會讓任何人擋住。",
+  "開花吧。"
+ ],
+ "zoro": [
+  "我不會再輸給任何人了。",
+  "拔刀吧。"
+ ],
+ "sanji": [
+  "對女士以外的傢伙，我可不會手下留情。",
+  "抽根菸的時間，就能解決你。"
+ ],
+ "yamato": [
+  "我是光月御田！你就是那個會打倒凱多的人嗎？",
+  "讓我看看你的覺悟吧！"
+ ],
+ "kaido": [
+  "世界最強的生物是誰？……是我。",
+  "來吧！讓我看看你能撐多久！"
+ ],
+ "hody": [
+  "下等的人類，也敢踏進魚人島？",
+  "我會讓這座島，回到它本來該有的樣子——沒有人類！"
+ ],
+ "lucci": [
+  "正義的名義下，你們一個都別想離開這座島。",
+  "……無聊。讓我看看你能撐幾秒。"
+ ]
 };
 
 /* 扭蛋道具：rarity N/R/SR/SSR */
@@ -341,6 +129,10 @@ const RARITY = {
 const GACHA_COST = {single:1, ten:9};
 
 const DEFAULT_NEWS = [
+ {id:'n10', date:'2026-09-28', tag:'更新', title:'司法島 BOSS：CP9 羅布·路奇', body:'司法之塔前，CP9 最強的殺手擋住了去路。羅布·路奇精通六式，可在懸賞處召喚。黑鬍子換上新立繪與全新技能動畫。'},
+ {id:'n9', date:'2026-09-28', tag:'更新', title:'魚人島篇改版：新魚人海賊團的政變', body:'荷帝·瓊斯率領新魚人海賊團包圍龍宮城！魚人島篇劇情全面改寫，白星公主改以 NPC 登場。荷帝·瓊斯可在懸賞處召喚。'},
+ {id:'n8', date:'2026-09-28', tag:'更新', title:'四皇凱多登場・角色平衡調整', body:'和之國的 BOSS 改為四皇凱多，大和成為並肩作戰的夥伴。黑暗海域改為蜂巢島篇，與海軍英雄卡普一起救出克比。白星新增第五技能「召喚」，可以復活倒下的隊友。多位角色技能同步調整。'},
+ {id:'n7', date:'2026-09-28', tag:'更新', title:'航海日誌 3.1：故事擴充與畫面升級', body:'八個篇章都加入了登島序章、通關尾聲與新的劇情任務。3D 場景加上地面與牆面紋理、漸層天空與彩旗；角色背包可以排出戰順序，經驗道具能一次使用多本。'},
  {id:'n6', date:'2026-09-28', tag:'更新', title:'航海日誌 3.0：船員培養與陣容戰鬥', body:'新玩家會得到 LV1 的初登場魯夫、索隆、香吉士。最多 3 人上陣，戰鬥中可以換人，出戰者倒下時換下一位。打贏敵人、推進劇情都能拿到經驗與貝里。'},
  {id:'n5', date:'2026-09-28', tag:'活動', title:'新手拉霸：免費召喚 LV100 船員', body:'第一次出航的船長可以在懸賞處免費拉一次拉霸，三格對齊的船員會以 LV100 加入角色背包。'},
  {id:'n4', date:'2026-09-28', tag:'公告', title:'懸賞處與海軍本部開放', body:'懸賞處可以召喚、接懸賞任務賺貝里、在商店購買道具。不需要的船員可以交給海軍本部換貝里或經驗，交出後無法反悔。'},

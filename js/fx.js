@@ -1,9 +1,12 @@
 /* 戰鬥特效引擎 v2：發光粒子貼圖、漸層斬擊、集中線、命中白閃、鏡頭震推 */
+const LOWFX = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 700;
 const FXE = (() => {
   let cv, cx, list = [], raf = 0, last = 0, W = 0, H = 0, dpr = 1;
   const R = (a, b) => a + Math.random() * (b - a), TAU = Math.PI * 2;
   function ensure() {
-    if (!cv) { cv = document.getElementById('bCanvas'); cx = cv.getContext('2d'); }
+    if (!cv) { cv = document.getElementById('bCanvas'); cx = cv.getContext('2d');
+      // 手機：發光模糊降到三成，減少掉幀
+      if (LOWFX) { const d = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'shadowBlur'); Object.defineProperty(cx, 'shadowBlur', { set(v) { d.set.call(cx, v * .3); }, get() { return d.get.call(cx); } }); } }
     const r = cv.parentElement.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
     if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
     W = r.width; H = r.height;
@@ -43,8 +46,7 @@ const FXE = (() => {
         let g = c.createLinearGradient(0, -w * 1.6, 0, w * 1.6); g.addColorStop(0, rgba(col, 0)); g.addColorStop(.5, rgba(col, .55)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.fillRect(0, -w * 1.6, reach, w * 3.2);
         g = c.createLinearGradient(0, -w * .5, 0, w * .5); g.addColorStop(0, rgba(col, 0)); g.addColorStop(.3, rgba(col, 1)); g.addColorStop(.5, '#ffffff'); g.addColorStop(.7, rgba(col, 1)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.fillRect(0, -w * .5, reach, w);
         c.drawImage(glowSpr(col), reach - w * 2, -w * 2, w * 4, w * 4); } }); },
-    particles(o) {
-      const ps = []; for (let i = 0; i < o.n; i++) { const a = R(o.ang ? o.ang[0] : 0, o.ang ? o.ang[1] : TAU), s = R(o.spd[0], o.spd[1]); ps.push({ x: o.x + R(-(o.jx || 0), o.jx || 0), y: o.y + R(-(o.jy || 0), o.jy || 0), vx: Math.cos(a) * s, vy: Math.sin(a) * s, l: R(o.life[0], o.life[1]), s: R(o.size[0], o.size[1]), c: o.colors[i % o.colors.length], r: R(0, 6), vr: R(-8, 8), d: R(0, o.delay || 0) }); }
+    particles(o) { const ps = []; const NN = LOWFX ? Math.ceil(o.n * .55) : o.n; for (let i = 0; i < NN; i++) { const a = R(o.ang ? o.ang[0] : 0, o.ang ? o.ang[1] : TAU), s = R(o.spd[0], o.spd[1]); ps.push({ x: o.x + R(-(o.jx || 0), o.jx || 0), y: o.y + R(-(o.jy || 0), o.jy || 0), vx: Math.cos(a) * s, vy: Math.sin(a) * s, l: R(o.life[0], o.life[1]), s: R(o.size[0], o.size[1]), c: o.colors[i % o.colors.length], r: R(0, 6), vr: R(-8, 8), d: R(0, o.delay || 0) }); }
       const shape = o.shape || 'glow', additive = o.add !== undefined ? o.add : ['glow', 'spark', 'ember', 'snow'].includes(shape);
       return add({ add: additive, life: o.life[1] + (o.delay || 0) + .05, draw(c, k, dt, t) {
         for (const p of ps) { const lt = t - p.d; if (lt < 0 || lt > p.l) continue; if (o.toward) { p.vx += (o.toward.x - p.x) * dt * (o.pull || 6); p.vy += (o.toward.y - p.y) * dt * (o.pull || 6); } p.vy += (o.g || 0) * dt; const dr = 1 - (o.drag || 0) * dt; p.vx *= dr; p.vy *= dr; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;

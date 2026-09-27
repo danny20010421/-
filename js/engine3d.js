@@ -129,15 +129,37 @@ void main(){
   const FS = `
 precision highp float;
 varying vec3 vN; varying vec3 vC; varying float vD; varying vec3 vW;
-uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uGround; uniform vec3 uFog; uniform vec2 uFogR; uniform vec4 uTint; uniform float uWave; uniform float uT; uniform float uFlash;
+uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uGround; uniform vec3 uFog; uniform vec2 uFogR; uniform vec4 uTint; uniform float uWave; uniform float uT; uniform float uFlash; uniform float uMat; uniform float uFogOn; uniform vec3 uCam;
+float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(h2(i), h2(i+vec2(1.0,0.0)), f.x), mix(h2(i+vec2(0.0,1.0)), h2(i+vec2(1.0,1.0)), f.x), f.y); }
 void main(){
   vec3 n = normalize(vN);
+  vec3 col = vC * uTint.rgb;
+  if(uMat > 0.5 && uMat < 1.5){
+    // 場景貼皮：地面斑塊與顆粒、牆面木板與磚縫
+    float up = smoothstep(0.55, 0.85, n.y);
+    float big = vn(vW.xz*0.12), mid = vn(vW.xz*0.9+7.3), fine = vn(vW.xz*6.0+vW.y*3.0);
+    vec3 ground = col * (0.84 + 0.26*big) * (0.93 + 0.14*mid) * (0.95 + 0.1*fine);
+    float row = floor(vW.y*1.4);
+    float along = dot(vW.xz, normalize(vec2(abs(n.z)+0.001, abs(n.x)+0.001)));
+    float brick = step(0.9, fract(vW.y*1.4)) + step(0.94, fract(along*0.6 + row*0.5))*0.7;
+    vec3 wall = col * (0.92 + 0.1*vn(vec2(along*2.5, vW.y*9.0))) * (1.0 - 0.13*clamp(brick,0.0,1.0));
+    col = mix(wall, ground, up);
+  } else if(uMat > 1.5){
+    // 人物貼皮：布料織紋與陰影
+    float weave = 0.5 + 0.5*sin(vW.y*42.0)*sin((vW.x+vW.z)*42.0);
+    col *= 0.93 + 0.1*weave;
+  }
+  if(uWave > 0.5){ float s = sin(vW.x*0.5+uT*2.0)*sin(vW.z*0.45-uT*1.6); col += vec3(0.1)*smoothstep(0.7,1.0,s); col *= 0.9 + 0.2*vn(vW.xz*0.08+uT*0.05); }
   float dif = max(dot(n, normalize(uSun)), 0.0);
   vec3 amb = mix(uGround, uSky, n.y*0.5+0.5);
-  vec3 col = vC * uTint.rgb;
-  if(uWave > 0.5){ float s = sin(vW.x*0.5+uT*2.0)*sin(vW.z*0.45-uT*1.6); col += vec3(0.08)*smoothstep(0.7,1.0,s); }
-  vec3 c = col * (amb*0.62 + dif*0.78) + vec3(uFlash);
-  float f = clamp((vD - uFogR.x) / (uFogR.y - uFogR.x), 0.0, 1.0);
+  vec3 c = uMat > 2.5 ? col : col * (amb*0.6 + dif*0.82);
+  // 邊緣光與色彩增強
+  vec3 v = normalize(uCam - vW); float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+  if(uMat < 2.5) c += uSky * rim * 0.22;
+  float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, 1.18);
+  c += vec3(uFlash);
+  float f = uFogOn > 0.5 ? clamp((vD - uFogR.x) / (uFogR.y - uFogR.x), 0.0, 1.0) : 0.0;
   gl_FragColor = vec4(mix(c, uFog, f*f*(3.0-2.0*f)), uTint.a);
 }`;
   const BVS = `
@@ -183,14 +205,15 @@ void main(){
   class Renderer {
     constructor(canvas) {
       this.canvas = canvas;
-      const gl = canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'high-performance' }) || canvas.getContext('experimental-webgl');
+      const LOWDEV = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 700;
+      const gl = canvas.getContext('webgl', { antialias: !LOWDEV, alpha: false, powerPreference: 'high-performance' }) || canvas.getContext('experimental-webgl');
       if (!gl) throw new Error('WebGL 不可用');
       this.gl = gl; this.lit = program(gl, VS, FS); this.bb = program(gl, BVS, BFS);
       this.quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-.5,0, .5,0, .5,1, -.5,0, .5,1, -.5,1]), gl.STATIC_DRAW);
       this.tex = new Map(); this.env = {}; this.time = 0; this.flash = 0;
       gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
-      this.dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 800 ? 1.25 : 1.6);
+      this.maxDpr = Math.min(window.devicePixelRatio || 1, LOWDEV ? 1.25 : 1.6); this.dpr = this.maxDpr; this.low = LOWDEV;
     }
     resize() {
       const c = this.canvas, w = Math.max(1, c.clientWidth), h = Math.max(1, c.clientHeight);
@@ -254,6 +277,7 @@ void main(){
       gl.useProgram(L.p);
       gl.uniformMatrix4fv(L.u.uM, false, model || M.ident());
       gl.uniform4fv(L.u.uTint, opts.tint || [1, 1, 1, 1]); gl.uniform1f(L.u.uWave, opts.wave ? 1 : 0);
+      gl.uniform1f(L.u.uMat, opts.mat || 0); gl.uniform1f(L.u.uFogOn, opts.noFog ? 0 : 1); if (L.u.uCam) gl.uniform3fv(L.u.uCam, this.eye);
       const a = opts.alpha;
       if (a) { gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); }
       if (opts.noCull) gl.disable(gl.CULL_FACE);

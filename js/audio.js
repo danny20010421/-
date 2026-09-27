@@ -18,7 +18,7 @@ const AUDIO = (() => {
     ambBus = ctx.createGain(); ambBus.gain.value = pref.music * .5; ambBus.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     // 簡易殘響
-    verb = ctx.createConvolver(); const len = ctx.sampleRate * 1.6, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    verb = ctx.createConvolver(); const len = Math.round(ctx.sampleRate * 1.1), ir = ctx.createBuffer(2, len, ctx.sampleRate);
     for (let c = 0; c < 2; c++) { const ch = ir.getChannelData(c); for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
     verb.buffer = ir; const vg = ctx.createGain(); vg.gain.value = .22; verb.connect(vg); vg.connect(musicBus);
     return true;
@@ -152,26 +152,34 @@ const AUDIO = (() => {
   }
   const cache = {};
   function getSong(name) { if (!cache[name]) cache[name] = compile(SONGS[name] || ONESHOT[name]); return cache[name]; }
+  /* 以 Worker 計時，不受畫面運算拖累；不支援時退回 setInterval */
+  const LOOKAHEAD = .6, TICK_MS = 50;
+  let worker = null;
+  try { worker = new Worker(URL.createObjectURL(new Blob(["let h=null;onmessage=e=>{clearInterval(h);if(e.data>0)h=setInterval(()=>postMessage(0),e.data)}"], { type: 'text/javascript' }))); worker.onmessage = () => tick(); } catch (e) { worker = null; }
+  function startTimer() { if (worker) worker.postMessage(TICK_MS); else { clearInterval(timer); timer = setInterval(tick, TICK_MS); } }
+  function stopTimer() { if (worker) worker.postMessage(0); clearInterval(timer); }
   function tick() {
     if (!song) return;
-    while (nextTime < ctx.currentTime + .15) {
+    // 主執行緒忙碌造成落後時，直接跳過錯過的拍子，避免音符擠在一起播放
+    if (nextTime < ctx.currentTime - .02) { while (nextTime < ctx.currentTime + .02) { nextTime += song.stepDur; step++; if (song.once && step >= song.total) break; } }
+    while (nextTime < ctx.currentTime + LOOKAHEAD) {
       const s = step % song.total;
       for (const e of song.byStep[s] || []) { if (e.drum) DRUM[e.drum](nextTime, e.v, musicBus); else INST[e.inst](nextTime, mtof(e.m), e.len * song.stepDur * .92, e.v, musicBus); }
       nextTime += song.stepDur; step++;
-      if (song.once && step >= song.total) { const after = song.after; song = null; clearInterval(timer); if (after) setTimeout(() => playSong(after), 600); return; }
+      if (song.once && step >= song.total) { const after = song.after; song = null; stopTimer(); if (after) setTimeout(() => playSong(after), 600); return; }
     }
   }
   function playSong(name, after) {
     if (!ctx || ctx.state !== 'running') { pending = { name }; songName = name; return; }
     if (songName === name && song && !song.once) return;
-    clearInterval(timer); songName = name;
+    stopTimer(); songName = name;
     const base = getSong(name); song = { ...base, after, byStep: {} };
     base.events.forEach(e => (song.byStep[e.s] = song.byStep[e.s] || []).push(e));
     // 淡入
     musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setValueAtTime(.0001, ctx.currentTime); musicBus.gain.linearRampToValueAtTime(pref.muted ? 0 : pref.music * .5, ctx.currentTime + .6);
-    step = 0; nextTime = ctx.currentTime + .08; timer = setInterval(tick, 25); tick();
+    step = 0; nextTime = ctx.currentTime + .08; startTimer(); tick();
   }
-  function stopSong() { clearInterval(timer); song = null; songName = null; }
+  function stopSong() { stopTimer(); song = null; songName = null; }
 
   /* ---------- 環境音 ---------- */
   let ambPending = null;
@@ -223,7 +231,9 @@ const AUDIO = (() => {
   return {
     playSong, stopSong, ambient, unlock,
     sfx(name) { if (!ctx || ctx.state !== 'running' || pref.muted || !FX[name]) return; try { FX[name](); } catch (e) { } },
-    jingle(name, after) { if (!ctx || ctx.state !== 'running') return; clearInterval(timer); songName = name; const base = getSong(name); song = { ...base, after, byStep: {} }; base.events.forEach(e => (song.byStep[e.s] = song.byStep[e.s] || []).push(e)); musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setValueAtTime(pref.muted ? 0 : pref.music * .5, ctx.currentTime); step = 0; nextTime = ctx.currentTime + .05; timer = setInterval(tick, 25); tick(); },
+    jingle(name, after) { if (!ctx || ctx.state !== 'running') return; stopTimer(); songName = name; const base = getSong(name); song = { ...base, after, byStep: {} }; base.events.forEach(e => (song.byStep[e.s] = song.byStep[e.s] || []).push(e)); musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setValueAtTime(pref.muted ? 0 : pref.music * .5, ctx.currentTime); step = 0; nextTime = ctx.currentTime + .05; startTimer(); tick(); },
+    suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); },
+    resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); },
     get pref() { return pref; },
     setPref(p) { Object.assign(pref, p); try { localStorage.setItem(PREF_KEY, JSON.stringify(pref)); } catch (e) { } if (ctx) { master.gain.value = pref.muted ? 0 : 1; musicBus.gain.value = pref.music * .5; ambBus.gain.value = pref.music * .5; sfxBus.gain.value = pref.sfx; } }
   };

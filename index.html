@@ -17,16 +17,16 @@
 
 <!-- ================= 登入 ================= -->
 <section class="screen" id="loginScreen">
-  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.webm" type="video/webm"><source src="assets/login/loop.mp4" type="video/mp4"></video>
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4" type="video/mp4"></video>
   <div class="login-shade"></div>
   <div class="login-main">
     <div class="logo">
       <span class="logo-small">海賊王</span>
       <h1>偉大航路</h1>
-      <p>五座島嶼，五場決戰。帶上你的船長，從東海出發。</p>
+      <p>戴上草帽，從風車村揚帆。<br>招募夥伴、組好三人陣容，闖過八座傳說之島，寫下屬於你的航海日誌。</p>
     </div>
     <div class="login-actions">
-      <button class="btn-primary big" id="startBtn">開始冒險</button>
+      <button class="btn-primary big" id="startBtn">揚帆出航</button>
       <div class="login-sub">
         <button class="btn-ghost" id="newsOpenBtn">全部公告</button>
         <button class="btn-ghost" id="soundBtn" aria-pressed="false">音樂：開</button>
@@ -232,8 +232,9 @@
   <div class="modal-card wide">
     <header><h2 id="charTitle">船員</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
     <p class="modal-note" id="quotaNote"></p>
-    <div class="char-grid" id="charGrid"></div>
-    <div class="char-detail" id="charDetail"></div>
+    <div class="lineup-bar hidden" id="lineupBar"></div>
+    <div class="crew-body"><div class="char-grid" id="charGrid"></div>
+    <div class="char-detail" id="charDetail"></div></div>
     <footer><button class="btn-primary big" id="charConfirm">揚帆出航</button></footer>
   </div>
 </div>

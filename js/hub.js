@@ -1,5 +1,5 @@
 /* 懸賞處：懸賞召喚、懸賞任務、道具商店、海軍本部（販賣角色） */
-const CHAR_RARITY = { luffy: 'R', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
+const CHAR_RARITY = { lucci: 'SSR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
 const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, perLv: 80 } };
 const BOUNTY_POOL = [
   { id: 'win3', text: '擊敗 3 名敵人', stat: 'wins', goal: 3, berry: 1500 },
@@ -63,7 +63,7 @@ function sellValue(id, mode) { const r = CHAR_RARITY[id] || 'R', lv = crewLv(id)
 function renderNavy() {
   const ids = CHARACTER_ORDER.filter(owned);
   if (!ids.includes(navyPick)) navyPick = ids.find(id => !inLineup(id)) || ids[0];
-  $('navyList').innerHTML = ids.map(id => { const c = CHARACTERS[id], r = CHAR_RARITY[id] || 'R'; return `<button class="char ${id === navyPick ? 'on' : ''}" data-id="${id}"><img src="${c.image}" alt="" loading="lazy"><span class="c-lv" style="--c:${TIERS[tierOf(crewLv(id))].color}">LV ${crewLv(id)}</span><span class="rar r-${r} nv-r">${r}</span>${inLineup(id) ? '<span class="c-badge">陣容中</span>' : ''}<span class="c-name">${c.name}</span></button>`; }).join('');
+  $('navyList').innerHTML = ids.map(id => { const c = CHARACTERS[id], r = CHAR_RARITY[id] || 'R'; return `<button class="char ${id === navyPick ? 'on' : ''}" data-id="${id}"><img src="${c.image}" alt="" loading="lazy"><span class="c-lv" style="--c:${TIERS[tierOf(crewLv(id))].color}">LV ${crewLv(id)}</span><span class="rar c-rar r-${r}">${r}</span>${inLineup(id) ? '<span class="c-tags"><span class="c-team">陣容中</span></span>' : ''}<span class="c-name">${c.name}</span></button>`; }).join('');
   $('navyList').querySelectorAll('.char').forEach(b => b.onclick = () => { navyPick = b.dataset.id; renderNavy(); });
   const id = navyPick, c = CHARACTERS[id]; if (!id) { $('navyDetail').innerHTML = ''; return; }
   const targets = ids.filter(x => x !== id && crewLv(x) < MAX_LV); if (!targets.includes(navyTarget)) navyTarget = targets[0] || null;
@@ -91,7 +91,7 @@ function sellChar(id, mode, target) {
   const val = sellValue(id, mode), name = CHARACTERS[id].name;
   if (inLineup(id)) { if (!lineupRemove(id)) return; }
   delete SAVE.data.roster[id]; SAVE.save();
-  if (mode === 'berry') addBerry(val); else gainExp(target, val, false);
+  if (mode === 'berry') addBerry(val); else gainExp(target, val, false, true);
   SFX.play('coin'); toast(`${name} 已交給海軍本部`, 'gold'); navyPick = null; renderNavy();
 }
 

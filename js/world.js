@@ -55,6 +55,10 @@
       c.addEventListener('pointermove', e => { if (!down || down.id !== e.pointerId) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; if (Math.hypot(dx, dy) > 6) down.drag = true; if (down.drag) { this.cam.tYaw = down.yaw - dx * .006; this.cam.pitch = Math.max(.18, Math.min(1.1, down.pitch + dy * .004)); } });
       c.addEventListener('pointerup', e => { if (down && !down.drag && !this.paused) this._clickMove(e); down = null; });
       c.addEventListener('pointercancel', () => { down = null; });
+      const touches = new Map(); let pinch0 = 0, dist0 = 0;
+      c.addEventListener('touchstart', e => { if (e.touches.length === 2) { const [a, b] = e.touches; pinch0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); dist0 = this.cam.dist; down = null; } }, { passive: true });
+      c.addEventListener('touchmove', e => { if (e.touches.length === 2 && pinch0) { const [a, b] = e.touches; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); this.cam.dist = Math.max(10, Math.min(38, dist0 * pinch0 / d)); } }, { passive: true });
+      c.addEventListener('touchend', e => { if (e.touches.length < 2) pinch0 = 0; }, { passive: true });
       c.addEventListener('wheel', e => { e.preventDefault(); this.cam.dist = Math.max(10, Math.min(38, this.cam.dist + e.deltaY * .02)); }, { passive: false });
     }
     setJoystick(x, y) { this.joy.x = x; this.joy.y = y; if (x || y) this.p.target = null; }
@@ -80,6 +84,9 @@
     /* ---------- 更新 ---------- */
     frame(now) {
       const dt = Math.max(0, Math.min(.05, (now - this.last) / 1000)); this.last = now; this.r.time += dt;
+      // 自適應畫質：幀率偏低時降低解析度，順暢時慢慢拉回
+      const raw = (now - this.last0 || 16) ; this.last0 = now; this._acc = (this._acc || 0) * .95 + raw * .05; this._qt = (this._qt || 0) + dt;
+      if (this._qt > 1.5) { this._qt = 0; const r = this.r; if (this._acc > 30 && r.dpr > .6) r.dpr = Math.max(.6, r.dpr - .15); else if (this._acc < 19 && r.dpr < r.maxDpr) r.dpr = Math.min(r.maxDpr, r.dpr + .1); }
       if (!this.paused) this.update(dt);
       this.render(dt);
     }
@@ -132,13 +139,14 @@
       r.setCamera(eye, [p.x, p.y + 3, p.z], .9);
       if (this.chapter.id === 'dark' || this.chapter.id === 'skypiea') { if (Math.random() < dt * .12) this._flashT = .35; if (this._flashT > 0) { this._flashT -= dt; r.flash = Math.max(0, this._flashT) * (this.chapter.id === 'dark' ? .5 : .35); } else r.flash = 0; }
       r.begin();
-      r.draw(S.staticMesh, null);
+      if (S.sky) r.draw(S.sky, M.trs(p.x, 0, p.z, 0, 1), { noFog: true, noCull: true, mat: 3 });
+      r.draw(S.staticMesh, null, { mat: 1 });
       if (S.blade) S.dyn.windmills.forEach(([x, y, z], i) => r.draw(S.blade, M.mul(M.mul(M.trs(x, y, z, 0, 1), M.rz(t * .8 + i)), M.rx(Math.PI / 2))));
       if (S.cloud) S.dyn.clouds.forEach(([x, y, z, s, ph]) => r.draw(S.cloud, M.trs(x + Math.sin(t * .1 + ph) * 6, y + Math.sin(t * .4 + ph), z, ph, s)));
       if (S.bird && this.chapter.id !== 'fishman') for (let i = 0; i < 7; i++) { const a = t * (.25 + i * .03) + i * 1.3, R = 30 + i * 9; r.draw(S.bird, M.mul(M.trs(Math.cos(a) * R, 24 + i * 2 + Math.sin(t * 2 + i) * 1.5, Math.sin(a) * R, -a, 1.3), M.rz(Math.sin(t * 9 + i) * .35)), { noCull: true, tint: this.chapter.id === 'dark' ? [.3, .25, .35, 1] : [1, 1, 1, 1] }); }
       if (S.fishMesh) S.dyn.fish.forEach(([x, y, z, ph, c], i) => { const a = t * .4 + ph; r.draw(S.fishMesh, M.trs(x + Math.cos(a) * 12, y + Math.sin(t + ph) * .8, z + Math.sin(a) * 12, -a - Math.PI / 2, 1.4), { tint: E3.hex(c).concat(1) }); });
       if (S.petal) for (let i = 0; i < 40; i++) { const ph = i * 7.13, fx = p.x + ((i * 37) % 60) - 30 + Math.sin(t * .7 + ph) * 3, fz = p.z + ((i * 53) % 60) - 30, fy = S.H(fx, fz) + 12 - ((t * 1.6 + ph) % 12); r.draw(S.petal, M.mul(M.trs(fx, fy, fz, t + ph, 1), M.rx(t * 2 + ph)), { noCull: true }); }
-      for (const n of this.npcs) { const sc = SCENES.lookScale(n.look); const lookAt = Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * 2 + n.x)) * .05, n.z, n.face, sc)); }
+      for (const n of this.npcs) { const sc = SCENES.lookScale(n.look); const lookAt = Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * 2 + n.x)) * .05, n.z, n.face, sc), { mat: 2 }); }
       for (const it of this.items) if (!it.taken) r.draw(this.itemMeshes[it.icon], M.trs(it.x, it.y + 1.4 + Math.sin(t * 2.4 + it.x) * .35, it.z, t * 1.5, 1.2));
       r.draw(S.water, M.trs(p.x - (p.x % 11.8), 0, p.z - (p.z % 11.8), 0, 1), { wave: true, alpha: S.waterAlpha < 1 ? false : false, tint: [1, 1, 1, 1] });
       // 影子

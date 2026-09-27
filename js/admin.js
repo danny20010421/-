@@ -73,7 +73,7 @@ function renderAdmin(tab) {
   } else if (tab === 'chapters') {
     P.innerHTML = `<h3>篇章、BOSS 與難度</h3><p class="an">難度倍率會套用在該篇章所有敵人身上；BOSS 另外乘上 BOSS 倍率。</p>` + CHAPTERS.map(ch => { const d = CHAPTER_DIFFICULTY[ch.id]; return `<fieldset data-chapter="${ch.id}"><legend>${ch.name}</legend>
       <div class="agrid four">${field('篇章名稱', 'cname', ch.name, 'text')}${field('副標題', 'subtitle', ch.subtitle, 'text')}
-      <label class="af"><span>篇章 BOSS</span><select name="boss">${CHARACTER_ORDER.map(id => `<option value="${id}" ${id === ch.boss ? 'selected' : ''}>${CHARACTERS[id].name}</option>`).join('')}</select></label>
+      <label class="af"><span>篇章 BOSS</span><select name="boss"><option value="" ${!ch.boss ? 'selected' : ''}>（暫無 BOSS）</option>${CHARACTER_ORDER.map(id => `<option value="${id}" ${id === ch.boss ? 'selected' : ''}>${CHARACTERS[id].name}</option>`).join('')}</select></label>
       ${field('BOSS 稱號', 'bossTitle', ch.bossTitle, 'text')}</div>
       <div class="agrid seven">${field('體力倍率', 'hp', d.hp, 'number', 'step="0.01"')}${field('攻擊階', 'atk', d.atk)}${field('防禦階', 'def', d.def)}${field('速度階', 'spd', d.spd)}${field('BOSS 體力倍率', 'bossHp', d.bossHp, 'number', 'step="0.01"')}${field('BOSS 額外階', 'bossStages', d.bossStages)}${field('AI 積極度', 'ai', d.ai, 'number', 'step="0.01"')}</div>
       <div class="agrid five">${ch.steps.map((s, i) => field(`任務 ${i + 1} 獎勵`, 'rew' + i, s.reward)).join('')}</div></fieldset>`; }).join('');
@@ -120,7 +120,7 @@ function collectAdmin() {
     } else if (tab === 'chapters') {
       ADM.chapters = ADM.chapters || {}; ADM.difficulty = ADM.difficulty || {};
       P.querySelectorAll('[data-chapter]').forEach(fs => { const id = fs.dataset.chapter, ch = CHAPTERS.find(c => c.id === id); const steps = JSON.parse(JSON.stringify(ch.steps)); steps.forEach((s, i) => s.reward = num(v('rew' + i, fs).value, s.reward));
-        ADM.chapters[id] = Object.assign(ADM.chapters[id] || {}, { name: v('cname', fs).value, subtitle: v('subtitle', fs).value, boss: v('boss', fs).value, bossTitle: v('bossTitle', fs).value, steps });
+        ADM.chapters[id] = Object.assign(ADM.chapters[id] || {}, { name: v('cname', fs).value, subtitle: v('subtitle', fs).value, boss: v('boss', fs).value || null, bossTitle: v('bossTitle', fs).value, steps });
         const d = {}; ['hp', 'atk', 'def', 'spd', 'bossHp', 'bossStages', 'ai'].forEach(k => d[k] = num(v(k, fs).value, CHAPTER_DIFFICULTY[id][k])); ADM.difficulty[id] = d; });
     } else if (tab === 'story') {
       let npcs, steps; try { npcs = JSON.parse(v('npcs').value); steps = JSON.parse(v('steps').value); } catch (e) { throw new Error('劇情 JSON 格式錯誤，請檢查括號與引號'); }

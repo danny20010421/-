@@ -91,6 +91,8 @@ function statusChips(c) {
   if (st.executeBuffTurns > 0 && st.executeBuffChance > 0) chip('秒殺 ' + Math.round(st.executeBuffChance * 100) + '%', 'up');
   if (st.damageReductionTurns > 0 && st.damageReductionValue > 0) chip('減傷 ' + Math.round(st.damageReductionValue * 100) + '%', 'good');
   if (st.nextAttackMultTurns > 0 && st.nextAttackMultValue > 1) chip('下擊 ×' + st.nextAttackMultValue, 'up');
+  if (st.spdMulTurns > 0 && st.spdMul > 1) chip('速度 ×' + st.spdMul, 'up');
+  if (st.hitDouble > 0) chip('次數×2 ' + st.hitDouble, 'up', '技能攻擊次數加倍');
   if (st.revive > 0) chip('不死鳥', 'good');
   return a.join('');
 }
@@ -178,8 +180,8 @@ async function applyItem(id) {
   const fw = $('bFL'); fw.classList.add('cast'); spawnSupport('L', true); await wait(420); fw.classList.remove('cast');
   if (ef.healRatio) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
   if (ef.cleanse) { clearAbnormal(p); clearNegativeStages(p); log('異常狀態與負面能力全部清除。'); }
-  if (ef.ppAll) { p.skills.forEach(s => { s.pp += ef.ppAll; }); log(`所有技能使用次數 +${ef.ppAll}`); }
-  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate) s.pp += ef.ppUlt; }); }
+  if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppAll; }); log(`所有技能使用次數 +${ef.ppAll}`); }
+  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppUlt; }); }
   if (ef.atkUp) { p.buffs.atk = clamp(p.buffs.atk + ef.atkUp, -6, 6); log(`攻擊能力 +${ef.atkUp}`); }
   if (ef.shieldRatio) { const sh = Math.round(p.maxHp * ef.shieldRatio); p.status.shield += sh; log(`獲得 ${sh} 點護盾`); }
   if (ef.revive) { p.status.revive = ef.revive; log('不死鳥之羽守護著你。'); }
@@ -216,7 +218,7 @@ async function executeAction(side, idx) {
     target.status.reflectMultiplier = 1; target.status.reflectNegative = false;
     triggerImpact(S, 'gold'); renderHUD(); renderSkills(); await wait(700); return;
   }
-  if (result.damage > 0) applyDamage(target, result.damage, T);
+  if (result.damage > 0) applyDamage(target, result.damage, T, result.meta);
   if (!blocked) applySkillEffects(actor, target, skill, result);
   if (result.damage > 0) triggerImpact(T, BATTLE_ANIM[skill.anima] || 'red', result.damage > target.maxHp * .25);
   renderHUD(); renderSkills(); await wait(640);

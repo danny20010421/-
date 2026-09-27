@@ -662,3 +662,59 @@ legend{padding:0 6px;font-weight:700;color:var(--brass2)}
 .navy-detail .btn-primary{margin-top:10px;width:100%}
 @media (max-width:860px){.hub-tabs{top:calc(62px + var(--safeT));max-width:94vw;overflow-x:auto}.hub-pane,.g-main{top:calc(118px + var(--safeT))!important}.navy{grid-template-columns:1fr}.bounty{grid-template-columns:64px 1fr;}.bounty .btn-gold{grid-column:1/-1}.bt-poster{height:70px}}
 .toast{top:calc(72px + var(--safeT))}
+/* 角色卡：左上稀有度、右上等級、名字上方狀態，互不重疊 */
+.char .c-rar,.g-cap.char .c-rar{position:absolute;top:6px;left:6px;right:auto;bottom:auto;min-width:0;font-size:11px;padding:1px 6px;z-index:2}
+.char .c-lv{top:6px;right:6px;left:auto;z-index:2}
+.char .c-tags{position:absolute;left:6px;right:6px;bottom:36px;display:flex;flex-wrap:wrap;gap:4px;z-index:2;pointer-events:none}
+.char .c-tags .c-badge,.char .c-tags .c-team{position:static;font-size:10.5px}
+.rar.r-CHAR{background:linear-gradient(90deg,#ff9a4a,#ffd26c)}
+/* 角色背包：兩欄、陣容列、經驗道具欄 */
+#charModal .modal-card{width:min(1180px,96vw)}
+#charModal .crew-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,430px);gap:16px;align-items:start}
+#charModal .char-grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr));max-height:62vh;overflow:auto;padding:2px}
+#charModal .char img{height:auto;inset:8% 4% 20%;width:92%}
+#charModal .char-detail{margin:0;position:sticky;top:0;flex-direction:column;align-items:stretch;max-height:62vh;overflow:auto}
+#charModal .char-detail>img{width:72px;height:72px;align-self:flex-start}
+.lineup-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin-bottom:12px;border-radius:12px;background:rgba(201,151,58,.1);border:1px solid rgba(201,151,58,.35)}
+.lb-title{font-family:var(--serif);color:var(--brass2)}
+.lb-slot{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:rgba(6,18,30,.7);border:1px solid rgba(255,255,255,.15);cursor:grab;min-width:190px;transition:transform .15s,border-color .15s}
+.lb-slot>span{font-family:var(--num);font-size:18px;color:var(--brass2);width:16px;text-align:center}
+.lb-slot img{width:38px;height:38px;border-radius:8px;object-fit:cover}
+.lb-slot b{display:block;font-size:13.5px}.lb-slot small{color:var(--muted);font-size:11.5px}
+.lb-slot.empty{cursor:default;opacity:.55;min-width:120px}.lb-slot.empty em{font-style:normal;color:var(--muted)}
+.lb-slot.drag{opacity:.4}.lb-slot.over{border-color:var(--brass2);transform:scale(1.03)}
+.lb-mv{display:flex;gap:2px;margin-left:auto}.lb-mv button{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);font-size:12px}
+.lb-mv button:disabled{opacity:.3}
+.lb-hint{color:var(--muted);font-size:12px;margin-left:auto}
+.exp-panel{margin-top:10px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(0,0,0,.2);overflow:hidden}
+.exp-panel summary{cursor:pointer;padding:10px 14px;font-weight:700;display:flex;flex-direction:column;gap:2px;list-style:none}
+.exp-panel summary::-webkit-details-marker{display:none}
+.exp-panel summary::before{content:'▸ ';color:var(--brass2)}.exp-panel[open] summary::before{content:'▾ '}
+.exp-panel summary small{font-weight:400;color:var(--muted);font-size:12px}
+.exp-row{display:grid;grid-template-columns:36px 1fr auto;grid-template-areas:"i n n" "s s u" "p p u";gap:6px 10px;align-items:center;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08)}
+.exp-row.off{opacity:.45}
+.exp-row .ico{grid-area:i;width:34px;height:34px}.er-name{grid-area:n}.er-name small{display:block;color:var(--muted);font-size:11.5px}
+.stepper{grid-area:s;display:flex;align-items:center;gap:4px}
+.stepper button{min-width:32px;height:30px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);font-weight:700}
+.stepper output{min-width:34px;text-align:center;font-family:var(--num);font-size:17px}
+.er-prev{grid-area:p;font-size:12.5px;color:var(--muted)}.er-prev b{color:#9dffb8}
+.exp-row [data-use]{grid-area:u}
+@media (max-width:860px){#charModal .crew-body{grid-template-columns:1fr}#charModal .char-grid{max-height:38vh;grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}#charModal .char-detail{position:static;max-height:none}.lb-slot{min-width:0;flex:1 1 100%}.lb-hint{margin-left:0}}
+
+/* 手機操作：避免雙擊縮放與誤選字 */
+html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+input,textarea,select{-webkit-user-select:text;user-select:text}
+@media (pointer:coarse){
+  .act-btn{padding:16px 24px;font-size:17px}
+  .joy{width:140px;height:140px}
+  .skill{min-height:120px}
+  .cmd-btn{min-height:44px}
+  .icon-btn{width:46px;height:46px}
+}
+@media (max-width:860px) and (orientation:portrait){
+  .b-arena{top:112px;bottom:232px}
+  .fighter{height:80%}
+}
+@media (max-width:860px){.bt-poster span{font-size:12px}.bt-poster b{font-size:13px}}
+.cno{display:inline-block;margin-right:8px;font-family:var(--num);font-size:14px;letter-spacing:.05em;color:var(--brass2);vertical-align:middle}
+.boss-unk{width:52px;height:52px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-family:var(--num);font-size:28px;color:var(--muted);border:1px dashed rgba(255,255,255,.3)}

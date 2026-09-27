@@ -99,6 +99,11 @@
     kawamatsu: { skin: '#6a9a4a', hair: '#6a9a4a', hs: 'bald', top: '#2b3e59', bottom: '#1f2e44', legs: 'kimono', hat: 'kappa', hatC: '#d9d4c8', sword: true, belly: true, sc: 1.15 },
     dorry: { skin: '#c68d62', hair: '#8a5a3a', hs: 'long', beard: '#8a5a3a', top: '#7d5a3a', bottom: '#4a3526', hat: 'horned', hatC: '#9aa0a6', sc: 2.3, belly: true },
     brogy: { skin: '#d49a6a', hair: '#e8b33b', hs: 'long', beard: '#e8b33b', top: '#5a4028', bottom: '#3a2a1a', hat: 'horned', hatC: '#c9973a', sc: 2.25 },
+    robinNpc: { skin: '#e8c0a0', hair: '#1b1b22', hs: 'long', top: '#f4f2ea', bottom: '#6a3a8a', hat: 'cowboy', hatC: '#6a3a8a', cape: '#f4f2ea' },
+    shirahoshiNpc: { skin: '#f7dcc6', hair: '#ff9ac2', hs: 'long', top: '#ffd26c', tail: '#ff8fb8', hat: 'crown', hatC: '#e8c170', sc: 2.3 },
+    garp: { skin: '#e0b08a', hair: '#e8e4dc', hs: 'short', beard: '#e8e4dc', top: '#f4f2ea', bottom: '#3f6fa3', cape: '#f4f2ea', belt: '#3a3a3a', sc: 1.2, bigArms: true },
+    helmeppo: { skin: '#f0c9a4', hair: '#f2d36b', hs: 'short', top: '#f4f2ea', bottom: '#2b3e59', glasses: 'sun', belt: '#8a6240' },
+    yamatoNpc: { skin: '#f3d6bf', hair: '#f4f7ff', hs: 'pony', top: '#f4f2ea', bottom: '#c8322b', legs: 'kimono', hat: 'horned', hatC: '#f4f7ff', obi: '#6a3a8a', sc: 1.12 },
     hajrudin: { skin: '#c68d62', hair: '#e8753a', hs: 'spiky', beard: '#e8753a', top: '#3a3a4a', bottom: '#2a2a33', hat: 'horned', hatC: '#6b7280', sc: 2.15, cape: '#7d1d18' }
   };
   const lookScale = (look) => (LOOKS[look] || {}).sc || 1;
@@ -365,6 +370,10 @@
   };
   function detail(b, H, r, O, id) {
     const T = THEME[id] || THEME.east;
+    // 彩色三角旗串
+    if (id !== 'dark') { const FL = { wano: ['#c8322b', '#f4f0e4', '#1b1b1b'], fishman: ['#ff8fb8', '#8fd8ff', '#ffe46a'], skypiea: ['#ffffff', '#8fd8ff', '#ffe7a0'] }[id] || ['#e8553b', '#ffd26c', '#3fb6c9', '#6fd08c', '#b58cff'];
+      [[-15, 26, 15, 26], [-13, 38, 13, 42]].forEach(([x0, z0, x1, z1]) => { if (bad((x0 + x1) / 2, (z0 + z1) / 2)) return; const y0 = H(x0, z0) + 5, y1 = H(x1, z1) + 5; b.cyl(x0, H(x0, z0) - .3, z0, .1, .1, 5.3, 4, '#5a3d27'); b.cyl(x1, H(x1, z1) - .3, z1, .1, .1, 5.3, 4, '#5a3d27');
+        const n = 14; for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + .8) / n, sag = (t) => -Math.sin(t * Math.PI) * 1.2; const ax = x0 + (x1 - x0) * t0, az = z0 + (z1 - z0) * t0, ay = y0 + (y1 - y0) * t0 + sag(t0), bx = x0 + (x1 - x0) * t1, bz = z0 + (z1 - z0) * t1, by = y0 + (y1 - y0) * t1 + sag(t1), mx = (ax + bx) / 2, mz = (az + bz) / 2, my = (ay + by) / 2 - .9; const col = hex(FL[i % FL.length]); b.tri([ax, ay, az], [bx, by, bz], [mx, my, mz], col); b.tri([ax, ay, az], [mx, my, mz], [bx, by, bz], col); } }); }
     for (let i = 0; i < 260; i++) { const a = r() * Math.PI * 2, d = 10 + r() * 66, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z); if (y < 1 || bad(x, z) || Math.abs(x) < 4) continue;
       if (i % 5 === 0 && !T.dry) { const c = T.flower[i % T.flower.length]; b.cyl(x, y - .1, z, .04, .04, .5, 3, '#4f8a36'); b.sphere(x, y + .5, z, .16, 5, c); }
       else b.cyl(x, y - .15, z, .35 + r() * .3, 0, .5 + r() * .5, 4, shade(T.grass, .85 + r() * .3), null, r() * 3); }
@@ -387,6 +396,13 @@
     if (D.fish) { const fb = new Builder(); fb.sphere(0, 0, 0, .5, 6, '#ffffff', .6); fb.cyl(-.5, -.25, 0, .02, .35, .5, 4, '#ffffff', null, 0, [-.2, 0]); scene.fishMesh = renderer.mesh(fb); }
     { const bb = new Builder(); bb.box(-.6, 0, 0, 1.2, .06, .35, '#ffffff', -.35); bb.box(.6, 0, 0, 1.2, .06, .35, '#ffffff', .35); scene.bird = renderer.mesh(bb); }
     if (D.petals) { const pb = new Builder(); pb.box(0, 0, 0, .35, .04, .25, '#ffc4d8'); scene.petal = renderer.mesh(pb); }
+    // 漸層天幕與高空雲
+    const env = (CHAPTERS.find(c => c.id === chapterId) || {}).env || { sky: '#9fd6f5', fog: '#bfe3f6' };
+    { const sk = new Builder(), zen = shade(env.sky, chapterId === 'dark' ? .6 : .82), hor = hex(env.fog), R = 420, LAT = 14, LON = 28;
+      const P = (la, lo) => { const y = la / LAT, ph = lo / LON * Math.PI * 2, e = -0.15 + y * 1.15, r = Math.cos(e * Math.PI / 2), yy = Math.sin(e * Math.PI / 2); return [Math.cos(ph) * r * R, yy * R, Math.sin(ph) * r * R]; };
+      for (let la = 0; la < LAT; la++) for (let lo = 0; lo < LON; lo++) { const t = Math.max(0, (la + .5) / LAT - .08); const c = mix(hor, zen, Math.pow(t, .7)); sk.quad(P(la, lo), P(la + 1, lo), P(la + 1, lo + 1), P(la, lo + 1), c); }
+      scene.sky = renderer.mesh(sk); }
+    if (!D.clouds && chapterId !== 'dark' && chapterId !== 'fishman') { D.clouds = []; for (let i = 0; i < 12; i++) { const a2 = r() * Math.PI * 2, d = 70 + r() * 110; D.clouds.push([Math.cos(a2) * d, 42 + r() * 26, Math.sin(a2) * d, 6 + r() * 7, r() * 6]); } }
     if (D.clouds) { const cb = new Builder(); cb.sphere(0, 0, 0, 1, 8, '#ffffff', .55, .15, 3); cb.sphere(1.1, .1, .3, .7, 7, '#ffffff', .6, .1, 5); cb.sphere(-1, 0, -.2, .75, 7, '#ffffff', .6, .1, 8); scene.cloud = renderer.mesh(cb); }
     return scene;
   }
