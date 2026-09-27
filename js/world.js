@@ -36,7 +36,8 @@
       this.items.forEach(it => { if (!this.itemMeshes[it.icon]) this.itemMeshes[it.icon] = SCENES.itemMesh(this.r, it.icon); });
       this.enemies = (st.enemies || []).map(e => ({ ...e, y: this.scene.H(e.x, e.z), kind: 'enemy' }));
       this.enemies.forEach(e => this.r.texture(CHARACTERS[e.id].image));
-      this.bossUnlocked = !!st.bossUnlocked; this.target = st.target || null;
+      this.bossUnlocked = !!st.bossUnlocked; this.target = st.target || null; this.beacon = st.beacon || null; this._reached = false;
+      if (this.beacon) { this.beacon.y = this.scene.H(this.beacon.x, this.beacon.z); if (!this.beaconMesh) this.beaconMesh = SCENES.beaconMesh(this.r); }
       if (this.labelEls) { this.labels.innerHTML = ''; this.labelEls.clear(); }
     }
     start() { if (this.running) return; this.running = true; this.last = performance.now(); const loop = (t) => { if (!this.running) return; this._raf = requestAnimationFrame(loop); this.frame(t); }; this._raf = requestAnimationFrame(loop); }
@@ -106,12 +107,13 @@
       // 提示
       const n = this.nearest(); if (n !== this._near) { this._near = n; this.cb.onNear(n); }
       if (this._marker) this._marker.t += dt;
+      if (this.beacon && !this._reached && Math.hypot(this.beacon.x - p.x, this.beacon.z - p.z) < this.beacon.r) { this._reached = true; this.cb.onReach && this.cb.onReach(); }
     }
     _collide(x, z) {
       const pr = 1.1;
       const all = this.scene.obstacles;
       for (let i = 0; i < all.length; i++) { const o = all[i], dx = x - o[0], dz = z - o[1], d = Math.hypot(dx, dz), m = o[2] + pr; if (d < m && d > 1e-4) { x = o[0] + dx / d * m; z = o[1] + dz / d * m; } }
-      for (const n of this.npcs) { const dx = x - n.x, dz = z - n.z, d = Math.hypot(dx, dz), m = (n.look === 'giant' ? 2.4 : 1.2) + pr; if (d < m && d > 1e-4) { x = n.x + dx / d * m; z = n.z + dz / d * m; } }
+      for (const n of this.npcs) { const dx = x - n.x, dz = z - n.z, d = Math.hypot(dx, dz), m = SCENES.lookScale(n.look) * 1.1 + pr; if (d < m && d > 1e-4) { x = n.x + dx / d * m; z = n.z + dz / d * m; } }
       for (const e of this.enemies) { const dx = x - e.x, dz = z - e.z, d = Math.hypot(dx, dz), m = (e.boss && !this.bossUnlocked ? 13.5 : 1.8) + pr; if (d < m && d > 1e-4) { x = e.x + dx / d * m; z = e.z + dz / d * m; } }
       const d = Math.hypot(x, z); if (d > 95) { x *= 95 / d; z *= 95 / d; }
       return [x, z];
@@ -121,7 +123,11 @@
     render(dt) {
       const r = this.r, p = this.p, S = this.scene, t = r.time; r.resize();
       let dy = this.cam.tYaw - this.cam.yaw; this.cam.yaw += dy * Math.min(1, dt * 8);
-      const cp = Math.cos(this.cam.pitch), eye = [p.x + Math.sin(this.cam.yaw) * this.cam.dist * cp, p.y + 2.5 + Math.sin(this.cam.pitch) * this.cam.dist, p.z + Math.cos(this.cam.yaw) * this.cam.dist * cp];
+      // 鏡頭避障：鏡頭與角色之間有障礙物時把鏡頭拉近
+      let want = this.cam.dist; const sy = Math.sin(this.cam.yaw), cy = Math.cos(this.cam.yaw), cp0 = Math.cos(this.cam.pitch);
+      for (const o of S.obstacles) { const ox = o[0] - p.x, oz = o[1] - p.z; if (ox * ox + oz * oz > 1600) continue; for (let k = .25; k <= 1; k += .125) { const d = want * k, qx = sy * d * cp0, qz = cy * d * cp0; if ((qx - ox) ** 2 + (qz - oz) ** 2 < (o[2] * 1.5 + 1) ** 2) { want = Math.max(7, d - 2); break; } } }
+      this.cam.eff = this.cam.eff == null ? want : this.cam.eff + (want - this.cam.eff) * Math.min(1, dt * (want < this.cam.eff ? 10 : 3));
+      const cp = Math.cos(this.cam.pitch), eye = [p.x + Math.sin(this.cam.yaw) * this.cam.eff * cp, p.y + 2.5 + Math.sin(this.cam.pitch) * this.cam.eff, p.z + Math.cos(this.cam.yaw) * this.cam.eff * cp];
       const minY = S.H(eye[0], eye[2]) + 2; if (eye[1] < minY) eye[1] = minY;
       r.setCamera(eye, [p.x, p.y + 3, p.z], .9);
       if (this.chapter.id === 'dark' || this.chapter.id === 'skypiea') { if (Math.random() < dt * .12) this._flashT = .35; if (this._flashT > 0) { this._flashT -= dt; r.flash = Math.max(0, this._flashT) * (this.chapter.id === 'dark' ? .5 : .35); } else r.flash = 0; }
@@ -129,7 +135,10 @@
       r.draw(S.staticMesh, null);
       if (S.blade) S.dyn.windmills.forEach(([x, y, z], i) => r.draw(S.blade, M.mul(M.mul(M.trs(x, y, z, 0, 1), M.rz(t * .8 + i)), M.rx(Math.PI / 2))));
       if (S.cloud) S.dyn.clouds.forEach(([x, y, z, s, ph]) => r.draw(S.cloud, M.trs(x + Math.sin(t * .1 + ph) * 6, y + Math.sin(t * .4 + ph), z, ph, s)));
-      for (const n of this.npcs) { const sc = n.look === 'giant' ? 2.3 : n.look === 'kid' ? .78 : 1; const lookAt = Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * 2 + n.x)) * .05, n.z, n.face, sc)); }
+      if (S.bird && this.chapter.id !== 'fishman') for (let i = 0; i < 7; i++) { const a = t * (.25 + i * .03) + i * 1.3, R = 30 + i * 9; r.draw(S.bird, M.mul(M.trs(Math.cos(a) * R, 24 + i * 2 + Math.sin(t * 2 + i) * 1.5, Math.sin(a) * R, -a, 1.3), M.rz(Math.sin(t * 9 + i) * .35)), { noCull: true, tint: this.chapter.id === 'dark' ? [.3, .25, .35, 1] : [1, 1, 1, 1] }); }
+      if (S.fishMesh) S.dyn.fish.forEach(([x, y, z, ph, c], i) => { const a = t * .4 + ph; r.draw(S.fishMesh, M.trs(x + Math.cos(a) * 12, y + Math.sin(t + ph) * .8, z + Math.sin(a) * 12, -a - Math.PI / 2, 1.4), { tint: E3.hex(c).concat(1) }); });
+      if (S.petal) for (let i = 0; i < 40; i++) { const ph = i * 7.13, fx = p.x + ((i * 37) % 60) - 30 + Math.sin(t * .7 + ph) * 3, fz = p.z + ((i * 53) % 60) - 30, fy = S.H(fx, fz) + 12 - ((t * 1.6 + ph) % 12); r.draw(S.petal, M.mul(M.trs(fx, fy, fz, t + ph, 1), M.rx(t * 2 + ph)), { noCull: true }); }
+      for (const n of this.npcs) { const sc = SCENES.lookScale(n.look); const lookAt = Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * 2 + n.x)) * .05, n.z, n.face, sc)); }
       for (const it of this.items) if (!it.taken) r.draw(this.itemMeshes[it.icon], M.trs(it.x, it.y + 1.4 + Math.sin(t * 2.4 + it.x) * .35, it.z, t * 1.5, 1.2));
       r.draw(S.water, M.trs(p.x - (p.x % 11.8), 0, p.z - (p.z % 11.8), 0, 1), { wave: true, alpha: S.waterAlpha < 1 ? false : false, tint: [1, 1, 1, 1] });
       // 影子
@@ -142,6 +151,8 @@
       for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: [1, 1, 1, 1] }); }
       list.forEach(o => { if (!o.d) o.d = Math.hypot(o.x - eye[0], o.z - eye[2]); }); list.sort((a, b) => b.d - a.d);
       for (const o of list) { const rec = r.texture(o.url); const asp = rec.ready ? rec.w / rec.h : .75; r.sprite(o.url, o.x, o.y, o.z, o.h * asp, o.h, { flip: o.flip, tint: o.tint }); }
+      if (this.beacon) r.draw(this.beaconMesh, M.trs3(this.beacon.x, this.beacon.y - 1, this.beacon.z, t, 1 + Math.sin(t * 3) * .08, 1, 1 + Math.sin(t * 3) * .08), { alpha: true, noCull: true, tint: [1, .9, .5, .28 + Math.sin(t * 4) * .06] });
+      if (this.beacon) { const by = S.H(this.beacon.x, this.beacon.z); r.draw(this.beaconMesh, M.trs3(this.beacon.x, by - .5, this.beacon.z, t, 1 + Math.sin(t * 3) * .08, 1, 1 + Math.sin(t * 3) * .08), { alpha: true, noCull: true, tint: [1, .95, .7, .28] }); }
       // BOSS 屏障
       const boss = this.enemies.find(e => e.boss);
       if (boss && !this.bossUnlocked) r.draw(this.barrier, M.trs3(boss.x, boss.y - 1, boss.z, t * .3, 1, 1 + Math.sin(t * 2) * .03, 1), { alpha: true, noCull: true, tint: [.6, .85, 1, .22 + Math.sin(t * 3) * .05] });
@@ -157,9 +168,10 @@
         el.style.opacity = s.d > 60 ? (75 - s.d) / 15 : 1; seen.add(key);
       };
       const tgt = this.target;
-      for (const n of this.npcs) { const h = n.look === 'giant' ? 7.6 : n.look === 'kid' ? 2.9 : 3.8; const q = tgt && tgt.type === 'npc' && tgt.id === n.id; put('n' + n.id + (q ? 'q' : ''), n.x, S0(this, n) + h, n.z, (q ? '<b class="qmark">!</b>' : '') + `<span>${n.name}</span>`, 'npc' + (q ? ' qtarget' : ''), () => this.goTo(n)); }
-      for (const e of this.enemies) { const lock = e.boss && !this.bossUnlocked; const h = e.boss ? 8.6 : 6.4; put('e' + e.id + (lock ? 'l' : ''), e.x, e.y + h, e.z, `${e.boss ? '<i class="crown"></i>' : ''}<span>${CHARACTERS[e.id].name}</span>${lock ? '<em>屏障中</em>' : ''}`, 'foe' + (e.boss ? ' boss' : '') + (lock ? ' locked' : ''), lock ? null : () => this.goTo(e)); }
+      for (const n of this.npcs) { const h = SCENES.lookScale(n.look) * 3.6 + .4; const q = tgt && tgt.type === 'npc' && tgt.ids.includes(n.id); put('n' + n.id + (q ? 'q' : ''), n.x, S0(this, n) + h, n.z, (q ? '<b class="qmark">!</b>' : '') + `<span>${n.name}</span>`, 'npc' + (q ? ' qtarget' : ''), () => this.goTo(n)); }
+      for (const e of this.enemies) { const lock = e.boss && !this.bossUnlocked; const h = e.boss ? 8.6 : 6.4; put('e' + e.id + (lock ? 'l' : ''), e.x, e.y + h, e.z, `${e.boss ? '<i class="crown"></i>' : ''}<em class="lv">LV ${e.lv || ''}</em><span>${CHARACTERS[e.id].name}</span>${lock ? '<em>屏障中</em>' : ''}`, 'foe' + (e.boss ? ' boss' : '') + (lock ? ' locked' : ''), lock ? null : () => this.goTo(e)); }
       for (const it of this.items) if (!it.taken) put('i' + it.idx, it.x, it.y + 3.2, it.z, `<span>${it.label}</span>`, 'item');
+      if (this.beacon) put('bc', this.beacon.x, this.beacon.y + 9, this.beacon.z, `<b class="qmark">▼</b><span>${this.beacon.label}</span>`, 'npc qtarget beacon', () => { this.p.target = [this.beacon.x, this.beacon.z]; });
       if (this._marker && this._marker.t < .8 && this.p.target) put('mk', this._marker.x, this.scene.H(this._marker.x, this._marker.z) + .5, this._marker.z, '<i class="dot"></i>', 'marker'); 
       for (const [k, el] of this.labelEls) if (!seen.has(k)) { el.remove(); this.labelEls.delete(k); }
     }
@@ -176,7 +188,8 @@
       const dot = (x, z, r, c, ring) => { ctx.beginPath(); ctx.arc((x + 100) * sc, (z + 100) * sc, r, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); if (ring) { ctx.lineWidth = 2; ctx.strokeStyle = ring; ctx.stroke(); } };
       const tg = this.target;
       for (const it of this.items) if (!it.taken) dot(it.x, it.z, 3, '#7fe3ff');
-      for (const n of this.npcs) dot(n.x, n.z, 3, tg && tg.type === 'npc' && tg.id === n.id ? '#ffd26c' : '#f4ead2', tg && tg.type === 'npc' && tg.id === n.id ? '#fff' : null);
+      for (const n of this.npcs) { const q = tg && tg.type === 'npc' && tg.ids.includes(n.id); dot(n.x, n.z, 3, q ? '#ffd26c' : '#f4ead2', q ? '#fff' : null); }
+      if (this.beacon) dot(this.beacon.x, this.beacon.z, 5, '#ffd26c', '#fff');
       for (const e of this.enemies) dot(e.x, e.z, e.boss ? 5 : 3.2, e.boss ? (this.bossUnlocked ? '#ff5a4a' : '#8f9bb0') : '#e8553b', e.boss ? '#ffd26c' : null);
       const px = (this.p.x + 100) * sc, pz = (this.p.z + 100) * sc, a = -this.cam.yaw;
       ctx.translate(px, pz); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 5); ctx.lineTo(0, 2.5); ctx.lineTo(-5, 5); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#0a1f33'; ctx.lineWidth = 1.5; ctx.stroke();

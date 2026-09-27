@@ -51,9 +51,10 @@
     <div class="captain" id="captainChip"></div>
     <div class="topbar-right">
       <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
-      <div class="coin" title="寶藏幣：完成劇情任務獲得"><i class="coin-ico"></i><b id="coinTop">0</b></div>
+      <div class="coin berry" title="貝里：打贏敵人、完成任務獲得，可在商店使用"><i class="berry-ico">B</i><b class="berryVal">0</b></div><div class="coin" title="寶藏幣：完成劇情任務獲得"><i class="coin-ico"></i><b id="coinTop">0</b></div>
       <button class="btn-ghost" id="bagBtnMap">背包</button>
-      <button class="btn-gold" id="gachaBtnMap">扭蛋機</button>
+      <button class="btn-ghost" id="navyBtnMap">海軍本部</button>
+      <button class="btn-gold" id="gachaBtnMap">懸賞處</button>
     </div>
   </header>
   <div class="chart">
@@ -73,9 +74,9 @@
     <div class="w-title"><b id="wChapter"></b><span id="wChapterSub"></span></div>
     <div class="topbar-right">
       <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
-      <div class="coin"><i class="coin-ico"></i><b id="coinWorld">0</b></div>
+      <div class="coin berry" title="貝里：打贏敵人、完成任務獲得，可在商店使用"><i class="berry-ico">B</i><b class="berryVal">0</b></div><div class="coin"><i class="coin-ico"></i><b id="coinWorld">0</b></div>
       <button class="btn-ghost" id="bagBtnWorld">背包</button>
-      <button class="btn-gold" id="gachaBtnWorld">扭蛋機</button>
+      <button class="btn-gold" id="gachaBtnWorld">懸賞處</button>
     </div>
   </div>
   <div class="quest" id="questBox"></div>
@@ -109,7 +110,7 @@
     <div class="plate L" id="bPlateL">
       <img class="pl-av" id="bAvL" alt="">
       <div class="pl-info">
-        <div class="pl-name"><b id="bNameL"></b><small id="bTitleL"></small></div>
+        <div class="pl-name"><b id="bNameL"></b><small id="bTitleL"></small><em class="pl-lv" id="bLvL"></em></div>
         <div class="pl-types" id="bTypesL"></div>
         <div class="hp"><i class="hp-g" id="bHpGL"></i><i class="hp-f" id="bHpL"></i><i class="hp-s" id="bShieldL"></i></div>
         <div class="hp-t" id="bHpTL"></div>
@@ -143,6 +144,7 @@
     <div class="b-ticker" id="bTicker"></div>
   </div>
   <footer class="b-cmd">
+    <div class="b-team" id="bTeam"></div>
     <div class="skills" id="bSkills"></div>
     <div class="cmd-side">
       <button class="cmd-btn" id="bItemBtn"><span>道具</span><small id="bItemCount">3/3</small></button>
@@ -164,14 +166,20 @@
   </div>
 </section>
 
-<!-- ================= 扭蛋機 ================= -->
+<!-- ================= 懸賞處 ================= -->
 <section class="screen hidden" id="gachaScreen">
   <header class="topbar">
     <button class="icon-btn" id="gBackBtn" aria-label="返回">‹</button>
-    <h2 class="g-title">寶藏扭蛋機</h2>
-    <div class="topbar-right"><button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button><div class="coin"><i class="coin-ico"></i><b id="coinGacha">0</b></div><button class="btn-ghost" id="bagBtnGacha">背包</button></div>
+    <h2 class="g-title">懸賞處</h2>
+    <div class="topbar-right"><button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button><div class="coin berry" title="貝里：打贏敵人、完成任務獲得，可在商店使用"><i class="berry-ico">B</i><b class="berryVal">0</b></div><div class="coin"><i class="coin-ico"></i><b id="coinGacha">0</b></div><button class="btn-ghost" id="bagBtnGacha">背包</button></div>
   </header>
-  <div class="g-main">
+  <nav class="hub-tabs" id="hubTabs" role="tablist" aria-label="懸賞處">
+    <button data-hub="summon" class="on" role="tab">懸賞召喚</button>
+    <button data-hub="bounty" role="tab">懸賞任務</button>
+    <button data-hub="shop" role="tab">道具商店</button>
+    <button data-hub="navy" role="tab">海軍本部</button>
+  </nav>
+  <div class="g-main" data-pane="summon">
     <div class="machine" id="machine">
       <div class="m-sign">寶藏扭蛋</div>
       <div class="m-globe"><div class="m-caps" id="mCaps"></div><div class="m-glass"></div></div>
@@ -182,7 +190,8 @@
       </div>
     </div>
     <div class="g-panel">
-      <p class="g-lead">完成劇情任務獲得寶藏幣。抽到的道具會放進背包，對戰時按「道具」使用，每場最多 3 次。</p>
+      <div class="free-box hidden" id="freeBox"><div><b>新手福利</b><p>免費召喚一位 LV 100 的強力船員！</p></div><button class="btn-gold big" id="pullFree">免費拉霸</button></div>
+      <p class="g-lead">完成劇情任務獲得寶藏幣。有機會直接抽到新船員；經驗書在「船員」畫面使用，戰鬥道具在對戰中按「道具」使用。</p>
       <div class="g-pulls">
         <button class="btn-gold big" id="pull1">抽 1 次<small>1 枚寶藏幣</small></button>
         <button class="btn-primary big" id="pull10">抽 10 次<small>9 枚・保底 SR 以上</small></button>
@@ -191,6 +200,21 @@
       <p class="g-empty" id="gEmpty"></p>
     </div>
   </div>
+  <div class="hub-pane hidden" data-pane="bounty"><div class="hub-inner">
+    <h3>今日懸賞單</h3><p class="hub-note" id="bountyNote"></p>
+    <div class="bounty-list" id="bountyList"></div>
+  </div></div>
+  <div class="hub-pane hidden" data-pane="shop"><div class="hub-inner">
+    <h3>道具商店</h3><p class="hub-note">用貝里購買補給。貝里靠打贏敵人、完成任務、擊敗 BOSS 與領取懸賞取得。</p>
+    <div class="bag-list" id="shopList"></div>
+  </div></div>
+  <div class="hub-pane hidden" data-pane="navy"><div class="hub-inner wide">
+    <h3>海軍本部</h3><p class="hub-note">把不需要的船員交給海軍，依稀有度與等級換取貝里，或把經驗傳承給其他船員。販賣後無法反悔。</p>
+    <div class="navy">
+      <div class="char-grid navy-list" id="navyList"></div>
+      <div class="char-detail navy-detail" id="navyDetail"></div>
+    </div>
+  </div></div>
   <div class="g-open" id="gOpen"><div class="cap"><i class="cap-top"></i><i class="cap-bot"></i></div><div class="cap-light"></div></div>
   <div class="g-result" id="gResult">
     <div class="g-res-card">
@@ -206,7 +230,7 @@
 <!-- 角色選擇 -->
 <div class="modal" id="charModal" role="dialog" aria-modal="true" aria-labelledby="charTitle">
   <div class="modal-card wide">
-    <header><h2 id="charTitle">選擇你的船長</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <header><h2 id="charTitle">船員</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
     <p class="modal-note" id="quotaNote"></p>
     <div class="char-grid" id="charGrid"></div>
     <div class="char-detail" id="charDetail"></div>
@@ -241,7 +265,7 @@
         <button data-tab="chars">角色與技能</button>
         <button data-tab="chapters">篇章與 BOSS</button>
         <button data-tab="story">劇情與對話</button>
-        <button data-tab="gacha">扭蛋機</button>
+        <button data-tab="gacha">懸賞處</button>
         <button data-tab="news">公告</button>
         <button data-tab="tools">備份與工具</button>
       </nav>
@@ -251,6 +275,18 @@
   </div>
 </div>
 
+<!-- 新手拉霸 -->
+<div class="modal" id="slotModal" role="dialog" aria-modal="true" aria-labelledby="slotTitle">
+  <div class="modal-card slot-card">
+    <header><h2 id="slotTitle">新手拉霸</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <p class="modal-note">拉下拉桿！三格停在同一位船員，他就會以 <b>LV 100</b> 加入角色背包。新手福利只有一次。</p>
+    <div class="slot"><div class="slot-frame"><div class="reel"><div class="strip" id="reel0"></div></div><div class="reel"><div class="strip" id="reel1"></div></div><div class="reel"><div class="strip" id="reel2"></div></div><div class="slot-line"></div></div>
+      <button class="slot-lever" id="slotLever" aria-label="拉下拉桿"><i></i><b></b></button></div>
+    <div class="slot-result" id="slotResult"></div>
+    <footer><button class="btn-gold big" id="slotSpin">拉下拉桿</button></footer>
+  </div>
+</div>
+<!-- 商店 -->
 <!-- 背包 -->
 <div class="modal" id="bagModal" role="dialog" aria-modal="true" aria-labelledby="bagTitle">
   <div class="modal-card">
@@ -278,7 +314,9 @@
 <script src="js/battle.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/fx_choreo.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/app.js"></script>
+<script src="js/hub.js"></script>
 </body>
 </html>

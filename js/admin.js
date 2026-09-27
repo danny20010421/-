@@ -41,12 +41,22 @@ function renderAdmin(tab) {
   if (tab === 'general') {
     P.innerHTML = `<h3>基本規則</h3><p class="an">存檔後立即套用到下一場戰鬥與下一次登島。</p><div class="agrid">
       ${field('每回合選技秒數', 'turnSeconds', S.turnSeconds, 'number', 'min="5" max="120"')}
-      ${field('能力階級倍率（每階）', 'stageStep', S.stageStep, 'number', 'step="0.01" min="0.01" max="1"')}
       ${field('BOSS 復活次數', 'bossRevives', S.bossRevives, 'number', 'min="0" max="5"')}
       ${field('每場可用道具次數', 'itemsPerBattle', S.itemsPerBattle, 'number', 'min="0" max="20"')}
       ${field('新玩家初始寶藏幣', 'startTokens', S.startTokens, 'number', 'min="0"')}
       ${field('首次通關獎勵寶藏幣', 'clearBonus', S.clearBonus, 'number', 'min="0"')}
-      ${field('每日可登錄角色數', 'dailyLimit', S.dailyLimit, 'number', 'min="1" max="7"')}
+      ${field('替補船員分享經驗比例', 'shareExp', S.shareExp, 'number', 'step="0.05" min="0" max="1"')}
+      ${field('攻擊每階增減（0.10 = 10%）', 'atkStep', S.atkStep, 'number', 'step="0.01" min="0" max="0.5"')}
+      ${field('防禦每階增減', 'defStep', S.defStep, 'number', 'step="0.01" min="0" max="0.5"')}
+      ${field('速度每階增減', 'spdStep', S.spdStep, 'number', 'step="0.01" min="0" max="0.5"')}
+      ${field('冰凍每回合扣血', 'freezeDot', S.freezeDot, 'number', 'step="0.01" min="0" max="0.5"')}
+      ${field('冰凍速度下降', 'freezeSlow', S.freezeSlow, 'number', 'step="0.05" min="0" max="0.9"')}
+      ${field('燒傷每回合扣血', 'burnDot', S.burnDot, 'number', 'step="0.01" min="0" max="0.5"')}
+      ${field('虛弱時傷害下降', 'weakDealt', S.weakDealt, 'number', 'step="0.05" min="0" max="0.9"')}
+      ${field('破防時受傷增加', 'armorBreak', S.armorBreak, 'number', 'step="0.01" min="0" max="1"')}
+      ${field('首殺 BOSS 加入機率', 'bossJoinFirst', S.bossJoinFirst, 'number', 'step="0.05" min="0" max="1"')}
+      ${field('重複擊敗 BOSS 加入機率', 'bossJoinRepeat', S.bossJoinRepeat, 'number', 'step="0.05" min="0" max="1"')}
+      ${field('BOSS 加入時的等級', 'bossJoinLv', S.bossJoinLv, 'number', 'min="1" max="100"')}
       <label class="af check"><input name="unlockAll" type="checkbox" ${S.unlockAll ? 'checked' : ''}><span>全部篇章直接開放（不需依序解鎖）</span></label>
     </div>`;
   } else if (tab === 'chars') {
@@ -77,7 +87,7 @@ function renderAdmin(tab) {
     P.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => { if (collectAdmin()) { admChapter = b.dataset.ch; renderAdmin('story'); } });
   } else if (tab === 'gacha') {
     P.innerHTML = `<h3>扭蛋機</h3><p class="an">機率會自動換算成總和 100%。</p><div class="agrid four">${Object.keys(RARITY).map(k => field(`${k} 機率（%）`, 'rate_' + k, Math.round(RARITY[k].rate * 1000) / 10, 'number', 'step="0.1" min="0"')).join('')}</div>
-      <div class="agrid">${field('單抽花費', 'single', GACHA_COST.single)}${field('十連花費', 'ten', GACHA_COST.ten)}</div>`;
+      <div class="agrid">${field('單抽花費', 'single', GACHA_COST.single)}${field('十連花費', 'ten', GACHA_COST.ten)}${field('每抽出現角色機率（%）', 'charRate', Math.round(GAME_SETTINGS.charRate * 1000) / 10, 'number', 'step="0.1" min="0" max="100"')}${field('抽到角色的等級', 'charLv', GAME_SETTINGS.charLv, 'number', 'min="1" max="100"')}</div>`;
   } else if (tab === 'news') {
     P.innerHTML = `<h3>公告</h3><p class="an">公告編輯器會另外開啟。</p><button class="btn-primary" id="admNews">開啟公告編輯器</button>`;
     $('admNews').onclick = () => { closeModal('adminModal'); openNewsEditor(); };
@@ -87,7 +97,9 @@ function renderAdmin(tab) {
       <label class="btn-ghost filebtn">匯入後台設定<input type="file" accept="application/json" id="admImport"></label>
       <button class="btn-ghost" data-t="tokens">給自己 10 枚寶藏幣</button>
       <button class="btn-ghost" data-t="unlock">標記全部篇章已通關</button>
-      <button class="btn-ghost" data-t="daily">清除今日角色登錄</button>
+      <button class="btn-ghost" data-t="lvup">目前船長 +10 級</button>
+      <button class="btn-ghost" data-t="allchars">獲得全部角色（LV 50）</button>
+      <button class="btn-ghost" data-t="freedraw">重置新手免費召喚</button>
       <button class="btn-ghost danger" data-t="resetSave">清除遊戲進度</button>
       <button class="btn-ghost danger" data-t="resetAdmin">後台設定恢復預設</button></div>`;
     P.querySelectorAll('[data-t]').forEach(b => b.onclick = () => adminTool(b.dataset.t));
@@ -99,7 +111,7 @@ function collectAdmin() {
   const P = $('adminPane'), tab = document.querySelector('#adminNav .on').dataset.tab, v = (n, root) => (root || P).querySelector(`[name="${n}"]`);
   try {
     if (tab === 'general') {
-      ADM.settings = {}; ['turnSeconds', 'stageStep', 'bossRevives', 'itemsPerBattle', 'startTokens', 'clearBonus', 'dailyLimit'].forEach(k => ADM.settings[k] = num(v(k).value, GAME_SETTINGS[k]));
+      ADM.settings = Object.assign(ADM.settings || {}, {}); ['turnSeconds', 'bossRevives', 'itemsPerBattle', 'startTokens', 'clearBonus', 'shareExp', 'atkStep', 'defStep', 'spdStep', 'freezeDot', 'freezeSlow', 'burnDot', 'weakDealt', 'armorBreak', 'bossJoinFirst', 'bossJoinRepeat', 'bossJoinLv'].forEach(k => ADM.settings[k] = num(v(k).value, GAME_SETTINGS[k]));
       ADM.settings.unlockAll = v('unlockAll').checked;
     } else if (tab === 'chars') {
       ADM.characters = ADM.characters || {}; const o = { name: v('name').value.trim(), title: v('title').value.trim(), maxHp: num(v('maxHp').value), baseSpeed: num(v('baseSpeed').value), scale: num(v('scale').value), desc: v('desc').value, skills: [] };
@@ -117,7 +129,7 @@ function collectAdmin() {
     } else if (tab === 'gacha') {
       const rates = {}; let tot = 0; Object.keys(RARITY).forEach(k => { rates[k] = Math.max(0, num(v('rate_' + k).value, 0)); tot += rates[k]; });
       if (tot <= 0) throw new Error('機率總和必須大於 0');
-      ADM.rarity = {}; Object.keys(rates).forEach(k => ADM.rarity[k] = { rate: rates[k] / tot }); ADM.cost = { single: Math.max(0, num(v('single').value, 1)), ten: Math.max(0, num(v('ten').value, 9)) };
+      ADM.rarity = {}; Object.keys(rates).forEach(k => ADM.rarity[k] = { rate: rates[k] / tot }); ADM.cost = { single: Math.max(0, num(v('single').value, 1)), ten: Math.max(0, num(v('ten').value, 9)) }; ADM.settings = Object.assign(ADM.settings || {}, { charRate: Math.min(1, Math.max(0, num(v('charRate').value, 3) / 100)), charLv: Math.min(100, Math.max(1, num(v('charLv').value, 20))) });
     }
     return true;
   } catch (e) { $('adminStatus').textContent = e.message; $('adminStatus').className = 'astatus err'; return false; }
@@ -133,7 +145,9 @@ function adminTool(t) {
   if (t === 'export') { const blob = new Blob([JSON.stringify(adminLoad(), null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'op_admin_config.json'; a.click(); }
   if (t === 'tokens') { addTokens(10, '後台發放'); }
   if (t === 'unlock') { CHAPTERS.forEach(c => SAVE.data.chapters[c.id].cleared = true); SAVE.save(); toast('全部篇章已標記通關'); }
-  if (t === 'daily') { localStorage.removeItem(DAILY_KEY); toast('今日角色登錄已清除'); }
+  if (t === 'lvup') { const r = SAVE.data.roster[SAVE.data.player]; if (r) { r.lv = Math.min(MAX_LV, r.lv + 10); r.exp = 0; SAVE.save(); toast(`${CHARACTERS[SAVE.data.player].name} 升到 LV ${r.lv}`); } }
+  if (t === 'allchars') { CHARACTER_ORDER.forEach(id => addCrew(id, 50)); toast('已獲得全部角色'); }
+  if (t === 'freedraw') { SAVE.data.freeDraw = false; SAVE.save(); toast('新手免費召喚已重置'); }
   if (t === 'resetSave') confirmBox('清除遊戲進度？', '寶藏幣、背包與篇章進度都會歸零，無法復原。', '清除', () => { localStorage.removeItem(SAVE.key); SAVE.load(); coins(); loginInfo(); toast('遊戲進度已清除'); });
   if (t === 'resetAdmin') confirmBox('恢復預設設定？', '所有後台修改（數值、BOSS、劇情、扭蛋）都會還原。', '恢復', () => { localStorage.removeItem(ADMIN_KEY); ADM = {}; adminApply({}); renderAdmin('tools'); toast('後台設定已恢復預設'); });
 }

@@ -9,15 +9,16 @@ const SAVE = {
   load() {
     let d = null; try { d = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { }
     if (!d) d = { tokens: GAME_SETTINGS.startTokens, inventory: { potion_s: 2, pp_s: 1 }, chapters: {}, player: 'luffy', pulls: 0, pity: 0 };
-    CHAPTERS.forEach(c => { d.chapters[c.id] = Object.assign({ step: 0, collected: [], defeated: [], roster: null, cleared: false, rewarded: [] }, d.chapters[c.id] || {}); });
-    d.inventory = d.inventory || {}; this.data = d; return d;
+    CHAPTERS.forEach(c => { d.chapters[c.id] = Object.assign({ step: 0, collected: [], defeated: [], talked: [], roster: null, cleared: false, rewarded: [] }, d.chapters[c.id] || {}); if (d.chapters[c.id].step > c.steps.length) d.chapters[c.id].step = c.steps.length; });
+    d.berry = d.berry || 0; d.roster = d.roster || {}; if (!Array.isArray(d.lineup)) d.lineup = d.player && d.roster[d.player] ? [d.player] : []; d.lineup = d.lineup.filter(id => d.roster[id]).slice(0, GAME_SETTINGS.lineupMax); if (d.lineup.length) d.player = d.lineup[0]; d.inventory = d.inventory || {};
+    if (!d.roster) { d.roster = {}; if (CHAPTERS.some(c => d.chapters[c.id].step > 0 || d.chapters[c.id].cleared) && CHARACTERS[d.player]) d.roster[d.player] = { lv: 40, exp: 0 }; }
+    if (d.player && !d.roster[d.player]) d.player = Object.keys(d.roster)[0] || 'luffy';
+    this.data = d; return d;
   },
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { } }
 };
 const DAILY_KEY = 'op_rpg_daily_characters_v1';
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-function dailyUsage() { let d = { date: today(), ids: [] }; try { const p = JSON.parse(localStorage.getItem(DAILY_KEY) || 'null'); if (p && p.date === today() && Array.isArray(p.ids)) d = { date: p.date, ids: [...new Set(p.ids)].slice(0, GAME_SETTINGS.dailyLimit) }; } catch (e) { } return d; }
-function dailyRegister(id) { const d = dailyUsage(); if (d.ids.includes(id)) return true; if (d.ids.length >= GAME_SETTINGS.dailyLimit) return false; d.ids.push(id); try { localStorage.setItem(DAILY_KEY, JSON.stringify(d)); } catch (e) { } return true; }
 
 /* ---------- 共用 UI ---------- */
 let toastT = null;
@@ -37,7 +38,13 @@ function showScreen(id) {
 }
 function syncSound() { const off = AUDIO.pref.muted; document.querySelectorAll('[data-snd]').forEach(b => { b.classList.toggle('off', off); b.setAttribute('aria-pressed', String(!off)); }); $('soundBtn').textContent = '音樂：' + (off ? '關' : '開'); }
 function toggleSound() { AUDIO.setPref({ muted: !AUDIO.pref.muted }); AUDIO.unlock(); syncSound(); }
-function coins() { ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); }
+function coins() { ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); }
+function addBerry(n) { if (!n) return; SAVE.data.berry = (SAVE.data.berry || 0) + n; SAVE.save(); coins(); document.querySelectorAll('.coin.berry').forEach(el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }); }
+/* 陣容：最多 GAME_SETTINGS.lineupMax 人，第一位是先鋒（也是在島上行走的角色） */
+function syncLeader() { const L = SAVE.data.lineup; if (L.length) SAVE.data.player = L[0]; SAVE.save(); }
+function inLineup(id) { return SAVE.data.lineup.includes(id); }
+function lineupAdd(id, front) { const L = SAVE.data.lineup; if (L.includes(id)) { if (front) { L.splice(L.indexOf(id), 1); L.unshift(id); } } else { if (L.length >= GAME_SETTINGS.lineupMax) L.pop(); front ? L.unshift(id) : L.push(id); } syncLeader(); }
+function lineupRemove(id) { const L = SAVE.data.lineup; if (L.length <= 1) return false; L.splice(L.indexOf(id), 1); syncLeader(); return true; }
 function addTokens(n, why) { if (!n) return; SFX.play('coin'); SAVE.data.tokens += n; SAVE.save(); coins(); toast(`獲得寶藏幣 ×${n}${why ? '・' + why : ''}`, 'gold'); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i) && $(i).parentElement; if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }); }
 const ICONS = {
   potion: '<path d="M26 8h12v10l10 16a14 14 0 0 1-12 22h-8A14 14 0 0 1 16 34l10-16z" fill="var(--c)"/><path d="M24 6h16v6H24z" fill="#8a6240"/><path d="M20 38h24a10 10 0 0 1-10 12h-4a10 10 0 0 1-10-12z" fill="#fff" opacity=".35"/>',
@@ -46,6 +53,7 @@ const ICONS = {
   fruit: '<circle cx="32" cy="36" r="18" fill="var(--c)"/><path d="M32 18c0-6 4-10 8-10" stroke="#5a3d27" stroke-width="3" fill="none"/><path d="M34 16c6-6 14-4 16 0-6 4-12 4-16 0z" fill="#4f8f3a"/><circle cx="25" cy="30" r="4" fill="#fff" opacity=".4"/>',
   scroll: '<rect x="14" y="16" width="36" height="32" rx="3" fill="#efe2c0"/><rect x="10" y="12" width="44" height="8" rx="4" fill="var(--c)"/><rect x="10" y="44" width="44" height="8" rx="4" fill="var(--c)"/><path d="M20 26h24M20 32h18M20 38h22" stroke="#8a6240" stroke-width="2"/>',
   meat: '<path d="M14 40c-4-12 6-26 20-26s22 12 18 22-18 16-28 12z" fill="var(--c)"/><path d="M20 38c-2-8 4-16 14-16" stroke="#fff" stroke-width="3" opacity=".35" fill="none"/><rect x="40" y="38" width="16" height="6" rx="3" fill="#f4ead2" transform="rotate(30 48 41)"/><circle cx="56" cy="48" r="4" fill="#f4ead2"/>',
+  book: '<rect x="14" y="10" width="36" height="44" rx="3" fill="var(--c)"/><rect x="18" y="10" width="4" height="44" fill="#000" opacity=".25"/><rect x="26" y="20" width="18" height="4" rx="2" fill="#fff" opacity=".7"/><rect x="26" y="28" width="14" height="3" rx="1.5" fill="#fff" opacity=".5"/><path d="M32 38l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1z" fill="#ffe7a0"/>',
   feather: '<path d="M46 8C28 12 16 30 18 52l6-4c2-18 10-30 22-40z" fill="var(--c)"/><path d="M18 52L40 18" stroke="#b8433a" stroke-width="2"/><path d="M22 40l-6-2M26 32l-8-4M30 25l-6-5" stroke="#fff" stroke-width="2" opacity=".5"/>'
 };
 function itemIcon(it) { return `<svg class="ico" viewBox="0 0 64 64" style="--c:${it.color}">${ICONS[it.icon] || ICONS.potion}</svg>`; }
@@ -82,37 +90,84 @@ function openNewsEditor() {
   };
   openModal('newsEditModal');
 }
-function loginInfo() { const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters[c.id].cleared).length; $('loginSaveInfo').textContent = cl || d.pulls ? `航海進度 ${cl}/${CHAPTERS.length} 篇章・寶藏幣 ${d.tokens}` : '第一次出航？先選一位船長。'; }
 
-/* ---------- 角色選擇 ---------- */
-let pickChar = null;
-function openCharModal() {
-  pickChar = SAVE.data.player || 'luffy'; const u = dailyUsage();
-  $('quotaNote').innerHTML = `每天最多登錄 ${GAME_SETTINGS.dailyLimit} 位不同角色，今天已登錄 <b>${u.ids.length}/${GAME_SETTINGS.dailyLimit}</b>${u.ids.length ? '：' + u.ids.map(i => CHARACTERS[i].name).join('、') : ''}。`;
-  renderCharGrid(); openModal('charModal');
+/* ---------- 船員與培養 ---------- */
+function owned(id) { return !!(SAVE.data.roster || {})[id]; }
+function crewLv(id) { return owned(id) ? SAVE.data.roster[id].lv : 1; }
+function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); return true; }
+/* 增加經驗，回傳升級資訊 */
+function gainExp(id, n, silent) {
+  const r = SAVE.data.roster[id]; if (!r || !n) return null;
+  if (!silent) Object.keys(SAVE.data.roster).forEach(o => { if (o !== id && SAVE.data.roster[o].lv < MAX_LV) gainExp(o, Math.round(n * GAME_SETTINGS.shareExp), true); });
+  const from = r.lv, unlocked = []; r.exp += n;
+  while (r.lv < MAX_LV && r.exp >= expNeed(r.lv)) { r.exp -= expNeed(r.lv); r.lv++; const si = SKILL_UNLOCK.indexOf(r.lv); if (si >= 0 && CHARACTERS[id].skills[si]) unlocked.push(CHARACTERS[id].skills[si].name); }
+  if (r.lv >= MAX_LV) r.exp = 0;
+  SAVE.save();
+  const tierUp = tierOf(r.lv) > tierOf(from);
+  if (r.lv > from && !silent) { SFX.play('rare'); toast(`${CHARACTERS[id].name} 升到 LV ${r.lv}！${unlocked.length ? '學會「' + unlocked.join('」「') + '」' : ''}`, 'gold'); }
+  return { from, to: r.lv, unlocked, tierUp, gained: n };
 }
-function renderCharGrid() {
-  const u = dailyUsage();
-  $('charGrid').innerHTML = CHARACTER_ORDER.map(id => { const c = CHARACTERS[id]; const locked = !u.ids.includes(id) && u.ids.length >= GAME_SETTINGS.dailyLimit; return `<button class="char ${id === pickChar ? 'on' : ''} ${locked ? 'locked' : ''}" data-id="${id}" aria-pressed="${id === pickChar}"><img src="${c.image}" alt="" loading="lazy"><span class="c-name">${c.name}</span>${u.ids.includes(id) ? '<span class="c-badge">今日已登錄</span>' : locked ? '<span class="c-badge off">明天可用</span>' : ''}</button>`; }).join('');
-  $('charGrid').querySelectorAll('.char').forEach(b => b.onclick = () => { pickChar = b.dataset.id; renderCharGrid(); });
-  const c = CHARACTERS[pickChar];
-  $('charDetail').innerHTML = `<img src="${c.avatar}" alt=""><div><h3>${c.name}<small>${c.title}</small></h3><div class="pl-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}</div><p>${c.desc}</p><dl><div><dt>體力</dt><dd>${c.maxHp}</dd></div><div><dt>速度</dt><dd>${c.baseSpeed}</dd></div><div><dt>奧義</dt><dd>${(c.skills.find(s => s.ultimate) || c.skills[c.skills.length - 1]).name}</dd></div></dl></div>`;
+function expText(res) { if (!res) return ''; let t = `經驗 +${res.gained}`; if (res.to > res.from) t += `，升到 <b>LV ${res.to}</b>`; if (res.tierUp) t += `，晉升「${TIERS[tierOf(res.to)].name}」`; if (res.unlocked.length) t += `，學會「${res.unlocked.join('」「')}」`; return t; }
+function tierBadge(lv) { const t = TIERS[tierOf(lv)]; return `<span class="tier" style="--c:${t.color}">${t.name}</span>`; }
+function charSource(id) { const ch = CHAPTERS.find(c => c.boss === id); return [STARTERS.includes(id) ? '入門船員' : null, `懸賞處（每抽 ${Math.round(GAME_SETTINGS.charRate * 1000) / 10}%）`, ch ? `首次擊敗「${ch.name}」的 BOSS` : null].filter(Boolean).join('、'); }
+
+/* 首次遊玩：選擇入門船員 */
+let pickChar = null, crewMode = 'crew';
+function openStarter() {
+  crewMode = 'starter'; pickChar = pickChar && STARTERS.includes(pickChar) ? pickChar : STARTERS[0];
+  $('charTitle').textContent = '你的入門船員';
+  $('quotaNote').innerHTML = '初登場的魯夫、索隆、香吉士會一起以 <b>LV 1</b> 加入並上陣。先選一位當<b>先鋒</b>，戰鬥時可以隨時換人。打贏敵人、完成任務、使用經驗書就能升級、學會新技能。之後還能在拉霸機免費召喚一位 <b>LV 100</b> 船員！';
+  renderCrew(); $('charConfirm').textContent = '由他擔任先鋒'; $('charConfirm').style.display = ''; openModal('charModal');
 }
-function confirmChar() {
-  if (!dailyRegister(pickChar)) { toast(`今天已登錄 ${GAME_SETTINGS.dailyLimit} 位角色，請從已登錄的角色中選擇`, 'warn'); renderCharGrid(); return; }
-  SAVE.data.player = pickChar; SAVE.save(); closeModal('charModal'); openChart();
+function openCrew() {
+  crewMode = 'crew'; pickChar = SAVE.data.player;
+  $('charTitle').textContent = '角色背包';
+  $('quotaNote').innerHTML = `已擁有 <b>${Object.keys(SAVE.data.roster).length}/${CHARACTER_ORDER.length}</b> 位船員，陣容 <b>${SAVE.data.lineup.length}/${GAME_SETTINGS.lineupMax}</b>。陣容裡的船員會在戰鬥中出戰並拿到全部經驗；第一位是先鋒。`;
+  $('charConfirm').style.display = 'none'; renderCrew(); openModal('charModal');
 }
+function renderCrew() {
+  const list = crewMode === 'starter' ? STARTERS : CHARACTER_ORDER;
+  $('charGrid').innerHTML = list.map(id => { const c = CHARACTERS[id], own = owned(id) || crewMode === 'starter', lv = crewMode === 'starter' ? 1 : crewLv(id);
+    return `<button class="char ${id === pickChar ? 'on' : ''} ${own ? '' : 'locked'}" data-id="${id}" aria-pressed="${id === pickChar}"><img src="${c.image}" alt="" loading="lazy">${own ? `<span class="c-lv" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : '<span class="c-badge off">未獲得</span>'}${id === SAVE.data.player && crewMode === 'crew' ? '<span class="c-badge">船長</span>' : ''}<span class="c-name">${c.name}</span></button>`; }).join('');
+  $('charGrid').querySelectorAll('.char').forEach(b => { b.onclick = () => { pickChar = b.dataset.id; renderCrew(); }; const k = SAVE.data.lineup.indexOf(b.dataset.id); if (crewMode === 'crew' && k >= 0) b.insertAdjacentHTML('beforeend', `<span class="c-team">${k === 0 ? '先鋒' : '陣容 ' + (k + 1)}</span>`); });
+  const c = CHARACTERS[pickChar], own = owned(pickChar), lv = crewMode === 'starter' ? 1 : crewLv(pickChar), L = lvStats(c, lv), r = SAVE.data.roster[pickChar];
+  const expPct = r && lv < MAX_LV ? Math.min(100, r.exp / expNeed(lv) * 100) : 100;
+  const skills = c.skills.map((s, i) => { const need = SKILL_UNLOCK[i] || 1, ok = lv >= need; return `<li class="${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}"><b>${s.name}</b><span>${ok ? s.desc : `LV ${need} 解鎖`}</span></li>`; }).join('');
+  const books = crewMode === 'crew' && own ? ['exp_s', 'exp_m', 'exp_l'].filter(k => SAVE.data.inventory[k] > 0).map(k => `<button class="btn-ghost sm" data-book="${k}">使用${ITEMS[k].name}（${SAVE.data.inventory[k]}）</button>`).join('') : '';
+  $('charDetail').innerHTML = `<img src="${c.avatar}" alt=""><div class="cd-main">
+    <h3>${c.name}<small>${c.title}</small></h3>
+    <div class="cd-row"><div class="pl-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}</div>${own || crewMode === 'starter' ? tierBadge(lv) : ''}</div>
+    <p>${c.desc}</p>
+    ${own || crewMode === 'starter' ? `<div class="cd-exp"><span>LV ${lv}</span><div class="bar"><i style="width:${expPct}%"></i></div><small>${lv >= MAX_LV ? '已達最高等級' : r ? `${r.exp}/${expNeed(lv)}` : `0/${expNeed(1)}`}</small></div>
+    <dl><div><dt>體力</dt><dd>${L.hp}</dd></div><div><dt>速度</dt><dd>${L.spd}</dd></div><div><dt>傷害倍率</dt><dd>×${L.dmg.toFixed(2)}</dd></div><div><dt>技能次數</dt><dd>${L.ppAdj ? L.ppAdj : '滿'}</dd></div></dl>` : `<p class="cd-src">取得方式：${charSource(pickChar)}</p>`}
+    <ul class="cd-skills">${skills}</ul>
+    ${crewMode === 'crew' && own ? `<div class="cd-actions">${inLineup(pickChar) ? `<span class="cd-cap">陣容第 ${SAVE.data.lineup.indexOf(pickChar) + 1} 位${SAVE.data.lineup[0] === pickChar ? '・先鋒' : ''}</span>${SAVE.data.lineup[0] !== pickChar ? '<button class="btn-gold" id="setLead">設為先鋒</button>' : ''}<button class="btn-ghost" id="lnOut" ${SAVE.data.lineup.length <= 1 ? 'disabled' : ''}>移出陣容</button>` : `<button class="btn-primary" id="lnIn">${SAVE.data.lineup.length >= GAME_SETTINGS.lineupMax ? '加入陣容（替換最後一位）' : '加入陣容'}</button>`}${books}</div>` : ''}
+  </div>`;
+  const reCrew = () => { renderCrew(); if (currentScreen === 'chapterScreen') openChart(selChapter); };
+  const bi = $('lnIn'); if (bi) bi.onclick = () => { lineupAdd(pickChar); toast(`${c.name} 加入陣容`); reCrew(); };
+  const bo = $('lnOut'); if (bo) bo.onclick = () => { if (lineupRemove(pickChar)) { toast(`${c.name} 移出陣容`); reCrew(); } };
+  const bl = $('setLead'); if (bl) bl.onclick = () => { lineupAdd(pickChar, true); toast(`${c.name} 成為先鋒`); reCrew(); };
+  $('charDetail').querySelectorAll('[data-book]').forEach(b => b.onclick = () => { const k = b.dataset.book; if (!(SAVE.data.inventory[k] > 0)) return; if (crewLv(pickChar) >= MAX_LV) { toast('已經是最高等級了'); return; } SAVE.data.inventory[k]--; SAVE.save(); gainExp(pickChar, ITEMS[k].effect.exp); renderCrew(); });
+}
+function confirmStarter() {
+  STARTERS.forEach(id => addCrew(id, 1)); SAVE.data.lineup = [pickChar, ...STARTERS.filter(x => x !== pickChar)].slice(0, GAME_SETTINGS.lineupMax); syncLeader(); closeModal('charModal');
+  toast(`三位初登場船員都上陣了！由${CHARACTERS[pickChar].name}擔任先鋒`, 'gold');
+  openGacha('chapterScreen'); setTimeout(openSlot, 700);
+}
+function loginInfo() { const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters[c.id].cleared).length, n = Object.keys(d.roster).length; $('loginSaveInfo').textContent = n ? `船員 ${n} 位・航海進度 ${cl}/${CHAPTERS.length} 篇章・寶藏幣 ${d.tokens}` : '第一次出航？先選一位入門船員。'; }
+function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openChart(); }
 
 /* ---------- 篇章海圖 ---------- */
-const NODE_POS_WIDE = [[12, 70], [31, 38], [51, 64], [70, 30], [86, 58]], NODE_POS_TALL = [[24, 92], [72, 72], [28, 52], [72, 30], [32, 8]];
+const NODE_POS_WIDE = [[8, 74], [20, 40], [32, 72], [44, 34], [56, 68], [68, 30], [80, 64], [92, 32]], NODE_POS_TALL = [[24, 95], [72, 82], [28, 68], [72, 54], [28, 40], [72, 27], [28, 14], [72, 2]];
 let NODE_POS = NODE_POS_WIDE;
 let selChapter = null;
 function chapterUnlocked(i) { return i === 0 || GAME_SETTINGS.unlockAll || SAVE.data.chapters[CHAPTERS[i - 1].id].cleared; }
 function openChart(focus) {
   coins(); const d = SAVE.data, pc = CHARACTERS[d.player];
   NODE_POS = innerWidth < 860 ? NODE_POS_TALL : NODE_POS_WIDE;
-  $('captainChip').innerHTML = `<img src="${pc.avatar}" alt=""><div><b>${pc.name}</b><small>${pc.title}</small></div><button class="btn-ghost sm" id="swapChar">換角色</button>`;
-  $('swapChar').onclick = openCharModal;
+  const plv = crewLv(d.player);
+  $('captainChip').innerHTML = `<img src="${pc.avatar}" alt=""><div><b>${pc.name}<em>LV ${plv}</em></b><small>${TIERS[tierOf(plv)].name}</small></div><button class="btn-ghost sm" id="swapChar">船員</button>`;
+  $('swapChar').onclick = openCrew;
   const path = NODE_POS.map(([x, y], i) => `${i ? 'L' : 'M'}${x * 10} ${y * 6}`).join(' ');
   const doneIdx = CHAPTERS.findIndex(c => !d.chapters[c.id].cleared);
   const donePath = NODE_POS.slice(0, (doneIdx < 0 ? CHAPTERS.length : doneIdx) + 1).map(([x, y], i) => `${i ? 'L' : 'M'}${x * 10} ${y * 6}`).join(' ');
@@ -132,64 +187,89 @@ function selectChapter(id) {
       <div class="arc-head"><h2>${c.name}</h2><span class="stars" aria-label="難度 ${diff.stars} 顆星">${'★'.repeat(diff.stars)}<i>${'★'.repeat(5 - diff.stars)}</i></span></div>
       <p class="arc-sub">${c.subtitle}</p>
       <p class="arc-blurb">${c.blurb}</p>
-      <div class="arc-boss"><img src="${boss.avatar}" alt=""><div><small>篇章 BOSS</small><b>${c.bossTitle}</b></div></div>
+      ${c.rhythm ? `<p class="arc-rhythm">${c.rhythm}</p>` : ''}
+      <div class="arc-boss"><img src="${boss.avatar}" alt=""><div><small>篇章 BOSS・LV ${ENEMY_LEVEL[id] + BOSS_LEVEL_BONUS}</small><b>${c.bossTitle}</b></div><span class="arc-lv">敵人 LV ${ENEMY_LEVEL[id]}</span></div>
       <div class="arc-prog"><div class="bar"><i style="width:${done / total * 100}%"></i></div><span>${un ? (st.cleared ? '已完成' : `任務 ${done}/${total}：${next}`) : `完成「${CHAPTERS[i - 1].name}」後解鎖`}</span></div>
       <div class="arc-actions">${un ? `<button class="btn-primary big" id="sailBtn">${st.cleared ? '再次登島' : st.step ? '繼續冒險' : '出航'}</button>${st.cleared ? '<button class="btn-ghost" id="replayBtn">重玩劇情</button>' : ''}` : '<button class="btn-primary big" disabled>尚未解鎖</button>'}</div>
     </div>`;
   const sail = $('sailBtn'); if (sail) sail.onclick = () => enterChapter(id);
-  const rp = $('replayBtn'); if (rp) rp.onclick = () => confirmBox('重玩劇情？', '任務進度會從頭開始，敵人重新出現。已領過的寶藏幣不會重複發放。', '重玩', () => { Object.assign(st, { step: 0, collected: [], defeated: [], roster: null }); SAVE.save(); enterChapter(id); });
+  const rp = $('replayBtn'); if (rp) rp.onclick = () => confirmBox('重玩劇情？', '任務進度會從頭開始，敵人重新出現。已領過的寶藏幣不會重複發放。', '重玩', () => { Object.assign(st, { step: 0, collected: [], defeated: [], talked: [], roster: null }); SAVE.save(); enterChapter(id); });
   const card = $('arcCard'); card.classList.remove('swap'); void card.offsetWidth; card.classList.add('swap');
 }
 
 /* ---------- 3D 世界與劇情 ---------- */
-let WORLD = null, CH = null;
+let WORLD = null, CH = null, TIMED = null, CHAIN = null;
 const ENEMY_SPOTS = [[-32, -24], [30, -30], [-8, -18], [-46, 22], [44, 18]];
 function chState() { return SAVE.data.chapters[CH.id]; }
+function curStep() { const st = chState(); return st.cleared && st.step >= CH.steps.length ? null : CH.steps[Math.min(st.step, CH.steps.length - 1)]; }
 function worldState() {
-  const st = chState(), step = CH.steps[Math.min(st.step, CH.steps.length - 1)], pid = SAVE.data.player;
-  if (!st.roster) { const pool = CHARACTER_ORDER.filter(id => id !== CH.boss && id !== pid); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[pool[i], pool[j]] = [pool[j], pool[i]]; } st.roster = pool.slice(0, 3); SAVE.save(); }
-  const enemies = st.roster.map((id, i) => ({ id, x: ENEMY_SPOTS[i][0], z: ENEMY_SPOTS[i][1], boss: false })).filter(e => !st.defeated.includes(e.id));
-  if (!(st.cleared && st.step >= CH.steps.length)) enemies.push({ id: CH.boss, x: CH.bossPos[0], z: CH.bossPos[1], boss: true });
-  const collectStep = CH.steps.find(s => s.type === 'collect'); const ci = CH.steps.indexOf(collectStep);
-  const items = st.step === ci ? collectStep.spots.map((p, i) => ({ idx: i, x: p[0], z: p[1], icon: collectStep.icon, label: collectStep.item })).filter(it => !st.collected.includes(it.idx)) : [];
+  const st = chState(), step = curStep(), pid = SAVE.data.player;
+  st.talked = st.talked || [];
+  if (!st.roster || st.roster.some(id => STARTERS.includes(id))) { const pool = CHARACTER_ORDER.filter(id => id !== CH.boss && id !== pid && !STARTERS.includes(id)); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[pool[i], pool[j]] = [pool[j], pool[i]]; } st.roster = pool.slice(0, 3); SAVE.save(); }
+  if (step && step.type === 'gauntlet' && st.roster.filter(id => !st.defeated.includes(id)).length < step.count) { st.defeated = []; SAVE.save(); }
+  const elv = ENEMY_LEVEL[CH.id] || 1;
+  const enemies = st.roster.map((id, i) => ({ id, x: ENEMY_SPOTS[i][0], z: ENEMY_SPOTS[i][1], boss: false, lv: elv })).filter(e => !st.defeated.includes(e.id));
+  if (step) enemies.push({ id: CH.boss, x: CH.bossPos[0], z: CH.bossPos[1], boss: true, lv: elv + BOSS_LEVEL_BONUS });
+  const items = step && (step.type === 'collect' || step.type === 'timedCollect') ? step.spots.map((p, i) => ({ idx: i, x: p[0], z: p[1], icon: step.icon, label: step.item })).filter(it => !st.collected.includes(it.idx)) : [];
   const bossUnlocked = st.cleared || CH.steps.slice(0, st.step).some(s => s.unlockBoss);
-  let target = null;
-  if (!(st.cleared && st.step >= CH.steps.length)) { if (step.type === 'talk') target = { type: 'npc', id: step.npc }; else if (step.type === 'boss') target = { type: 'boss' }; }
-  const clear = [...ENEMY_SPOTS.map(p => [p[0], p[1], 7]), ...collectStep.spots.map(p => [p[0], p[1], 5]), ...CH.npcs.map(n => [n.pos[0], n.pos[1], 5])];
-  return { enemies, items, bossUnlocked, target, clear };
+  let target = null, beacon = null;
+  if (step) {
+    if ((step.type === 'talk' || step.type === 'choice') && step.npc) target = { type: 'npc', ids: [step.npc] };
+    if (step.type === 'talkAll') target = { type: 'npc', ids: step.npcs.filter(id => !st.talked.includes(id)) };
+    if (step.type === 'boss') target = { type: 'boss' };
+    if (step.type === 'goto') { beacon = { x: step.pos[0], z: step.pos[1], r: step.r || 7, label: step.label }; target = { type: 'goto' }; }
+  }
+  const clear = [...ENEMY_SPOTS.map(p => [p[0], p[1], 7]), ...CH.npcs.map(n => [n.pos[0], n.pos[1], 5])];
+  CH.steps.forEach(s => { (s.spots || []).forEach(p => clear.push([p[0], p[1], 5])); if (s.pos) clear.push([s.pos[0], s.pos[1], 9]); });
+  return { enemies, items, bossUnlocked, target, beacon, clear };
 }
 function enterChapter(id) {
-  CH = CHAPTERS.find(c => c.id === id); $('loading').classList.add('show');
+  CH = CHAPTERS.find(c => c.id === id); TIMED = null; CHAIN = null; $('loading').classList.add('show');
   setTimeout(() => {
     try {
-      if (!WORLD) WORLD = new World({ canvas: $('worldCanvas'), labels: $('worldLabels'), minimap: $('minimap'), callbacks: { onInteract, onPickup, onNear } });
+      if (!WORLD) WORLD = new World({ canvas: $('worldCanvas'), labels: $('worldLabels'), minimap: $('minimap'), callbacks: { onInteract, onPickup, onNear, onReach } });
       WORLD.load(CH, SAVE.data.player, worldState());
     } catch (err) { $('loading').classList.remove('show'); console.error(err); toast('這台裝置無法開啟 3D 場景（WebGL 不可用）', 'warn'); return; }
     $('wChapter').textContent = CH.name; $('wChapterSub').textContent = CH.subtitle; coins();
-    renderQuest(); onNear(null); hideDialog(); $('clearOverlay').classList.remove('show');
+    stepStarted(); renderQuest(); onNear(null); hideDialog(); $('clearOverlay').classList.remove('show');
     showScreen('worldScreen'); $('loading').classList.remove('show');
     const st = chState();
-    if (st.step === 0 && !st.cleared) setTimeout(() => say([[null, `${CH.name}・${CH.subtitle}`], [null, CH.blurb], [null, '找到頭上有「!」的人說話，任務會一步一步帶你前進。']]), 500);
+    if (st.step === 0 && !st.cleared) setTimeout(() => say([[null, `${CH.name}・${CH.subtitle}`], [null, CH.blurb], [null, '頭上有「!」的人有事找你。任務欄會告訴你下一步。']]), 500);
+    else autoStep();
     $('wHelp').classList.remove('fade'); setTimeout(() => $('wHelp').classList.add('fade'), 6000);
   }, 40);
 }
 function refreshWorld() { WORLD.setState(worldState()); renderQuest(); }
+/* 某些任務一開始就要啟動：限時收集的計時、無 NPC 的選擇題 */
+function stepStarted() { const s = curStep(); TIMED = s && s.type === 'timedCollect' ? { left: s.seconds } : null; }
+function autoStep() { const s = curStep(); if (s && s.type === 'choice' && !s.npc) setTimeout(() => { if (!dialogOpen) runChoice(s); }, 500); }
+setInterval(() => {
+  if (!TIMED || currentScreen !== 'worldScreen' || !WORLD || WORLD.paused || dialogOpen) return;
+  TIMED.left -= .25; const el = document.querySelector('.q-timer'); if (el) { el.textContent = Math.max(0, Math.ceil(TIMED.left)) + ' 秒'; el.classList.toggle('hurry', TIMED.left < 15); }
+  if (TIMED.left <= 0) { const st = chState(), s = curStep(); st.collected = []; SAVE.save(); TIMED.left = s.seconds; refreshWorld(); SFX.play('sand'); toast('沙暴把袋子全都埋回去了！重新找一次', 'warn'); }
+}, 250);
 function renderQuest() {
-  const st = chState(); const total = CH.steps.length;
-  if (st.cleared && st.step >= total) { $('questBox').innerHTML = `<h3>${CH.name}</h3><p class="q-done">篇章已完成。可以和居民聊天，或回海圖挑戰下一座島。</p>`; return; }
-  const s = CH.steps[st.step]; let prog = '';
-  if (s.type === 'collect') prog = `<span class="q-count">${st.collected.length}/${s.count}</span>`;
+  const st = chState(), total = CH.steps.length, s = curStep();
+  if (!s) { $('questBox').innerHTML = `<h3>${CH.name}</h3><p class="q-done">篇章已完成。可以和居民聊天，或回海圖前往下一座島。</p>`; return; }
+  let prog = '';
+  if (s.type === 'collect' || s.type === 'timedCollect') prog = `<span class="q-count">${st.collected.length}/${s.count}</span>`;
   if (s.type === 'defeat') prog = `<span class="q-count">${Math.min(st.defeated.length, s.count)}/${s.count}</span>`;
-  $('questBox').innerHTML = `<h3><span>任務 ${st.step + 1}/${total}</span>${s.title}</h3><p>${s.desc} ${prog}</p>${s.reward ? `<small class="q-rew"><i class="coin-ico"></i>×${s.reward}</small>` : ''}`;
+  if (s.type === 'talkAll') prog = `<span class="q-count">${s.npcs.filter(id => st.talked.includes(id)).length}/${s.npcs.length}</span>`;
+  if (s.type === 'gauntlet') prog = `<span class="q-count">${CHAIN ? CHAIN.wins.length : 0}/${s.count}</span>`;
+  const timer = s.type === 'timedCollect' ? `<b class="q-timer">${Math.ceil(TIMED ? TIMED.left : s.seconds)} 秒</b>` : '';
+  const kind = { talk: '對話', talkAll: '打聽', goto: '前往', collect: '收集', timedCollect: '限時', defeat: '擊敗', gauntlet: '連戰', choice: '抉擇', boss: 'BOSS' }[s.type];
+  $('questBox').innerHTML = `<h3><span><em class="q-kind k-${s.type}">${kind}</em>任務 ${st.step + 1}/${total}</span>${s.title}</h3><p>${s.desc} ${prog}</p>${timer}${s.reward ? `<small class="q-rew"><i class="coin-ico"></i>×${s.reward}</small>` : ''}`;
   const q = $('questBox'); q.classList.remove('flash'); void q.offsetWidth; q.classList.add('flash');
 }
 function completeStep() {
   const st = chState(), idx = st.step, s = CH.steps[idx];
-  if (!st.rewarded.includes(idx)) { st.rewarded.push(idx); addTokens(s.reward, s.title); }
-  st.step++; SAVE.save(); SFX.play('quest');
+  if (!st.rewarded.includes(idx)) { st.rewarded.push(idx); addBerry(80 * ((CHAPTER_DIFFICULTY[CH.id] || {}).order || 1)); addTokens(s.reward, s.title); gainExp(SAVE.data.player, (s.reward || 1) * 50 + ENEMY_LEVEL[CH.id] * 4); }
+  st.step++; SAVE.save(); track('steps'); SFX.play('quest'); stepStarted(); CHAIN = null;
+  if (s.unlockBoss) setTimeout(() => toast('BOSS 的屏障解除了', 'gold'), 500);
   const nx = CH.steps[st.step];
   if (nx && nx.type === 'defeat' && st.defeated.length >= nx.count) { setTimeout(completeStep, 600); }
-  refreshWorld();
+  if (WORLD) refreshWorld();
+  autoStep();
 }
 function onNear(n) {
   const b = $('actBtn');
@@ -198,56 +278,82 @@ function onNear(n) {
   b.classList.toggle('fight', n.kind !== 'npc'); b.classList.add('show');
 }
 function onPickup(it) {
-  const st = chState(), s = CH.steps[st.step]; if (!s || s.type !== 'collect') return;
-  if (!st.collected.includes(it.idx)) st.collected.push(it.idx); SAVE.save();
+  const st = chState(), s = curStep(); if (!s || (s.type !== 'collect' && s.type !== 'timedCollect')) return;
+  if (!st.collected.includes(it.idx)) { st.collected.push(it.idx); track('pickups'); } SAVE.save();
   SFX.play('pickup'); toast(`撿到${s.item}（${st.collected.length}/${s.count}）`);
-  if (st.collected.length >= s.count) { completeStep(); say([[null, `${s.item}都找齊了！`], [null, `下一步：${CH.steps[st.step].title}`]]); }
+  if (st.collected.length >= s.count) { TIMED = null; say([[null, `${s.item}都找齊了！`]], () => completeStep()); }
   else renderQuest();
+}
+function onReach() {
+  const s = curStep(); if (!s || s.type !== 'goto' || dialogOpen) return;
+  WORLD.setState({ ...worldState(), beacon: null }); SFX.play('quest');
+  if (s.lines && s.lines.length) say(s.lines, completeStep); else completeStep();
+}
+function runChoice(s) {
+  let qi = 0; const who = s.npc || null;
+  const ask = () => { const q = s.questions[qi]; say([[who, q.q]], null, q.options.map(o => ({ label: o.label, fn: () => { if (o.correct) { SFX.play('pickup'); say([[who, q.right]], () => { qi++; if (qi < s.questions.length) ask(); else completeStep(); }); } else { SFX.play('miss'); say([[who, q.wrong]], ask); } } }))); };
+  if (s.lines && s.lines.length) say(s.lines, ask); else ask();
 }
 function onInteract(n) {
   if (dialogOpen) return;
-  const st = chState(), s = CH.steps[st.step];
+  const st = chState(), s = curStep();
   if (n.kind === 'npc') {
-    if (s && s.type === 'talk' && s.npc === n.id && !(st.cleared && st.step >= CH.steps.length)) {
-      say(s.lines.map(([who, t]) => [who, t]), () => { const unlock = s.unlockBoss; completeStep(); if (unlock) { toast('BOSS 屏障解除了', 'gold'); } });
+    if (s && s.type === 'talk' && s.npc === n.id) { say(s.lines, completeStep); return; }
+    if (s && s.type === 'choice' && s.npc === n.id) { runChoice(s); return; }
+    if (s && s.type === 'talkAll' && s.npcs.includes(n.id) && !st.talked.includes(n.id)) {
+      say(s.lines[n.id], () => { st.talked.push(n.id); SAVE.save(); SFX.play('pickup'); if (s.npcs.every(id => st.talked.includes(id))) completeStep(); else { refreshWorld(); toast(`已打聽 ${s.npcs.filter(id => st.talked.includes(id)).length}/${s.npcs.length}`); } });
       return;
     }
-    const hint = s && !(st.cleared && st.step >= CH.steps.length) ? `（目前任務：${s.title}）` : '';
+    const hint = s ? `（目前任務：${s.title}）` : '';
     const pool = n.chat && n.chat.length ? n.chat : ['路上小心，航海者。'];
     say([[n.id, pool[Math.floor(Math.random() * pool.length)] + (hint && Math.random() < .5 ? ' ' + hint : '')]]);
     return;
   }
-  // 敵人
-  const c = CHARACTERS[n.id], lines = ENCOUNTER_LINES[n.id] || ['來吧！'];
+  const lines = ENCOUNTER_LINES[n.id] || ['來吧！'];
   const intro = n.boss ? [['@' + n.id, lines[0]], ['@' + n.id, lines[1] || lines[0]]] : [['@' + n.id, lines[Math.floor(Math.random() * lines.length)]]];
+  if (s && s.type === 'gauntlet' && !n.boss) intro.push([null, `連戰開始！要連續擊敗 ${s.count} 名對手，中途體力不會回復。`]);
   say(intro, null, [{ label: n.boss ? '開始 BOSS 戰' : '開始對戰', primary: true, fn: () => beginFight(n) }, { label: '先離開', fn: () => { } }]);
 }
-function beginFight(n) {
+function beginFight(n, carryHp) {
   WORLD.paused = true;
+  const s = curStep(); if (s && s.type === 'gauntlet' && !n.boss && !CHAIN) CHAIN = { wins: [] };
   startBattle({
-    playerId: SAVE.data.player, enemyId: n.id, chapterId: CH.id, isBoss: n.boss,
-    onEnd: (r) => onBattleEnd(r),
+    playerId: SAVE.data.player, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id), hp: carryHp ? carryHp[id] : undefined })), enemyId: n.id, chapterId: CH.id, isBoss: n.boss, enemyLv: ENEMY_LEVEL[CH.id] + (n.boss ? BOSS_LEVEL_BONUS : 0),
+    onEnd: (r) => onBattleEnd(r, n),
     onLeave: () => { showScreen('worldScreen'); if (pendingClear) AUDIO.stopSong(); WORLD.paused = false; refreshWorld(); coins(); if (pendingClear) { const pc = pendingClear; pendingClear = null; setTimeout(() => showClear(pc), 350); } }
   });
 }
 let pendingClear = null;
 function onBattleEnd(r) {
+  const st = chState(), s = curStep(), msgs = [];
+  if (r.win) { track('wins'); if (r.isBoss) track('bossWins'); }
+  if (r.win) { const elv = ENEMY_LEVEL[CH.id] + (r.isBoss ? BOSS_LEVEL_BONUS : 0), amt = Math.round((30 + elv * 6) * (r.isBoss ? 3 : 1)), lead = SAVE.data.lineup[0] || SAVE.data.player; const ex = gainExp(lead, amt); SAVE.data.lineup.filter(id => id !== lead).forEach(id => gainExp(id, Math.round(amt * (1 - GAME_SETTINGS.shareExp)), true)); if (ex) msgs.push(expText(ex) + (SAVE.data.lineup.length > 1 ? '（陣容全員）' : '')); const bry = Math.round((40 + elv * 8) * (r.isBoss ? 4 : 1)); addBerry(bry); msgs.push(`貝里 +${bry.toLocaleString()}`); }
+  if (s && s.type === 'gauntlet' && !r.isBoss && CHAIN) {
+    if (!r.win) { CHAIN = null; renderQuest(); return { message: '連戰中斷了。整理好狀態，再從第一場開始。' }; }
+    CHAIN.wins.push(r.enemyId);
+    if (CHAIN.wins.length < s.count) {
+      const next = st.roster.find(id => !st.defeated.includes(id) && !CHAIN.wins.includes(id));
+      const hp = Object.fromEntries(battle.team.map(f => [f.id, f.hp]));
+      msgs.push(`連戰 ${CHAIN.wins.length}/${s.count}！下一位對手已經衝上來了。`);
+      return { message: msgs.join('<br>'), next: { label: '迎戰下一位', fn: () => { const i = st.roster.indexOf(next); beginFight({ id: next, x: ENEMY_SPOTS[i][0], z: ENEMY_SPOTS[i][1], boss: false, kind: 'enemy' }, hp); } } };
+    }
+    CHAIN.wins.forEach(id => { if (!st.defeated.includes(id)) st.defeated.push(id); }); SAVE.save();
+    const b = SAVE.data.tokens; completeStep(); msgs.push(`連戰突破！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); return { message: msgs.join('<br>') };
+  }
   if (!r.win) return {};
-  const st = chState(); const msgs = [];
   if (r.isBoss) {
-    const s = CH.steps[st.step];
-    if (s && s.type === 'boss') { const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); pendingClear = { first }; }
+    if (s && s.type === 'boss') { const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, rate = first ? GAME_SETTINGS.bossJoinFirst : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(GAME_SETTINGS.bossJoinRepeat * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
     if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
-    const s = CH.steps[st.step];
     if (s && s.type === 'defeat') { if (st.defeated.length >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); } else msgs.push(`任務進度：${st.defeated.length}/${s.count}`); }
   }
   return { message: msgs.join('<br>') };
 }
 function showClear(pc) {
+  AUDIO.jingle('clear', CH.id);
   const i = CHAPTERS.findIndex(c => c.id === CH.id), next = CHAPTERS[i + 1];
-  AUDIO.jingle('clear', CH.id); $('clearTitle').textContent = `${CH.name} 完成`;
-  $('clearDesc').innerHTML = `${CH.bossTitle}被擊敗了，這座島恢復了平靜。${next ? `<br>新的航路已經打開：<b>${next.name}</b>。` : '<br>你走完了整條偉大航路。'}<br>別忘了去扭蛋機換道具。`;
+  $('clearTitle').textContent = `${CH.name} 完成`;
+  $('clearDesc').innerHTML = `${CH.bossTitle}被擊敗了，這座島恢復了平靜。${next ? `<br>新的航路已經打開：<b>${next.name}</b>。` : '<br>你走完了整條偉大航路。'}<br>別忘了去懸賞處換道具。`;
   $('clearOverlay').classList.add('show');
 }
 
@@ -277,31 +383,31 @@ function showChoices() {
 }
 function hideDialog() { dialogOpen = false; $('dialog').classList.remove('show'); if (WORLD && currentScreen === 'worldScreen') WORLD.paused = false; }
 
-/* ---------- 扭蛋機 ---------- */
+/* ---------- 懸賞處 ---------- */
 let gachaReturn = 'chapterScreen', gachaBusy = false;
-function openGacha() {
-  gachaReturn = currentScreen === 'gachaScreen' ? gachaReturn : currentScreen; coins();
-  $('rateTable').innerHTML = '<caption>出現機率</caption>' + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join('');
+function openGacha(ret) {
+  gachaReturn = typeof ret === 'string' ? ret : currentScreen === 'gachaScreen' ? gachaReturn : currentScreen; coins();
+  $('rateTable').innerHTML = '<caption>出現機率</caption>' + `<tr><th><span class="rar r-CHAR">船員</span></th><td>${Math.round(GACHA_CHAR_RATE * 100)}%</td><td>尚未擁有的角色（LV ${GACHA_CHAR_LV} 加入）</td></tr>` + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * (1 - GACHA_CHAR_RATE) * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join('');
   const caps = $('mCaps'); if (!caps.children.length) { const cols = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#f4f7f2']; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; let placed = 0, guard = 0; while (placed < 30 && guard++ < 4000) { const x = 8 + rnd() * 84, y = 40 + rnd() * 52; if (Math.hypot(x - 50, y - 50) > 40) continue; const s = document.createElement('i'); s.style.cssText = `--c:${cols[placed % cols.length]};left:${x - 7}%;top:${y - 7}%;--r:${Math.round(rnd() * 360)}deg;z-index:${Math.round(y)}`; caps.appendChild(s); placed++; } }
-  updateGachaBtns(); showScreen('gachaScreen');
+  updateGachaBtns(); showScreen('gachaScreen'); if (typeof switchHub === 'function') switchHub('summon');
 }
 function updateGachaBtns() {
   const t = SAVE.data.tokens; $('pull1').disabled = t < GACHA_COST.single || gachaBusy; $('pull10').disabled = t < GACHA_COST.ten || gachaBusy;
-  $('gEmpty').textContent = t < 1 ? '寶藏幣不夠了。回到篇章推進劇情任務就能再拿到。' : '';
+  const free = !SAVE.data.freeDraw && Object.keys(SAVE.data.roster).length > 0;
+  $('freeBox').classList.toggle('hidden', !free); $('pullFree').disabled = gachaBusy;
+  $('gEmpty').textContent = t < 1 && !free ? '寶藏幣不夠了。回到篇章推進劇情任務就能再拿到。' : '';
+  $('pull1').querySelector('small').textContent = `${GACHA_COST.single} 枚寶藏幣`; $('pull10').querySelector('small').textContent = `${GACHA_COST.ten} 枚・保底 SR 以上`;
 }
+const unownedChars = () => CHARACTER_ORDER.filter(id => !owned(id));
 function rollOne(minR) {
+  if (!minR && Math.random() < GAME_SETTINGS.charRate) { const pool = unownedChars(); if (pool.length) return { char: pool[Math.floor(Math.random() * pool.length)], lv: GAME_SETTINGS.charLv }; return { item: 'exp_l' }; }
   const order = ['N', 'R', 'SR', 'SSR']; let r = Math.random(), rar = 'N', acc = 0;
   for (const k of order) { acc += RARITY[k].rate; if (r < acc) { rar = k; break; } }
   if (minR && order.indexOf(rar) < order.indexOf(minR)) rar = Math.random() < .9 ? 'SR' : 'SSR';
-  const pool = Object.entries(ITEMS).filter(([, i]) => i.rarity === rar); return pool[Math.floor(Math.random() * pool.length)][0];
+  const pool = Object.entries(ITEMS).filter(([, i]) => i.rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)][0] };
 }
-async function pull(n) {
-  const cost = n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
-  gachaBusy = true; SAVE.data.tokens -= cost; coins(); updateGachaBtns();
-  const res = []; for (let i = 0; i < n; i++) res.push(rollOne());
-  if (n === 10 && !res.some(id => ['SR', 'SSR'].includes(ITEMS[id].rarity))) res[9] = rollOne('SR');
-  res.forEach(id => { SAVE.data.inventory[id] = (SAVE.data.inventory[id] || 0) + 1; }); SAVE.data.pulls += n; SAVE.save();
-  const best = res.map(id => ITEMS[id].rarity).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];
+const rarOf = (x) => x.char ? 'SSR' : ITEMS[x.item].rarity;
+async function playMachine(best) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const m = $('machine'); m.className = 'machine spin'; $('mDrop').className = 'm-drop r-' + best;
   SFX.play('crank'); await spinCapsules(reduce ? 200 : 1700); SFX.play('crank');
@@ -309,10 +415,33 @@ async function pull(n) {
   const op = $('gOpen'); op.className = 'g-open show shake r-' + best; SFX.play('pop'); await wait(reduce ? 100 : 750);
   op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop'); await wait(reduce ? 100 : 520);
   op.className = 'g-open';
-  $('gResTitle').textContent = n === 10 ? '十連結果' : '獲得道具';
-  $('gResGrid').className = 'g-res-grid ' + (n === 10 ? 'ten' : 'one');
-  $('gResGrid').innerHTML = res.map((id, i) => { const it = ITEMS[id]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`; }).join('');
+}
+function showResults(res, title) {
+  $('gResTitle').textContent = title;
+  $('gResGrid').className = 'g-res-grid ' + (res.length > 1 ? 'ten' : 'one');
+  $('gResGrid').innerHTML = res.map((x, i) => {
+    if (x.char) { const c = CHARACTERS[x.char]; return `<div class="g-cap r-SSR char" style="--d:${i * 90}ms"><span class="rar r-CHAR">新船員</span><img src="${c.image}" alt=""><b>${c.name}</b><small>LV ${x.lv}・${TIERS[tierOf(x.lv)].name}</small>${x.setCap ? `<button class="btn-gold sm" data-cap="${x.char}">加入陣容並設為先鋒</button>` : ''}</div>`; }
+    const it = ITEMS[x.item]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`;
+  }).join('');
+  $('gResGrid').querySelectorAll('[data-cap]').forEach(b => b.onclick = () => { SAVE.data.player = b.dataset.cap; lineupAdd(b.dataset.cap, true); b.textContent = '已設為先鋒'; b.disabled = true; toast(`${CHARACTERS[b.dataset.cap].name} 成為先鋒`, 'gold'); });
   $('gResult').classList.add('show'); gachaBusy = false; updateGachaBtns();
+}
+function grant(res) { res.forEach(x => { if (x.char) addCrew(x.char, x.lv); else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
+async function pull(n) {
+  const cost = n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
+  gachaBusy = true; SAVE.data.tokens -= cost; coins(); updateGachaBtns();
+  const res = []; for (let i = 0; i < n; i++) { const x = rollOne(); if (x.char && res.some(y => y.char === x.char)) { res.push({ item: 'exp_l' }); continue; } res.push(x); }
+  if (n === 10 && !res.some(x => ['SR', 'SSR'].includes(rarOf(x)))) res[9] = rollOne('SR');
+  grant(res); SAVE.data.pulls += n; SAVE.save();
+  const best = res.map(rarOf).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];
+  await playMachine(best);
+  showResults(res, n === 10 ? '十連結果' : res[0].char ? '新船員加入！' : '獲得道具');
+}
+async function pullFree() {
+  if (gachaBusy || SAVE.data.freeDraw) return; const pool = unownedChars(); if (!pool.length) return;
+  gachaBusy = true; SAVE.data.freeDraw = true; updateGachaBtns();
+  const x = { char: pool[Math.floor(Math.random() * pool.length)], lv: MAX_LV, setCap: true };
+  grant([x]); await playMachine('SSR'); showResults([x], '新手召喚：LV 100 船員加入！');
 }
 function spinCapsules(ms) {
   return new Promise(res => {
@@ -329,7 +458,7 @@ function spinCapsules(ms) {
 }
 function openBag() {
   const inv = SAVE.data.inventory, ids = Object.keys(ITEMS).filter(id => inv[id] > 0);
-  $('bagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<div class="bagItem static r-${it.rarity}">${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b></div>`; }).join('') : '<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到扭蛋機抽道具。</div>';
+  $('bagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<div class="bagItem static r-${it.rarity}">${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b></div>`; }).join('') : '<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到懸賞處抽道具。</div>';
   openModal('bagModal');
 }
 
@@ -347,13 +476,13 @@ function bindJoystick() {
 function boot() {
   SAVE.load(); renderNewsBoard(); loginInfo(); coins(); bindBattle(); bindJoystick();
   document.querySelectorAll('.modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.classList.remove('show')); });
-  $('startBtn').onclick = openCharModal; $('adminBtn').onclick = openAdmin; bindAdmin(); $('charConfirm').onclick = confirmChar;
+  $('startBtn').onclick = startGame; $('adminBtn').onclick = openAdmin; bindAdmin(); $('pullFree').onclick = pullFree; $('charConfirm').onclick = () => { if (crewMode === 'starter') confirmStarter(); };
   $('newsOpenBtn').onclick = () => openNews(); $('newsMoreBtn').onclick = () => openNews(); $('newsEditBtn').onclick = openNewsEditor;
   $('soundBtn').onclick = toggleSound; document.querySelectorAll('[data-snd]').forEach(b => b.onclick = toggleSound); syncSound();
   document.addEventListener('click', e => { if (e.target.closest('.btn-primary,.btn-gold,.btn-ghost,.node,.char,.chipbtn,.cmd-btn,.icon-btn')) SFX.play('click'); });
   $('chBackBtn').onclick = () => { loginInfo(); showScreen('loginScreen'); };
   $('wBackBtn').onclick = () => openChart(CH && CH.id);
-  ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => $(i).onclick = openGacha);
+  ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => $(i).onclick = () => openGacha());
   ['bagBtnMap', 'bagBtnWorld', 'bagBtnGacha'].forEach(i => $(i).onclick = openBag);
   $('gBackBtn').onclick = () => { if (gachaReturn === 'worldScreen') { showScreen('worldScreen'); coins(); } else openChart(); };
   $('pull1').onclick = () => pull(1); $('pull10').onclick = () => pull(10); $('mCrank').onclick = () => pull(1);
@@ -367,5 +496,36 @@ function boot() {
   CHARACTER_ORDER.forEach(id => { const i = new Image(); i.src = CHARACTERS[id].image; });
   showScreen('loginScreen');
 }
+/* ---------- 新手拉霸（免費 LV100 召喚） ---------- */
+const SLOT_H = 110; let slotBusy = false;
+function slotStrip(el, ids) { el.innerHTML = ids.map(id => `<div class="cell"><img src="${CHARACTERS[id].avatar}" alt=""></div>`).join(''); el.style.transform = 'translateY(0)'; }
+function openSlot() {
+  if (SAVE.data.freeDraw) { toast('新手拉霸已經使用過了'); return; }
+  const pool = unownedChars(); if (!pool.length) { toast('所有船員都已經到齊了！'); return; }
+  $('slotResult').innerHTML = ''; $('slotSpin').style.display = ''; $('slotSpin').disabled = false; $('slotModal').querySelector('.slot').classList.remove('win');
+  [0, 1, 2].forEach(r => slotStrip($('reel' + r), [0, 1, 2].map(k => pool[(k + r * 2) % pool.length])));
+  openModal('slotModal');
+}
+async function spinSlot() {
+  if (slotBusy || SAVE.data.freeDraw) return; const pool = unownedChars(); if (!pool.length) return;
+  slotBusy = true; $('slotSpin').disabled = true; const lever = $('slotLever'); lever.classList.remove('pull'); void lever.offsetWidth; lever.classList.add('pull');
+  const target = pool[Math.floor(Math.random() * pool.length)], N = 28, CH_ = ($('reel0').querySelector('.cell') || {}).offsetHeight || SLOT_H;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tick = setInterval(() => SFX.play('blip'), 90);
+  const anims = [0, 1, 2].map(r => { const ids = []; for (let i = 0; i < N; i++) ids.push(pool[Math.floor(Math.random() * pool.length)]); ids[N - 2] = target; const el = $('reel' + r); slotStrip(el, ids);
+    return el.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-(N - 3) * CH_}px)` }], { duration: reduce ? 300 : 1500 + r * 550, easing: 'cubic-bezier(.12,.8,.22,1.04)', fill: 'forwards' }).finished.then(() => SFX.play('punch')); });
+  await Promise.all(anims); clearInterval(tick);
+  SAVE.data.freeDraw = true; addCrew(target, MAX_LV); SAVE.save(); SFX.play('rare'); AUDIO.sfx('ult');
+  $('slotModal').querySelector('.slot').classList.add('win'); $('slotSpin').style.display = 'none';
+  const c = CHARACTERS[target], full = SAVE.data.lineup.length >= GAME_SETTINGS.lineupMax;
+  $('slotResult').innerHTML = `<div class="sr-card"><img src="${c.image}" alt=""><div><small>JACKPOT</small><h3>${c.name}<em>${c.title}</em></h3><p>LV 100・${TIERS[tierOf(MAX_LV)].name}，已放進角色背包。要讓他上陣嗎？</p>
+    <div class="sr-actions"><button class="btn-gold" data-sl="lead">上陣並設為先鋒</button><button class="btn-primary" data-sl="add">${full ? '上陣（替換最後一位）' : '加入陣容'}</button><button class="btn-ghost" data-sl="bag">先放在背包</button></div></div></div>`;
+  $('slotResult').querySelectorAll('[data-sl]').forEach(b => b.onclick = () => { const k = b.dataset.sl; if (k === 'lead') lineupAdd(target, true); if (k === 'add') lineupAdd(target); toast(k === 'bag' ? `${c.name} 在角色背包等你` : `${c.name} 上陣了！`, 'gold'); closeModal('slotModal'); updateGachaBtns(); });
+  slotBusy = false; updateGachaBtns();
+}
+pullFree = openSlot;
+
+/* ---------- 商店 ---------- */
+window.addEventListener('DOMContentLoaded', () => { $('slotSpin').onclick = spinSlot; $('slotLever').onclick = spinSlot; });
 window.addEventListener('DOMContentLoaded', boot);
 let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setTimeout(() => { if (currentScreen === 'chapterScreen') openChart(selChapter); }, 200); });

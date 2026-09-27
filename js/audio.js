@@ -45,6 +45,7 @@ const AUDIO = (() => {
     bell(t, f, dur, v, bus) { const g = ctx.createGain(); g.connect(bus); g.connect(verb); const e = env(g, t, .002, .16 * v, 1.2, .001, .1, .02); osc('sine', f, t, e + 1, g); const g2 = ctx.createGain(); g2.gain.value = .35; g2.connect(g); osc('sine', f * 2.76, t, e + 1, g2); },
     pad(t, f, dur, v, bus) { const g = ctx.createGain(); g.connect(bus); g.connect(verb); const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.connect(g); const e = env(g, t, .35, .05 * v, .2, .8, .5, dur); osc('sawtooth', f, t, e, lp, -9); osc('sawtooth', f, t, e, lp, 9); osc('triangle', f / 2, t, e, lp); },
     horn(t, f, dur, v, bus) { const g = ctx.createGain(); g.connect(bus); g.connect(verb); const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(400, t); lp.frequency.linearRampToValueAtTime(1500, t + .15); lp.connect(g); const e = env(g, t, .08, .12 * v, .1, .8, .2, dur); osc('sawtooth', f, t, e, lp); osc('sawtooth', f * 1.005, t, e, lp); },
+    marimba(t, f, dur, v, bus) { const g = ctx.createGain(); g.connect(bus); g.connect(verb); const e = env(g, t, .002, .28 * v, .28, .001, .05, .02); osc('sine', f, t, e + .3, g); const g2 = ctx.createGain(); g2.gain.value = .12; g2.connect(g); osc('sine', f * 4, t, t + .08, g2); },
     oud(t, f, dur, v, bus) { const g = ctx.createGain(); g.connect(bus); g.connect(verb); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2; bp.Q.value = 1.2; bp.connect(g); const e = env(g, t, .002, .5 * v, .5, .001, .05, .05); osc('sawtooth', f, t, e + .4, bp); osc('square', f * 1.003, t, e + .4, bp); }
   };
   function noise(t, dur, dest) { const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.connect(dest); s.start(t, Math.random()); s.stop(t + dur); return s; }
@@ -63,11 +64,13 @@ const AUDIO = (() => {
 
   /* ---------- 曲目（全部原創） ---------- */
   const SONGS = {
-    title: { bpm: 104, beat: 3, bars: 8, tracks: [
-      { inst: 'lead', v: 1, seq: 'A4:2 D5 D5:2 E5 | F#5:2 E5 D5:2 B4 | A4:2 B4 D5:2 F#5 | E5:6 | A5:2 F#5 D5:2 E5 | F#5:2 G5 A5:2 F#5 | G5:2 E5 C#5:2 E5 | D5:6' },
-      { inst: 'accordion', chords: [['D', 'maj'], ['B', 'min'], ['G', 'maj'], ['A', 'maj'], ['D', 'maj'], ['D', 'maj'], ['A', 'dom7'], ['D', 'maj']], pattern: [3], len: 2, oct: 4 },
-      { inst: 'bass', roots: ['D2', 'B1', 'G1', 'A1', 'D2', 'F#2', 'A1', 'D2'], pattern: [0], len: 2 },
-      { drum: 'kick', hits: [0], v: .7 }, { drum: 'shaker', hits: [0, 1, 2, 3, 4, 5], v: .8 }, { drum: 'snare', hits: [3], v: .35 }] },
+    title: { bpm: 168, beat: 4, bars: 4, tracks: [
+      { inst: 'horn', v: 1.3, seq: 'D4:4 F4:2 A4:2 D5:6 C5:2 | Bb4:4 A4:2 G4:2 A4:8 | F4:4 G4:2 A4:2 C5:4 Bb4:2 A4:2 | A4:4 C#5:4 E5:4 A5:4' },
+      { inst: 'lead', v: .45, seq: 'D5:4 F5:2 A5:2 D6:6 C6:2 | Bb5:4 A5:2 G5:2 A5:8 | F5:4 G5:2 A5:2 C6:4 Bb5:2 A5:2 | A5:4 C#6:4 E6:4 A6:4' },
+      { inst: 'pluck', roots: ['D3', 'Bb2', 'F3', 'A2'], pattern: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], len: 1, oct8: [0, 12, 7, 12], v: .55 },
+      { inst: 'pad', chords: [['D', 'min'], ['A#', 'maj'], ['F', 'maj'], ['A', 'maj']], pattern: [0], len: 16, oct: 3, v: 1 },
+      { inst: 'bass', roots: ['D2', 'Bb1', 'F2', 'A1'], pattern: [0, 3, 6, 8, 11, 14], len: 1 },
+      { drum: 'tom', hits: [0, 3, 6, 8, 10, 12, 14], v: 1 }, { drum: 'kick', hits: [0, 8], v: .9 }, { drum: 'snare', hits: [4, 12], v: .7 }, { drum: 'hat', hits: [0, 2, 4, 6, 8, 10, 12, 14], v: .5 }] },
     map: { bpm: 84, beat: 3, bars: 8, tracks: [
       { inst: 'pluck', arp: [['D', 'maj'], ['B', 'min'], ['G', 'maj'], ['A', 'maj'], ['D', 'maj'], ['G', 'maj'], ['A', 'dom7'], ['D', 'maj']], oct: 4, v: .9 },
       { inst: 'bell', v: .7, seq: 'F#5:6 | D5:6 | B4:3 D5:3 | C#5:6 | A5:6 | G5:3 B5:3 | A5:3 E5:3 | D5:6' },
@@ -106,10 +109,25 @@ const AUDIO = (() => {
       { inst: 'bass', roots: ['A1', 'F1', 'D2', 'E2'], pattern: [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14], len: 1 },
       { inst: 'pad', chords: [['A', 'min'], ['F', 'maj'], ['D', 'min'], ['E', 'maj']], pattern: [0], len: 16, oct: 3, v: .9 },
       { drum: 'kick', hits: [0, 2, 6, 8, 10, 14], v: 1 }, { drum: 'snare', hits: [4, 12], v: 1 }, { drum: 'hat', hits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], v: .7 }] },
-    gacha: { bpm: 120, beat: 4, bars: 2, tracks: [
-      { inst: 'bell', v: .8, seq: 'C6:2 E6:2 G6:2 E6:2 A6:2 G6:2 E6:4 | F6:2 D6:2 B5:2 D6:2 C6:8' },
-      { inst: 'pluck', arp4: [['C', 'maj'], ['G', 'maj']], oct: 4, v: .5 },
-      { inst: 'bass', roots: ['C2', 'G1'], pattern: [0, 8], len: 4, v: .6 }] }
+    gacha: { bpm: 128, beat: 4, bars: 4, tracks: [
+      { inst: 'marimba', v: 1, seq: 'C5:2 E5:2 G4:2 E5:2 D5:2 C5:2 A4:4 | G4:2 B4:2 D5:2 G4:2 F4:2 E4:2 D4:4 | E4:2 G4:2 C5:2 E5:2 F5:3 E5:1 D5:4 | G4:2 C5:2 E5:2 D5:2 C5:8' },
+      { inst: 'marimba', chords: [['C', 'maj'], ['G', 'maj'], ['F', 'maj'], ['C', 'maj']], pattern: [2, 6, 10, 14], len: 1, oct: 3, v: .45 },
+      { inst: 'bass', roots: ['C2', 'G1', 'F1', 'C2'], pattern: [0, 4, 8, 12], len: 2, oct8: [0, 7, 12, 7], v: .7 },
+      { drum: 'kick', hits: [0, 8], v: .6 }, { drum: 'snare', hits: [4, 12], v: .4 }, { drum: 'shaker', hits: [2, 6, 10, 14], v: .9 }] },
+    enies: { bpm: 132, beat: 4, bars: 4, tracks: [
+      { inst: 'horn', v: 1.2, seq: 'G4:4 Bb4:4 D5:6 C5:2 | Bb4:4 A4:4 G4:8 | F4:4 A4:4 C5:4 D5:4 | D5:12 -:4' },
+      { inst: 'pad', chords: [['G', 'min'], ['D#', 'maj'], ['F', 'maj'], ['D', 'maj']], pattern: [0], len: 16, oct: 3, v: .8 },
+      { inst: 'bass', roots: ['G1', 'Eb2', 'F1', 'D2'], pattern: [0, 4, 8, 12], len: 3 },
+      { drum: 'snare', hits: [2, 4, 6, 10, 12, 13, 14], v: .7 }, { drum: 'kick', hits: [0, 8], v: .8 }] },
+    fishman: { bpm: 76, beat: 4, bars: 4, tracks: [
+      { inst: 'marimba', v: 1, seq: 'E5:4 G#5:4 B5:4 C#6:4 | B5:8 G#5:8 | A5:4 F#5:4 D#5:4 B4:4 | E5:16' },
+      { inst: 'pad', chords: [['E', 'maj'], ['C#', 'min'], ['B', 'maj'], ['E', 'maj']], pattern: [0], len: 16, oct: 3, v: 1 },
+      { inst: 'pluck', arp4: [['E', 'maj'], ['C#', 'min'], ['B', 'maj'], ['E', 'maj']], oct: 3, v: .4 }] },
+    wano: { bpm: 100, beat: 4, bars: 4, tracks: [
+      { inst: 'oud', v: 1.1, seq: 'D5:2 Eb5:2 G5:4 A5:4 G5:4 | Bb5:4 A5:2 G5:2 Eb5:8 | D5:2 G5:2 A5:4 Bb5:2 A5:2 G5:4 | Eb5:4 D5:12' },
+      { inst: 'horn', v: .5, seq: 'D4:16 | G4:16 | C4:16 | D4:16' },
+      { inst: 'pad', chords: [['D', 'sus'], ['G', 'min'], ['C', 'min'], ['D', 'sus']], pattern: [0], len: 16, oct: 3, v: .7 },
+      { drum: 'tom', hits: [0, 6, 8, 11, 14], v: 1 }, { drum: 'tek', hits: [4, 12], v: .8 }] }
   };
   const ONESHOT = {
     victory: { bpm: 140, beat: 4, bars: 2, once: true, tracks: [{ inst: 'lead', v: 1.2, seq: 'C5:1 E5:1 G5:1 C6:3 G5:2 C6:8 | -:16' }, { inst: 'accordion', v: 1, seq: 'C4+E4+G4:4 -:2 C4+F4+A4:2 C4+E4+G4:8 | -:16' }, { drum: 'snare', hits: [0, 1, 2, 3, 6, 8], v: .7 }] },
