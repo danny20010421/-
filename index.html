@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2236">
+<title>海賊王 偉大航路｜篇章探索 RPG</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fx.css">
+</head>
+<body>
+<div id="app">
+
+<!-- ================= 登入 ================= -->
+<section class="screen" id="loginScreen">
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.webm" type="video/webm"><source src="assets/login/loop.mp4" type="video/mp4"></video>
+  <div class="login-shade"></div>
+  <div class="login-main">
+    <div class="logo">
+      <span class="logo-small">海賊王</span>
+      <h1>偉大航路</h1>
+      <p>五座島嶼，五場決戰。帶上你的船長，從東海出發。</p>
+    </div>
+    <div class="login-actions">
+      <button class="btn-primary big" id="startBtn">開始冒險</button>
+      <div class="login-sub">
+        <button class="btn-ghost" id="newsOpenBtn">全部公告</button>
+        <button class="btn-ghost" id="soundBtn" aria-pressed="false">影片音效：關</button>
+      </div>
+    </div>
+  </div>
+  <aside class="news-board" aria-label="最新公告">
+    <header><h2>船上告示</h2><div class="news-tabs" id="newsTabs"></div></header>
+    <ol class="news-list" id="newsBoard"></ol>
+    <button class="news-more" id="newsMoreBtn">查看全部與管理公告</button>
+  </aside>
+  <div class="login-foot">
+    <span id="loginSaveInfo"></span>
+  </div>
+</section>
+
+<!-- ================= 篇章海圖 ================= -->
+<section class="screen hidden" id="chapterScreen">
+  <header class="topbar">
+    <button class="icon-btn" id="chBackBtn" aria-label="回到登入">‹</button>
+    <div class="captain" id="captainChip"></div>
+    <div class="topbar-right">
+      <div class="coin" title="寶藏幣：完成劇情任務獲得"><i class="coin-ico"></i><b id="coinTop">0</b></div>
+      <button class="btn-ghost" id="bagBtnMap">背包</button>
+      <button class="btn-gold" id="gachaBtnMap">扭蛋機</button>
+    </div>
+  </header>
+  <div class="chart">
+    <svg class="chart-route" id="chartRoute" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <div class="chart-nodes" id="chartNodes"></div>
+    <div class="chart-compass" aria-hidden="true"></div>
+  </div>
+  <article class="arc-card" id="arcCard"></article>
+</section>
+
+<!-- ================= 3D 世界 ================= -->
+<section class="screen hidden" id="worldScreen">
+  <canvas id="worldCanvas"></canvas>
+  <div class="wlabels" id="worldLabels"></div>
+  <div class="w-top">
+    <button class="icon-btn" id="wBackBtn" aria-label="回到海圖">‹</button>
+    <div class="w-title"><b id="wChapter"></b><span id="wChapterSub"></span></div>
+    <div class="topbar-right">
+      <div class="coin"><i class="coin-ico"></i><b id="coinWorld">0</b></div>
+      <button class="btn-ghost" id="bagBtnWorld">背包</button>
+      <button class="btn-gold" id="gachaBtnWorld">扭蛋機</button>
+    </div>
+  </div>
+  <div class="quest" id="questBox"></div>
+  <canvas class="minimap" id="minimap" width="180" height="180"></canvas>
+  <div class="w-help" id="wHelp">WASD 移動・拖曳旋轉視角・點地面前往・E 互動</div>
+  <div class="joy" id="joy"><i></i></div>
+  <button class="act-btn" id="actBtn"></button>
+  <div class="dialog" id="dialog">
+    <div class="dlg-face" id="dlgFace"></div>
+    <div class="dlg-body">
+      <div class="dlg-name" id="dlgName"></div>
+      <p class="dlg-text" id="dlgText"></p>
+      <div class="dlg-choices" id="dlgChoices"></div>
+    </div>
+    <span class="dlg-next" id="dlgNext">▼</span>
+  </div>
+  <div class="clear-overlay" id="clearOverlay">
+    <div class="clear-card">
+      <h2 id="clearTitle">篇章完成</h2>
+      <p id="clearDesc"></p>
+      <div class="clear-actions"><button class="btn-ghost" id="clearStay">留在島上</button><button class="btn-primary" id="clearGo">回到海圖</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 對戰 ================= -->
+<section class="screen hidden" id="battleScreen">
+  <div class="b-bg" id="bBg"></div>
+  <div class="b-vignette"></div>
+  <header class="b-top">
+    <div class="plate L" id="bPlateL">
+      <img class="pl-av" id="bAvL" alt="">
+      <div class="pl-info">
+        <div class="pl-name"><b id="bNameL"></b><small id="bTitleL"></small></div>
+        <div class="pl-types" id="bTypesL"></div>
+        <div class="hp"><i class="hp-g" id="bHpGL"></i><i class="hp-f" id="bHpL"></i><i class="hp-s" id="bShieldL"></i></div>
+        <div class="hp-t" id="bHpTL"></div>
+        <div class="chips" id="bStatL"></div>
+      </div>
+    </div>
+    <div class="round" id="bTimerWrap">
+      <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" class="ring-bg"/><circle cx="30" cy="30" r="26" class="ring" id="bRing"/></svg>
+      <b id="bTimer">20</b>
+      <small>第 <span id="bRound">1</span> 回合</small>
+    </div>
+    <div class="plate R" id="bPlateR">
+      <img class="pl-av" id="bAvR" alt="">
+      <div class="pl-info">
+        <div class="pl-name"><b id="bNameR"></b><small id="bTitleR"></small><em class="pl-lv" id="bLvR"></em></div>
+        <div class="pl-types" id="bTypesR"></div>
+        <div class="hp"><i class="hp-g" id="bHpGR"></i><i class="hp-f" id="bHpR"></i><i class="hp-s" id="bShieldR"></i></div>
+        <div class="hp-t" id="bHpTR"></div>
+        <div class="chips" id="bStatR"></div>
+      </div>
+    </div>
+  </header>
+  <div class="b-arena" id="bArena">
+    <div class="stage"></div>
+    <div class="fighter L" id="bFL"><div class="f-shadow"></div><img id="bImgL" alt=""></div>
+    <div class="fighter R" id="bFR"><div class="f-shadow"></div><img id="bImgR" alt=""></div>
+    <div class="b-fx" id="bFx"></div>
+    <div class="b-dmg" id="bDmg"></div>
+    <div class="b-banner" id="bBanner"></div>
+    <div class="b-ticker" id="bTicker"></div>
+  </div>
+  <footer class="b-cmd">
+    <div class="skills" id="bSkills"></div>
+    <div class="cmd-side">
+      <button class="cmd-btn" id="bItemBtn"><span>道具</span><small id="bItemCount">3/3</small></button>
+      <button class="cmd-btn" id="bLogBtn"><span>紀錄</span><small>L</small></button>
+      <button class="cmd-btn flee" id="bFleeBtn"><span>撤退</span></button>
+    </div>
+  </footer>
+  <aside class="drawer" id="bBag"><header><h3>背包</h3><button class="icon-btn sm" data-close-drawer aria-label="關閉">×</button></header><p class="drawer-note" id="bBagNote"></p><div class="bag-list" id="bBagList"></div></aside>
+  <aside class="drawer" id="bLog"><header><h3>戰鬥紀錄</h3><button class="icon-btn sm" data-close-drawer aria-label="關閉">×</button></header><ol class="log-list" id="bLogList"></ol></aside>
+  <div class="b-cutin" id="bCutin"><div class="cut-band"><img id="bCutImg" alt=""><div class="cut-text"><small id="bCutWho"></small><b id="bCutName"></b></div></div></div>
+  <div class="b-result" id="bResult">
+    <div class="res-card">
+      <img id="bResImg" alt="">
+      <div class="res-body"><h2 id="bResTitle"></h2><div id="bResDesc"></div>
+        <div class="res-actions"><button class="btn-ghost" id="bRetry">再戰一次</button><button class="btn-primary" id="bBack">回到島上</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 扭蛋機 ================= -->
+<section class="screen hidden" id="gachaScreen">
+  <header class="topbar">
+    <button class="icon-btn" id="gBackBtn" aria-label="返回">‹</button>
+    <h2 class="g-title">寶藏扭蛋機</h2>
+    <div class="topbar-right"><div class="coin"><i class="coin-ico"></i><b id="coinGacha">0</b></div><button class="btn-ghost" id="bagBtnGacha">背包</button></div>
+  </header>
+  <div class="g-main">
+    <div class="machine" id="machine">
+      <div class="m-sign">寶藏扭蛋</div>
+      <div class="m-globe"><div class="m-caps" id="mCaps"></div><div class="m-glass"></div></div>
+      <div class="m-body">
+        <div class="m-slot"><i></i></div>
+        <button class="m-crank" id="mCrank" aria-label="轉動"><i></i></button>
+        <div class="m-chute"><div class="m-drop" id="mDrop"></div></div>
+      </div>
+    </div>
+    <div class="g-panel">
+      <p class="g-lead">完成劇情任務獲得寶藏幣。抽到的道具會放進背包，對戰時按「道具」使用，每場最多 3 次。</p>
+      <div class="g-pulls">
+        <button class="btn-gold big" id="pull1">抽 1 次<small>1 枚寶藏幣</small></button>
+        <button class="btn-primary big" id="pull10">抽 10 次<small>9 枚・保底 SR 以上</small></button>
+      </div>
+      <table class="rates" id="rateTable"></table>
+      <p class="g-empty" id="gEmpty"></p>
+    </div>
+  </div>
+  <div class="g-result" id="gResult">
+    <div class="g-res-card">
+      <h3 id="gResTitle">獲得道具</h3>
+      <div class="g-res-grid" id="gResGrid"></div>
+      <button class="btn-primary" id="gResOk">收下</button>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<!-- 角色選擇 -->
+<div class="modal" id="charModal" role="dialog" aria-modal="true" aria-labelledby="charTitle">
+  <div class="modal-card wide">
+    <header><h2 id="charTitle">選擇你的船長</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <p class="modal-note" id="quotaNote"></p>
+    <div class="char-grid" id="charGrid"></div>
+    <div class="char-detail" id="charDetail"></div>
+    <footer><button class="btn-primary big" id="charConfirm">揚帆出航</button></footer>
+  </div>
+</div>
+
+<!-- 公告 -->
+<div class="modal" id="newsModal" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+  <div class="modal-card">
+    <header><h2 id="newsTitle">船上告示</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <div class="news-full" id="newsFull"></div>
+    <footer class="split"><button class="btn-ghost" id="newsEditBtn">管理公告</button><button class="btn-primary" data-close>關閉</button></footer>
+  </div>
+</div>
+<div class="modal" id="newsEditModal" role="dialog" aria-modal="true" aria-labelledby="newsEditTitle">
+  <div class="modal-card wide">
+    <header><h2 id="newsEditTitle">管理公告</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <p class="modal-note">公告存在這台裝置的瀏覽器裡。要讓所有玩家看到同一份公告，請直接修改 js/data.js 的 DEFAULT_NEWS 後重新上傳。</p>
+    <div class="news-edit" id="newsEditList"></div>
+    <footer class="split"><div><button class="btn-ghost" id="newsAddBtn">新增一則</button> <button class="btn-ghost" id="newsResetBtn">恢復預設</button></div><button class="btn-primary" id="newsSaveBtn">儲存公告</button></footer>
+  </div>
+</div>
+
+<!-- 背包 -->
+<div class="modal" id="bagModal" role="dialog" aria-modal="true" aria-labelledby="bagTitle">
+  <div class="modal-card">
+    <header><h2 id="bagTitle">背包</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <div class="bag-list" id="bagList"></div>
+  </div>
+</div>
+
+<!-- 確認框 -->
+<div class="modal" id="confirmModal" role="alertdialog" aria-modal="true">
+  <div class="modal-card small">
+    <h2 id="cfTitle"></h2><p id="cfText"></p>
+    <footer class="split"><button class="btn-ghost" data-close>取消</button><button class="btn-primary" id="cfOk">確定</button></footer>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="loading" id="loading"><div class="ld-wheel"></div><span>載入中</span></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine3d.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/world.js"></script>
+<script src="js/battle_core.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

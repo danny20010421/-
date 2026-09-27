@@ -1,0 +1,43 @@
+.punchFx,.beamFx,.lightningFx,.impactFx,.supportFx,.iceBurst,.slashFx,.sandFx,.darkFx,.quakeFx{position:absolute;pointer-events:none}
+.punchFx{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#fff8da 0,#ff9b63 24%,#ff4a4a 58%,rgba(255,74,74,0) 76%);box-shadow:0 0 28px rgba(255,88,88,.55);animation:punchTravel .42s linear forwards}
+.beamFx{height:18px;border-radius:999px;background:linear-gradient(90deg,rgba(148,245,255,.2),#f0ffff 14%,#65d4ff 44%,rgba(101,212,255,.18));box-shadow:0 0 18px rgba(100,221,255,.75);animation:beamTravel .42s linear forwards}
+.lightningFx{width:160px;height:160px;background:conic-gradient(from 0deg,transparent 0 6%,rgba(138,224,255,.92) 6% 8%,transparent 8% 18%,rgba(138,224,255,.92) 18% 20%,transparent 20% 30%,rgba(138,224,255,.92) 30% 32%,transparent 32% 42%,rgba(138,224,255,.92) 42% 44%,transparent 44%);filter:drop-shadow(0 0 18px rgba(118,224,255,.8));animation:lightningSpin .45s linear forwards}
+.slashFx{width:170px;height:20px;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),rgba(255,70,70,.96),transparent);filter:blur(1px);animation:slashTravel .35s linear forwards}
+.impactFx{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffe0a3 12%,rgba(255,104,82,.95) 34%,rgba(255,104,82,.34) 55%,transparent 75%);box-shadow:0 0 40px rgba(255,122,90,.5);animation:impactBurst .55s ease forwards}
+.impactFx.blue{background:radial-gradient(circle,#fff 0,#dffcff 12%,rgba(108,219,255,.95) 32%,rgba(108,219,255,.28) 55%,transparent 75%);box-shadow:0 0 40px rgba(118,224,255,.52)}
+.impactFx.gold{background:radial-gradient(circle,#fff 0,#fff6c5 12%,rgba(255,214,83,.95) 32%,rgba(255,214,83,.28) 55%,transparent 75%);box-shadow:0 0 40px rgba(255,214,83,.48)}
+.supportFx{width:170px;height:170px;border-radius:50%;border:6px solid rgba(129,235,198,.4);box-shadow:0 0 24px rgba(111,255,186,.36);animation:supportPulse .8s ease forwards}
+.supportFx.blue{border-color:rgba(104,211,255,.52);box-shadow:0 0 28px rgba(104,211,255,.45)}
+.iceBurst{width:180px;height:180px;background:conic-gradient(from 15deg,transparent 0 7%,rgba(203,250,255,.95) 7% 11%,transparent 11% 18%,rgba(203,250,255,.95) 18% 22%,transparent 22% 30%,rgba(203,250,255,.95) 30% 34%,transparent 34% 41%,rgba(203,250,255,.95) 41% 45%,transparent 45%);filter:drop-shadow(0 0 16px rgba(204,250,255,.72));animation:iceSpin .65s ease forwards}
+.sandFx{width:180px;height:180px;border-radius:50%;background:conic-gradient(from 0deg,rgba(230,204,150,.95),rgba(210,174,104,.55),transparent 70%,rgba(230,204,150,.9));filter:blur(1px) drop-shadow(0 0 14px rgba(219,190,130,.65));animation:sandSpin .56s ease forwards}
+.darkFx{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(21,5,38,.95) 0,rgba(58,26,105,.82) 34%,rgba(0,0,0,.0) 72%);box-shadow:0 0 34px rgba(89,42,166,.55);animation:darkPulse .62s ease forwards}
+.quakeFx{width:200px;height:120px;border-bottom:4px solid rgba(220,244,255,.72);border-left:4px solid transparent;border-right:4px solid transparent;transform-origin:center bottom;animation:quakeCrack .55s ease forwards}
+.blackHoleFx,.shockRingFx,.petalFx,.seaWaveFx,.seaKingFx,.wingFx,.handBurstFx,.demonAuraFx,.sparkParticle{position:absolute;pointer-events:none}
+.blackHoleFx{width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,#020104 0 15%,#251040 26%,#51217d 42%,rgba(80,31,126,.25) 58%,transparent 72%);box-shadow:0 0 50px rgba(72,26,125,.72),inset 0 0 28px #000;animation:blackHolePulse .85s ease-out forwards}
+.shockRingFx{width:150px;height:150px;border:8px solid rgba(225,249,255,.86);border-radius:50%;box-shadow:0 0 24px #a8eaff,inset 0 0 24px rgba(188,234,255,.35);animation:shockRing 1s ease-out forwards}
+.petalFx{width:18px;height:10px;border-radius:70% 30% 70% 30%;background:linear-gradient(135deg,#ffd4ef,#ef72bf);box-shadow:0 0 10px rgba(255,123,202,.65);animation:petalFly 1.25s ease-out forwards}
+.seaWaveFx{width:220px;height:90px;border-radius:50%;border-top:12px solid rgba(145,235,255,.9);border-bottom:10px solid rgba(73,174,255,.28);filter:drop-shadow(0 0 18px rgba(96,213,255,.72));animation:seaWave 1s ease-out forwards}
+.seaKingFx{width:260px;height:130px;border-radius:55% 45% 40% 60%;background:linear-gradient(135deg,rgba(71,176,210,.8),rgba(23,78,115,.88));clip-path:polygon(2% 55%,18% 25%,42% 13%,70% 22%,90% 4%,82% 42%,100% 57%,77% 68%,59% 88%,29% 80%,12% 68%);box-shadow:0 0 34px rgba(73,198,239,.55);animation:seaKingCharge 1.05s ease-out forwards}
+.wingFx{width:180px;height:120px;background:radial-gradient(ellipse at 20% 50%,rgba(239,220,255,.82),transparent 46%),radial-gradient(ellipse at 80% 50%,rgba(239,220,255,.82),transparent 46%);filter:drop-shadow(0 0 16px rgba(217,169,255,.55));animation:wingOpen .9s ease-out forwards}
+.handBurstFx{width:200px;height:150px;background:repeating-radial-gradient(circle at 50% 70%,rgba(247,215,237,.9) 0 7px,rgba(142,81,141,.9) 8px 12px,transparent 13px 22px);filter:drop-shadow(0 0 20px rgba(238,126,201,.55));animation:handBurst .72s ease-out forwards}
+.demonAuraFx{width:250px;height:250px;border-radius:50%;background:conic-gradient(from 0deg,rgba(130,34,124,.08),rgba(227,73,181,.88),rgba(28,5,48,.9),rgba(255,87,194,.84),rgba(130,34,124,.08));filter:blur(2px) drop-shadow(0 0 28px rgba(236,74,198,.6));animation:demonAura 1.15s ease-out forwards}
+.sparkParticle{width:9px;height:9px;border-radius:50%;background:#fff5bd;box-shadow:0 0 12px #ffd770;animation:sparkFly .8s ease-out forwards}
+@keyframes punchTravel{0%{transform:scale(.6);opacity:0}20%{opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(1.18);opacity:0}}
+@keyframes slashTravel{0%{transform:translateX(0) scaleX(.6);opacity:0}18%{opacity:1}100%{transform:translateX(var(--tx)) scaleX(1.15);opacity:0}}
+@keyframes beamTravel{0%{width:22px;opacity:.1}20%{opacity:1}100%{width:var(--w);opacity:0}}
+@keyframes lightningSpin{0%{transform:scale(.4) rotate(0deg);opacity:0}30%{opacity:1}100%{transform:scale(1.18) rotate(110deg);opacity:0}}
+@keyframes impactBurst{0%{transform:scale(.24);opacity:0}18%{opacity:1}100%{transform:scale(1.15);opacity:0}}
+@keyframes supportPulse{0%{transform:scale(.4);opacity:0}25%{opacity:1}100%{transform:scale(1.2);opacity:0}}
+@keyframes iceSpin{0%{transform:scale(.4) rotate(0deg);opacity:0}22%{opacity:1}100%{transform:scale(1.18) rotate(110deg);opacity:0}}
+@keyframes sandSpin{0%{transform:scale(.4) rotate(0);opacity:0}25%{opacity:1}100%{transform:scale(1.2) rotate(160deg);opacity:0}}
+@keyframes darkPulse{0%{transform:scale(.3);opacity:0}18%{opacity:1}100%{transform:scale(1.25);opacity:0}}
+@keyframes quakeCrack{0%{opacity:0;transform:scaleX(.3) scaleY(.4)}20%{opacity:1}100%{opacity:0;transform:scaleX(1.2) scaleY(1.1)}}
+@keyframes blackHolePulse{0%{transform:scale(.2) rotate(0);opacity:0}25%{opacity:1}100%{transform:scale(1.35) rotate(180deg);opacity:0}}
+@keyframes shockRing{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.4);opacity:0}}
+@keyframes petalFly{0%{transform:translate(0,0) rotate(0);opacity:0}15%{opacity:1}100%{transform:translate(var(--px),var(--py)) rotate(540deg);opacity:0}}
+@keyframes seaWave{0%{transform:scale(.4) translateX(0);opacity:0}20%{opacity:1}100%{transform:scale(1.45) translateX(var(--wx));opacity:0}}
+@keyframes seaKingCharge{0%{transform:translateX(0) scale(.5);opacity:0}20%{opacity:1}100%{transform:translateX(var(--kx)) scale(1.25);opacity:0}}
+@keyframes wingOpen{0%{transform:scale(.2);opacity:0}35%{opacity:1}100%{transform:scale(1.35);opacity:0}}
+@keyframes handBurst{0%{transform:scale(.25);opacity:0}30%{opacity:1}100%{transform:scale(1.25);opacity:0}}
+@keyframes demonAura{0%{transform:scale(.2) rotate(0);opacity:0}25%{opacity:1}100%{transform:scale(1.28) rotate(110deg);opacity:0}}
+@keyframes sparkFly{0%{transform:translate(0,0) scale(.3);opacity:1}100%{transform:translate(var(--sx),var(--sy)) scale(1.4);opacity:0}}
