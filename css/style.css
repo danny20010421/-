@@ -190,7 +190,7 @@ button:disabled{cursor:not-allowed}
 
 /* ---------- 對戰 ---------- */
 #battleScreen{background:var(--abyss)}
-.b-bg{position:absolute;inset:-20px;background-size:cover;background-position:center;filter:blur(3px) brightness(.62) saturate(1.1);transform:scale(1.04)}
+.b-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.66) saturate(1.1)}
 .b-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,transparent 30%,rgba(6,18,30,.75) 100%),linear-gradient(180deg,rgba(6,18,30,.7),transparent 26%,transparent 60%,rgba(6,18,30,.92))}
 #battleScreen.shake .b-arena,#battleScreen.shake .b-bg{animation:shk .42s}
 @keyframes shk{20%{transform:translate(-8px,4px)}40%{transform:translate(7px,-5px)}60%{transform:translate(-5px,3px)}80%{transform:translate(3px,-2px)}}
@@ -238,7 +238,7 @@ button:disabled{cursor:not-allowed}
 .stage{position:absolute;left:8%;right:8%;bottom:4%;height:22%;border-radius:50%;background:radial-gradient(ellipse at center,rgba(143,216,255,.18),transparent 70%)}
 .fighter{position:absolute;bottom:6%;width:38%;height:88%;display:flex;align-items:flex-end;justify-content:center;--sc:.9}
 .fighter.L{left:6%}.fighter.R{right:6%}
-.fighter img{position:relative;max-width:100%;max-height:100%;object-fit:contain;transform-origin:50% 100%;transform:scale(var(--sc));filter:drop-shadow(0 12px 18px rgba(0,0,0,.5));animation:idle 3.2s ease-in-out infinite}
+.fighter img{position:relative;max-width:100%;max-height:100%;object-fit:contain;transform-origin:50% 100%;transform:scale(var(--sc));will-change:transform;animation:idle 3.2s ease-in-out infinite}
 .fighter.R img{transform:scale(var(--sc)) scaleX(-1);animation-name:idleR}
 @keyframes idle{50%{transform:scale(var(--sc)) translateY(-10px)}}
 @keyframes idleR{50%{transform:scale(var(--sc)) scaleX(-1) translateY(-10px)}}
@@ -248,12 +248,12 @@ button:disabled{cursor:not-allowed}
 @keyframes inL{from{transform:translateX(-60%);opacity:0}}@keyframes inR{from{transform:translateX(60%);opacity:0}}
 .fighter.lunge-r{animation:lungeR .5s cubic-bezier(.3,.7,.3,1)}.fighter.lunge-l{animation:lungeL .5s cubic-bezier(.3,.7,.3,1)}
 @keyframes lungeR{35%{transform:translateX(42%) scale(1.05)}}@keyframes lungeL{35%{transform:translateX(-42%) scale(1.05)}}
-.fighter.cast img{filter:drop-shadow(0 0 22px rgba(232,193,112,.9)) brightness(1.15)}
+.fighter.cast img{filter:saturate(1.15) drop-shadow(0 0 22px rgba(232,193,112,.9)) brightness(1.12)}
 .fighter.hit{animation:hitk .45s}
-.fighter.hit img{filter:brightness(2.2) saturate(.3) drop-shadow(0 0 10px #fff)}
+.fighter.hit img{filter:brightness(1.55) saturate(1.2) drop-shadow(0 0 16px rgba(255,90,60,.95))}
 @keyframes hitk{20%{transform:translateX(-14px)}45%{transform:translateX(10px)}70%{transform:translateX(-5px)}}
 .fighter.R.hit{animation-name:hitkR}@keyframes hitkR{20%{transform:translateX(14px)}45%{transform:translateX(-10px)}70%{transform:translateX(5px)}}
-.fighter.down img{animation:none;transform:scale(var(--sc)) rotate(-8deg) translateY(6%);filter:grayscale(.9) brightness(.55);transition:all .6s}
+.fighter.down img{animation:none;transform:scale(var(--sc)) rotate(-8deg) translateY(6%);opacity:.8;transition:all .6s}
 .fighter.R.down img{transform:scale(var(--sc)) scaleX(-1) rotate(-8deg) translateY(6%)}
 .b-fx,.b-dmg{position:absolute;inset:0;pointer-events:none;overflow:visible}
 .dmg{position:absolute;transform:translate(-50%,-50%);font-family:var(--num);font-size:40px;letter-spacing:.02em;color:#fff;-webkit-text-stroke:2px rgba(60,10,8,.9);paint-order:stroke;text-shadow:0 4px 0 rgba(0,0,0,.35);animation:dmg 1.2s cubic-bezier(.2,.8,.3,1) forwards;white-space:nowrap}
@@ -347,20 +347,18 @@ button.bagItem:hover:not(:disabled){background:rgba(255,255,255,.12)}
 .m-sign{position:relative;z-index:2;font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:.3em;padding:6px 20px 6px 26px;background:var(--red);color:#fff;border-radius:6px;box-shadow:0 4px 0 #7d1d18;margin-bottom:-14px}
 .m-globe{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.25),rgba(159,214,245,.08) 50%,rgba(11,34,54,.4));border:6px solid var(--brass);overflow:hidden;box-shadow:inset 0 -20px 40px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.4)}
 .m-caps{position:absolute;inset:0}
-.m-caps i{position:absolute;width:17%;aspect-ratio:1;border-radius:50%;transform:rotate(var(--r));background:linear-gradient(180deg,var(--c) 0 50%,#f5f3ea 50%);box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),0 3px 5px rgba(0,0,0,.3)}
-.machine.spin .m-caps{animation:tumble 1.4s ease-in-out}
+.m-caps i{position:absolute;width:14%;aspect-ratio:1;border-radius:50%;transform:rotate(var(--r));background:linear-gradient(180deg,var(--c) 0 50%,#f5f3ea 50%);box-shadow:inset -4px -6px 10px rgba(0,0,0,.25),0 3px 5px rgba(0,0,0,.3)}
 @keyframes tumble{20%{transform:rotate(-14deg) translateY(-6%)}45%{transform:rotate(16deg) translateY(-10%)}70%{transform:rotate(-8deg)}}
 .m-glass{position:absolute;left:12%;top:8%;width:30%;height:20%;border-radius:50%;background:rgba(255,255,255,.28);filter:blur(4px);transform:rotate(-30deg)}
 .m-body{position:relative;width:86%;height:150px;margin-top:-18px;background:linear-gradient(180deg,#c8322b,#8e1f1a);border-radius:10px 10px 24px 24px;box-shadow:0 4px 0 #5d1411,0 20px 30px rgba(0,0,0,.4)}
 .m-slot{position:absolute;left:14%;top:26px;width:44px;height:14px;border-radius:4px;background:#3a0d0a;box-shadow:inset 0 2px 3px rgba(0,0,0,.6)}
 .m-crank{position:absolute;right:14%;top:14px;width:72px;height:72px;border-radius:50%;border:0;background:radial-gradient(circle,var(--brass2),var(--brass) 70%);box-shadow:0 4px 0 #86611f,0 8px 14px rgba(0,0,0,.35)}
 .m-crank i{position:absolute;left:50%;top:10%;width:14px;height:80%;margin-left:-7px;border-radius:7px;background:#6b4a14}
-.machine.spin .m-crank{animation:crank 1.2s cubic-bezier(.4,.1,.3,1)}
 @keyframes crank{to{transform:rotate(720deg)}}
 .m-chute{position:absolute;left:12%;bottom:18px;width:88px;height:64px;border-radius:0 0 40px 40px;background:#3a0d0a;overflow:hidden;box-shadow:inset 0 4px 8px rgba(0,0,0,.6)}
 .m-drop{position:absolute;left:50%;top:-60px;width:52px;height:52px;margin-left:-26px;border-radius:50%;background:linear-gradient(180deg,#9fb3c4 50%,#f5f3ea 50%);opacity:0}
 .m-drop.r-R{background:linear-gradient(180deg,#5fb8ff 50%,#f5f3ea 50%)}.m-drop.r-SR{background:linear-gradient(180deg,#c58bff 50%,#f5f3ea 50%)}.m-drop.r-SSR{background:linear-gradient(180deg,#ffcf5a 50%,#f5f3ea 50%);box-shadow:0 0 20px #ffcf5a}
-.machine.spin .m-drop{animation:drop 1.5s .6s cubic-bezier(.3,1.4,.5,1) forwards}
+.machine.drop .m-drop{animation:drop .7s cubic-bezier(.3,1.4,.5,1) forwards}
 @keyframes drop{0%{opacity:1;top:-60px}60%{top:8px}100%{opacity:1;top:8px}}
 .g-panel{display:flex;flex-direction:column;gap:18px}
 .g-lead{margin:0;line-height:1.8;color:#cfdbe4}
@@ -483,3 +481,61 @@ button.bagItem:hover:not(:disabled){background:rgba(255,255,255,.12)}
   .res-card{flex-direction:column;text-align:center}.res-card img{width:120px;height:140px}.res-actions{justify-content:center}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ---------- 管理後台 ---------- */
+.modal-card.admin{width:min(1100px,96vw);height:min(820px,92vh);display:flex;flex-direction:column}
+.admin-body{flex:1;min-height:0;display:grid;grid-template-columns:170px 1fr;gap:18px}
+#adminNav{display:flex;flex-direction:column;gap:4px}
+#adminNav button{text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;color:var(--muted);font-weight:700}
+#adminNav button:hover{background:rgba(255,255,255,.06)}
+#adminNav button.on{background:rgba(201,151,58,.18);color:var(--brass2)}
+#adminPane{overflow:auto;padding-right:6px}
+#adminPane h3{margin:0 0 6px;font-family:var(--serif);font-size:20px}
+.an{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.agrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.agrid.four{grid-template-columns:repeat(4,minmax(0,1fr))}.agrid.five{grid-template-columns:repeat(5,minmax(0,1fr))}.agrid.seven{grid-template-columns:repeat(7,minmax(0,1fr))}
+.af{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.af.wide{margin-bottom:10px}
+.af.check{flex-direction:row;align-items:center;gap:8px;grid-column:1/-1;color:var(--foam);font-size:14px}
+.af input,.af select,.af textarea{font:inherit;font-size:14px;color:var(--foam);background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 10px;width:100%}
+.af textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
+.af input[type=checkbox]{width:18px;height:18px}
+fieldset{border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px 4px;margin:0 0 12px}
+legend{padding:0 6px;font-weight:700;color:var(--brass2)}
+.arow{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 14px}
+.chipbtn{display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);border-radius:999px;padding:4px 12px 4px 4px;font-size:13px}
+.chipbtn:not(:has(img)){padding:5px 12px}
+.chipbtn img{width:26px;height:26px;border-radius:50%;object-fit:cover}
+.chipbtn.on{border-color:var(--brass2);background:rgba(201,151,58,.2)}
+.atools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.atools .btn-ghost{padding:12px}
+.btn-ghost.danger{color:#ffb3a8;border-color:rgba(255,154,138,.4)}
+.filebtn{display:flex;align-items:center;justify-content:center;cursor:pointer}
+.filebtn input{display:none}
+.astatus{font-size:13.5px;color:var(--muted)}.astatus.ok{color:#9dffb8}.astatus.err{color:#ffb3a8}
+@media (max-width:860px){.admin-body{grid-template-columns:1fr}#adminNav{flex-direction:row;overflow-x:auto}#adminNav button{white-space:nowrap}.agrid,.agrid.four,.agrid.five,.agrid.seven{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.b-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.b-fx{z-index:2}.b-dmg{z-index:4}.b-banner,.b-ticker{z-index:4}
+.icon-btn.snd{font-size:18px}.icon-btn.snd.off,.cmd-btn.snd.off{opacity:.45;text-decoration:line-through}
+.cmd-side .cmd-btn.snd{flex:0 0 38px}
+/* 扭蛋：開蛋 */
+.g-open{position:absolute;inset:0;z-index:28;display:grid;place-items:center;background:rgba(6,18,30,.6);opacity:0;pointer-events:none;transition:opacity .2s}
+.g-open.show{opacity:1}
+.g-open .cap{position:relative;width:180px;height:180px;--c:#9fb3c4}
+.g-open .cap i{position:absolute;left:0;right:0;height:50%;border-radius:90px 90px 0 0;background:var(--c);box-shadow:inset -10px -8px 20px rgba(0,0,0,.25),inset 8px 10px 16px rgba(255,255,255,.35);transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
+.g-open .cap .cap-top{top:0}
+.g-open .cap .cap-bot{bottom:0;border-radius:0 0 90px 90px;background:#f5f3ea}
+.g-open.shake .cap{animation:capShake .12s linear infinite}
+@keyframes capShake{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.g-open.open .cap-top{transform:translate(-40px,-90px) rotate(-35deg)}
+.g-open.open .cap-bot{transform:translate(30px,90px) rotate(25deg)}
+.g-open .cap-light{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 var(--c,#fff);opacity:0}
+.g-open.open .cap-light{animation:capLight .6s ease-out forwards}
+@keyframes capLight{0%{opacity:1;box-shadow:0 0 0 0 #fff}100%{opacity:0;box-shadow:0 0 120px 160px rgba(255,255,255,0)}}
+.g-open.r-R .cap{--c:#5fb8ff}.g-open.r-SR .cap{--c:#c58bff}.g-open.r-SSR .cap{--c:#ffcf5a}
+.g-open.r-SSR.open{background:radial-gradient(circle,rgba(255,207,90,.35),rgba(6,18,30,.7) 60%)}
+.machine.spin .m-body{animation:wob .18s linear infinite}
+@keyframes wob{50%{transform:translateX(2px) rotate(.4deg)}}
+.machine.spin .m-crank{animation:crankSpin .45s linear infinite}
+@keyframes crankSpin{to{transform:rotate(360deg)}}

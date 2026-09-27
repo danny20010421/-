@@ -7,15 +7,17 @@ function startBattle(opts) {
   const p = buildFighter(playerId);
   const e = applyChapterDifficulty(buildFighter(enemyId), chapterId, isBoss);
   p.status.revive = 0;
+  if (battle) clearInterval(battle.timerHandle);
   battle = { player: p, enemy: e, round: 1, timer: 20, timerHandle: null, isBusy: false, gameOver: false, isBoss, bossRevivesUsed: 0, chapterId, onEnd, itemsUsed: 0, opts, difficulty: CHAPTER_DIFFICULTY[chapterId] || CHAPTER_DIFFICULTY.east };
   const ch = CHAPTERS.find(c => c.id === chapterId);
   $('bBg').style.backgroundImage = `url("${ch ? ch.art : ''}")`;
-  $('bLogList').innerHTML = ''; $('bResult').classList.remove('show'); closeDrawers();
+  $('bLogList').innerHTML = ''; $('bResult').classList.remove('show'); closeDrawers(); $('bFL').classList.remove('down', 'hit'); $('bFR').classList.remove('down', 'hit');
   ['L', 'R'].forEach(s => { const c = s === 'L' ? p : e; $('bImg' + s).src = c.image; $('bAv' + s).src = c.avatar; $('bName' + s).textContent = c.name; $('bTitle' + s).textContent = c.title; $('bTypes' + s).innerHTML = c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join(''); $('bF' + s).style.setProperty('--sc', c.scale || .9); });
   $('bPlateR').classList.toggle('boss', !!isBoss);
   $('bLvR').textContent = isBoss ? 'BOSS' : ('★'.repeat(battle.difficulty.stars));
   renderHUD(true); renderSkills(); renderBag();
-  showScreen('battleScreen');
+  showScreen('battleScreen'); FXE.clear();
+  AUDIO.playSong(isBoss ? 'boss' : 'battle'); AUDIO.ambient(null);
   // 入場動畫
   ['L', 'R'].forEach(s => { const el = $('bF' + s); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); });
   log(`對戰開始：${p.name} 對上 ${e.name}`);
@@ -145,7 +147,7 @@ async function resolveRound(pAct, eIdx) {
 }
 async function applyItem(id) {
   const it = ITEMS[id], p = battle.player, ef = it.effect;
-  log(`${p.name} 使用了「${it.name}」`); banner(it.name, 'item');
+  log(`${p.name} 使用了「${it.name}」`); banner(it.name, 'item'); SFX.play('buff');
   const fw = $('bFL'); fw.classList.add('cast'); spawnSupport('L', true); await wait(420); fw.classList.remove('cast');
   if (ef.healRatio) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
   if (ef.cleanse) { p.status.freeze = 0; p.status.petrify = 0; p.status.attackFail = 0; p.status.skipAttack = 0; p.status.dots = []; p.status.skillNullify = 0; p.status.buffBlock = 0; p.status.damageDealtReductionTurns = 0; p.status.damageDealtReductionValue = 0; log('負面狀態全部清除。'); }
@@ -167,13 +169,11 @@ async function executeAction(side, idx) {
   if (actor.status.attackFail > 0) actor.status.attackFail--;
   skill.pp--; actor.status.lastSkill = skill.name; renderSkills(); renderHUD();
   log(`${actor.name} 使用「${skill.name}」`, side === 'P' ? 'me' : 'foe');
-  if (skill.ultimate) await cutIn(actor, skill, side);
+  if (skill.ultimate) { SFX.play('ult'); await cutIn(actor, skill, side); }
   else banner(skill.name, side === 'P' ? 'me' : 'foe');
-  const support = skill.type === 'support';
-  wrap.classList.add(support ? 'cast' : (side === 'P' ? 'lunge-r' : 'lunge-l'));
-  if (['beam', 'world', 'hammer', 'thunderfive', 'quake', 'judgment', 'darkpull', 'release', 'seaking', 'demonflower'].includes(skill.anima)) shake();
-  playSkillAnimation(side, skill); await wait(480);
-  wrap.classList.remove('cast', 'lunge-r', 'lunge-l');
+  wrap.classList.add('cast');
+  await playChoreo(side, actor, idx, skill);
+  wrap.classList.remove('cast');
   if (Math.random() * 100 > skill.accuracy) { log(`${actor.name} 的招式落空`); floatText(T, 'MISS', 'miss'); await wait(420); return; }
   const blocked = actor.status.skillNullify > 0; if (blocked) log(`${actor.name} 的附加效果被封印，只保留傷害`);
   if (target.status.dodge > 0 && skill.type === 'attack') { target.status.dodge--; log(`${target.name} 閃避了攻擊`); floatText(T, '閃避', 'miss'); renderHUD(); await wait(600); return; }
@@ -208,6 +208,7 @@ function checkBattleEnd() {
 function finishBattle(win, fled) {
   const b = battle; b.gameOver = true; b.isBusy = false; clearInterval(b.timerHandle); renderSkills();
   const loser = win ? 'R' : 'L'; if (!fled) $('bF' + loser).classList.add('down');
+  if (!fled) AUDIO.jingle(win ? 'victory' : 'defeat'); else AUDIO.stopSong();
   setTimeout(() => {
     const res = b.onEnd ? b.onEnd({ win, fled, enemyId: b.enemy.id, isBoss: b.isBoss, rounds: b.round }) : {};
     $('bResTitle').textContent = fled ? '撤退' : win ? '勝利' : '戰敗';
@@ -232,8 +233,11 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 function showFx(text) { floatText(null, text, 'status'); }
 function banner(text, kind) { const el = $('bBanner'); el.textContent = text; el.className = 'b-banner ' + (kind || ''); void el.offsetWidth; el.classList.add('show'); }
 function fighterPoint(side) {
-  const a = $('bArena').getBoundingClientRect(), img = $('bImg' + side).getBoundingClientRect();
-  return { x: img.left - a.left + img.width / 2, y: img.top - a.top + img.height * .5, w: a.width, h: a.height };
+  // 以版面位置計算（忽略進場、突進等位移動畫），確保特效打在角色身上
+  const f = $('bF' + side), img = $('bImg' + side), ar = $('bArena');
+  const sc = parseFloat(getComputedStyle(f).getPropertyValue('--sc')) || 1;
+  const h = img.offsetHeight * sc;
+  return { x: f.offsetLeft + img.offsetLeft + img.offsetWidth / 2, y: f.offsetTop + img.offsetTop + img.offsetHeight - h * .5, w: ar.clientWidth, h: ar.clientHeight };
 }
 function floatText(side, text, kind) {
   const layer = $('bDmg'); const el = document.createElement('div'); el.className = 'dmg ' + kind; el.textContent = text;
@@ -242,9 +246,10 @@ function floatText(side, text, kind) {
   setTimeout(() => el.remove(), 1300);
 }
 function showDamage(side, amount) { const big = amount > (side === 'L' ? battle.player.maxHp : battle.enemy.maxHp) * .25; floatText(side, '-' + Math.round(amount), 'hit' + (big ? ' big' : '')); }
-function showHeal(side, amount) { floatText(side, '+' + Math.round(amount), 'heal'); }
+let _healT = 0;
+function showHeal(side, amount) { floatText(side, '+' + Math.round(amount), 'heal'); if (performance.now() - _healT > 400) { _healT = performance.now(); SFX.play('heal'); } }
 function shake() { const a = $('battleScreen'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); }
-function triggerImpact(side, theme) { const w = $('bF' + side); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); setTimeout(() => w.classList.remove('hit'), 520); spawnImpact(side, theme); }
+function triggerImpact(side, theme) { SFX.play('hit'); const w = $('bF' + side); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); setTimeout(() => w.classList.remove('hit'), 520); spawnImpact(side, theme); }
 function spawnImpact(side, theme) { const p = fighterPoint(side); place('impactFx ' + (theme === 'blue' ? 'blue' : theme === 'gold' ? 'gold' : ''), p.x - 80, p.y - 80); if (theme === 'blue') place('iceBurst', p.x - 90, p.y - 90); }
 function spawnSupport(side, blue) { const p = fighterPoint(side); place('supportFx ' + (blue ? 'blue' : ''), p.x - 85, p.y - 85); }
 function place(cls, x, y, w, h, vars, life) { const el = document.createElement('div'); el.className = cls; el.style.left = x + 'px'; el.style.top = y + 'px'; if (w) el.style.width = w + 'px'; if (h) el.style.height = h + 'px'; if (vars) for (const k in vars) el.style.setProperty(k, vars[k]); $('bFx').appendChild(el); setTimeout(() => el.remove(), life || 1000); return el; }
@@ -309,7 +314,7 @@ function bindBattle() {
   $('bLogBtn').onclick = () => { $('bBag').classList.remove('show'); $('bLog').classList.toggle('show'); };
   document.querySelectorAll('[data-close-drawer]').forEach(b => b.onclick = closeDrawers);
   $('bFleeBtn').onclick = () => { if (!battle || battle.gameOver) return; if (battle.isBusy) return; confirmBox('要撤退嗎？', '撤退後這場戰鬥不算勝負，敵人會留在原地。', '撤退', () => finishBattle(false, true)); };
-  $('bRetry').onclick = () => { const o = battle.opts; startBattle(o); };
+  $('bRetry').onclick = () => { const o = battle.opts; $('bFL').classList.remove('down'); $('bFR').classList.remove('down'); startBattle(o); };
   $('bBack').onclick = () => { if (battle && battle.opts.onLeave) battle.opts.onLeave(); };
   window.addEventListener('keydown', e => {
     if ($('battleScreen').classList.contains('hidden') || !battle) return;

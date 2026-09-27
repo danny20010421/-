@@ -96,7 +96,11 @@
   function itemMesh(renderer, icon) {
     const b = new Builder();
     const c = { map: '#f2e2b3', water: '#4aa8d8', shell: '#bfe8ff', flame: '#ffb347', fruit: '#e4572e' }[icon] || '#ffd26c';
-    if (icon === 'map') { b.box(0, 0, 0, 1.1, .12, .8, c); b.box(0, .12, 0, .7, .02, .5, '#9b7b4a'); }
+    if (icon === 'meat') { b.sphere(0, .45, 0, .55, 8, '#b5502a', .8); b.cyl(-.9, .35, 0, .12, .12, .3, 5, '#f4ead2'); b.sphere(-1.05, .5, 0, .2, 5, '#f4ead2'); b.sphere(.9, .5, 0, .2, 5, '#f4ead2'); }
+    else if (icon === 'sack') { b.sphere(0, .45, 0, .55, 7, '#c9b27e', .9, .15, 3); b.cyl(0, .9, 0, .18, .12, .3, 6, '#8a6240'); }
+    else if (icon === 'gold') { b.box(0, 0, 0, .9, .5, .5, '#e8c170', .4, .8); b.box(.25, .5, 0, .5, .3, .4, '#f3d36b', .2); }
+    else if (icon === 'paper') { b.box(0, 0, 0, .9, .08, 1.1, '#efe2c0'); b.box(0, .09, 0, .5, .02, .5, '#8a6240'); }
+    else if (icon === 'map') { b.box(0, 0, 0, 1.1, .12, .8, c); b.box(0, .12, 0, .7, .02, .5, '#9b7b4a'); }
     else if (icon === 'water') { b.cyl(0, 0, 0, .45, .38, .9, 7, c); b.cyl(0, .9, 0, .16, .14, .3, 6, '#7a5b33'); }
     else if (icon === 'shell') { b.cyl(0, 0, 0, .6, 0, .9, 9, c); b.sphere(0, .1, 0, .35, 6, '#ffffff'); }
     else if (icon === 'flame') { b.cyl(0, 0, 0, .12, .1, .8, 5, '#f4e9d0'); b.cyl(0, .8, 0, .22, 0, .55, 6, c); }

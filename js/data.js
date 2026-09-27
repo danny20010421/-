@@ -55,115 +55,120 @@ const TYPE_COLORS = {'火':'#e8553b','格鬥':'#c9973a','雷電':'#6fc3ff','冰'
 
 /* 篇章：想換成官方篇章圖，只要把圖放到 assets/chapters/ 並改 art 路徑即可 */
 const CHAPTERS = [
- { id:'east', name:'東海篇', subtitle:'風車村的漂流巨人', art:'assets/chapters/east.webp', boss:'loki', bossTitle:'漂流的雷霆巨人',
-   blurb:'一場怪異的雷暴把巨人沖上風車村的岬角，港口的船一艘接一艘被劈碎。',
+ { id:'east', name:'東海篇', subtitle:'風車村的出航之日', art:'assets/chapters/east.webp', boss:'luffy', bossTitle:'戴草帽的少年',
+   blurb:'十年前，紅髮香克斯把草帽託付給一個少年。今天，那個少年要從風車村出海了，而他想在出發前找個強者試試身手。',
    env:{sky:'#9fd6f5', fog:'#bfe3f6', ground:'#6c7f4a', sun:[0.55,0.9,0.35], fogR:[70,230]},
    spawn:[0,52], bossPos:[0,-58],
    npcs:[
-    {id:'chief', name:'村長 老錨', role:'風車村村長', look:'elder', pos:[-10,40]},
-    {id:'smith', name:'造船匠 鐵釘', role:'港口造船匠', look:'worker', pos:[18,26]},
-    {id:'girl', name:'酒館的瑪琳', role:'酒館老闆娘', look:'lady', pos:[-24,18], chat:['最近雷聲大得連酒杯都在跳。','你要出海？先把肚子填飽再說。']},
-    {id:'kid', name:'小帆', role:'想當海賊的孩子', look:'kid', pos:[8,48], chat:['我以後也要有自己的船！','岬角那邊的閃電好像會說話……']}
+    {id:'makino', name:'瑪琪諾', role:'港口酒館老闆娘', look:'lady', pos:[-10,40]},
+    {id:'mayor', name:'村長', role:'風車村村長', look:'elder', pos:[18,26]},
+    {id:'roux', name:'紅髮海賊團的船員', role:'留下來喝一杯的老海賊', look:'warrior', pos:[-24,18], chat:['老大把那頂帽子交出去的時候，我就知道這小子會出海。','近海霸主？那傢伙十年前就被老大一眼瞪跑了。']},
+    {id:'kid', name:'村裡的孩子', role:'魯夫的小跟班', look:'kid', pos:[8,48], chat:['魯夫說他要找到一個大祕寶！','他每天都在岬角對著海揍空氣，好奇怪。']}
    ],
    steps:[
-    {type:'talk', npc:'chief', title:'拜訪村長', desc:'到村子中央找村長老錨了解狀況。', reward:1, lines:[
-      ['chief','你就是新來的航海者？來得正好。三天前一場怪雷把巨人沖上了北邊岬角。'],
-      ['chief','他醒來後就不停揮舞那把雷錘，港口已經有四艘船被劈成柴火。'],
-      ['chief','前任航海士留下的海圖被暴風吹散在海灘上，拼起來才找得到通往岬角的淺灘。拜託你了。']]},
-    {type:'collect', title:'尋找海圖碎片', desc:'在海灘與碼頭附近撿回 3 片海圖碎片。', item:'海圖碎片', icon:'map', count:3, spots:[[34,30],[-40,6],[22,-12]], reward:2},
-    {type:'defeat', title:'擊退挑戰者', desc:'港口有人趁亂鬧事，擊敗其中 2 位。', count:2, reward:3},
-    {type:'talk', npc:'smith', title:'修好淺灘木橋', desc:'把海圖交給造船匠鐵釘。', reward:1, unlockBoss:true, lines:[
-      ['smith','海圖拼好了？讓我看看……原來淺灘在這裡。'],
-      ['smith','我連夜把木橋接上，你可以直接走到岬角。巨人身邊的雷光屏障也會跟著消失。'],
-      ['smith','別硬拚他的雷錘，撐到他露出破綻再反擊。']]},
-    {type:'boss', title:'挑戰岬角的巨人', desc:'前往北方岬角，擊敗雷霆巨人。', reward:5}
+    {type:'talk', npc:'makino', title:'港口酒館', desc:'到酒館門口找瑪琪諾。', reward:1, lines:[
+      ['makino','你是剛靠岸的航海者嗎？今天村子有點吵，魯夫終於要出海了。'],
+      ['makino','那孩子從小就在我店裡喊著要當海賊王。可是他的小船上……除了草帽，什麼都沒帶。'],
+      ['makino','他最愛吃肉了。能幫我把準備好的肉找回來嗎？剛才被海鷗叼走，掉在村子各處了。']]},
+    {type:'collect', title:'出航用的肉', desc:'找回被海鷗叼走的 3 塊肉。', item:'出航用的肉', icon:'meat', count:3, spots:[[34,30],[-40,6],[22,-12]], reward:2},
+    {type:'defeat', title:'港口的挑戰者', desc:'聽說草帽少年要出海，各路強者跑來港口湊熱鬧。擊敗其中 2 位。', count:2, reward:3},
+    {type:'talk', npc:'mayor', title:'村長的嘆氣', desc:'把肉交給村長，請他轉交。', reward:1, unlockBoss:true, lines:[
+      ['mayor','哼，又一個想當海賊的笨蛋。從那個紅髮的傢伙來過之後，這村子就沒安寧過。'],
+      ['mayor','……不過，那小子是認真的。他在岬角等著，說出海前要跟一個真正的強者交手。'],
+      ['mayor','去吧。打贏他，或者被他打飛，都算是替他送行了。']]},
+    {type:'boss', title:'岬角的送行之戰', desc:'前往北方岬角，和戴草帽的少年交手。', reward:5}
    ]},
- { id:'alabasta', name:'阿拉巴斯坦篇', subtitle:'乾涸的王國', art:'assets/chapters/alabasta.webp', boss:'crocodile', bossTitle:'砂暴霸主',
-   blurb:'整整三年沒有下雨，綠洲一座接一座消失，王宮前卻有人在操縱沙暴。',
+ { id:'alabasta', name:'阿拉巴斯坦篇', subtitle:'被偷走的雨', art:'assets/chapters/alabasta.webp', boss:'crocodile', bossTitle:'王下七武海 沙鱷魚',
+   blurb:'三年沒有下雨，綠洲一座座乾涸，叛亂軍即將與王國軍開戰。人們把他當成英雄，沒人知道乾旱正是他一手造成的。',
    env:{sky:'#f2cf94', fog:'#efd3a4', ground:'#a27b45', sun:[0.4,0.95,0.2], fogR:[60,210]},
    spawn:[0,55], bossPos:[0,-60],
    npcs:[
-    {id:'leader', name:'反抗軍 卡札', role:'反抗軍隊長', look:'warrior', pos:[12,40]},
-    {id:'granny', name:'綠洲婆婆', role:'守著最後的水井', look:'elder', pos:[-18,30]},
-    {id:'merchant', name:'商隊的哈桑', role:'駱駝商人', look:'worker', pos:[26,12], chat:['往北的路都被沙埋了，我已經繞了三天。','王宮那邊的天空總是黃濛濛的。']},
-    {id:'boy', name:'送水少年', role:'村裡的孩子', look:'kid', pos:[-6,50], chat:['只要一杯水，媽媽就能好起來了。']}
+    {id:'toto', name:'托托', role:'在尤巴挖井的老人', look:'elder', pos:[-18,30]},
+    {id:'vivi', name:'薇薇', role:'阿拉巴斯坦公主', look:'lady', pos:[12,40]},
+    {id:'koza', name:'寇沙', role:'叛亂軍首領', look:'warrior', pos:[26,12], chat:['國王偷走了雨，我們只能拿起武器。','……如果你說的是真的，那我們一直在跟誰打仗？']},
+    {id:'kid', name:'尤巴的孩子', role:'綠洲的孩子', look:'kid', pos:[-6,50], chat:['爺爺每天都在挖，他說水一定還在沙子底下。']}
    ],
    steps:[
-    {type:'talk', npc:'granny', title:'綠洲的請託', desc:'和綠洲婆婆說話。', reward:1, lines:[
-      ['granny','旅人……這口井也快見底了。'],
-      ['granny','商隊逃走時丟下了幾個水袋，就埋在沙丘裡。先把它們帶回來給孩子們吧。']]},
-    {type:'collect', title:'找回水袋', desc:'在沙丘間找到 3 個水袋。', item:'水袋', icon:'water', count:3, spots:[[-38,-4],[40,-10],[4,10]], reward:2},
-    {type:'defeat', title:'擊退沙漠刺客', desc:'有人在暗處埋伏反抗軍，擊敗 2 位對手。', count:2, reward:3},
-    {type:'talk', npc:'leader', title:'與反抗軍會合', desc:'向反抗軍隊長卡札報告。', reward:1, unlockBoss:true, lines:[
-      ['leader','是你幫了綠洲？謝了，這份人情反抗軍記住了。'],
-      ['leader','乾旱不是天災，是有人拿沙暴在吸乾整個國家。那傢伙就站在王宮前的廣場上。'],
-      ['leader','我們的人會拖住外圍，王宮大門交給你。']]},
-    {type:'boss', title:'王宮前的決戰', desc:'前往王宮廣場，擊敗砂暴霸主。', reward:5}
+    {type:'talk', npc:'toto', title:'乾涸的尤巴', desc:'和在沙中挖井的托托說話。', reward:1, lines:[
+      ['toto','旅人啊……尤巴被沙暴埋了，可我不相信這片土地會背叛我們。'],
+      ['toto','只是這乾旱太奇怪。最近常看到奇怪的人在夜裡往空中撒粉，隔天別的城市就下雨了。'],
+      ['toto','他們丟下了幾個袋子，就在沙丘間。拜託你把它們找來，讓公主看看。']]},
+    {type:'collect', title:'舞粉的證據', desc:'在沙丘間找到 3 袋可以偷走雨水的「舞粉」。', item:'舞粉袋', icon:'sack', count:3, spots:[[-38,-4],[40,-10],[4,10]], reward:2},
+    {type:'defeat', title:'巴洛克工作社', desc:'祕密犯罪組織的特工在追捕知情者，擊敗 2 位。', count:2, reward:3},
+    {type:'talk', npc:'vivi', title:'公主的決心', desc:'把舞粉交給薇薇公主。', reward:1, unlockBoss:true, lines:[
+      ['vivi','這是……舞粉。原來偷走雨的不是父王，是巴洛克工作社。'],
+      ['vivi','他們的老大 Mr.0，就是被人民當成英雄的克洛克達爾。他想讓國家內戰，好奪走王位。'],
+      ['vivi','叛亂軍和王國軍就要在阿爾巴那開戰了。拜託你，擋住他！']]},
+    {type:'boss', title:'阿爾巴那的決戰', desc:'前往王宮前廣場，擊敗克洛克達爾。', reward:5}
    ]},
- { id:'skypiea', name:'空島篇', subtitle:'雲端上的審判', art:'assets/chapters/skypiea.webp', boss:'enel', bossTitle:'自稱為神的雷霆',
-   blurb:'一萬公尺高的雲海上，有人自稱為神，用雷聲審判每一個說出反對的人。',
+ { id:'skypiea', name:'空島篇', subtitle:'神之國的鐘聲', art:'assets/chapters/skypiea.webp', boss:'enel', bossTitle:'自稱為神的男人',
+   blurb:'在一萬公尺高的空島，聽得見所有聲音的男人自稱為神。四百年前沉默的黃金鐘，正等著再次響起。',
    env:{sky:'#bfe4ff', fog:'#e2f2ff', ground:'#c8d7e8', sun:[0.35,1.0,0.5], fogR:[80,260]},
    spawn:[0,55], bossPos:[0,-62],
    npcs:[
-    {id:'elder', name:'雲島長老', role:'天使島的長老', look:'elder', pos:[-14,40]},
-    {id:'guard', name:'雲之守衛', role:'雲海巡邏隊', look:'warrior', pos:[16,30]},
-    {id:'singer', name:'雲上歌手', role:'吟遊詩人', look:'lady', pos:[-28,12], chat:['在這裡，說錯一句話雷就會落下來。','所以大家都學會了用歌聲說話。']},
-    {id:'kid', name:'抱著雲朵的孩子', role:'天使島居民', look:'kid', pos:[6,50], chat:['你是從青海來的嗎？下面真的有地面？']}
+    {id:'conis', name:'柯妮絲', role:'天使島的少女', look:'lady', pos:[-14,40]},
+    {id:'ganfall', name:'甘·福爾', role:'前任之神・空之騎士', look:'elder', pos:[16,30]},
+    {id:'wiper', name:'懷帕', role:'香迪亞戰士', look:'warrior', pos:[-28,12], chat:['這片大地是我們祖先的故鄉，四百年來我們只想回家。','黃金鐘響起的那天，大戰士卡爾格拉的約定才算完成。']},
+    {id:'pagaya', name:'帕加亞', role:'柯妮絲的父親', look:'worker', pos:[6,50], chat:['貝殼是空島的寶物，能存下聲音、風，甚至衝擊。','小聲點，神聽得見一切。']}
    ],
    steps:[
-    {type:'talk', npc:'elder', title:'來自青海的客人', desc:'拜見雲島長老。', reward:1, lines:[
-      ['elder','能從青海爬上來的人，好久不見了。'],
-      ['elder','島上的雷雲貝殼能吸收雷聲。只要收集三枚，神殿的雷就傷不到你太深。']]},
-    {type:'collect', title:'收集雷雲貝殼', desc:'在雲海浮島上找到 3 枚雷雲貝殼。', item:'雷雲貝殼', icon:'shell', count:3, spots:[[-36,-8],[36,-2],[0,14]], reward:2},
-    {type:'defeat', title:'通過神官試煉', desc:'擊敗 2 位在雲端巡守的對手。', count:2, reward:3},
-    {type:'talk', npc:'guard', title:'打開雲之門', desc:'請雲之守衛開啟通往神殿的雲門。', reward:1, unlockBoss:true, lines:[
-      ['guard','你真的通過試煉了……那我也不怕了。'],
-      ['guard','雲門已經打開。記住，他的雷再快，也有喘息的時候。']]},
-    {type:'boss', title:'神之社的審判', desc:'登上神之社，擊敗自稱為神的男人。', reward:5}
+    {type:'talk', npc:'conis', title:'青海來的客人', desc:'和天使島的柯妮絲說話。', reward:1, lines:[
+      ['conis','歡迎來到天使島……對不起，我得小聲說話。'],
+      ['conis','神‧艾涅爾能聽見整座島的聲音。說出反對他的話，雷就會落下來。'],
+      ['conis','傳說神之島上埋著香朵拉的黃金。如果能找回來，也許就能讓黃金鐘再響一次。']]},
+    {type:'collect', title:'香朵拉的黃金', desc:'在雲上遺跡找到 3 塊黃金碎片。', item:'香朵拉黃金', icon:'gold', count:3, spots:[[-36,-8],[36,-2],[0,14]], reward:2},
+    {type:'defeat', title:'神官的試煉', desc:'艾涅爾手下的神官守著神之島，擊敗 2 位。', count:2, reward:3},
+    {type:'talk', npc:'ganfall', title:'前任之神', desc:'向甘·福爾報告。', reward:1, unlockBoss:true, lines:[
+      ['ganfall','你找到了黃金……那個男人六年前奪走了我的國家，現在又要把它毀掉。'],
+      ['ganfall','他打造的方舟準備升空，要把空島所有的地面都劈成碎片。'],
+      ['ganfall','雲門我已經打開。記住，他的雷再快，也有他看不見的東西。']]},
+    {type:'boss', title:'神之社的審判', desc:'登上神之社，擊敗艾涅爾。', reward:5}
    ]},
- { id:'dark', name:'黑暗海域', subtitle:'沉沒的燈塔', art:'assets/chapters/dark.webp', boss:'blackbeard', bossTitle:'吞噬黑暗的海賊',
-   blurb:'燈塔熄滅之後，這片海域就只剩下黑色的霧，和一陣陣令人作嘔的震動。',
+ { id:'dark', name:'黑暗海域', subtitle:'班納羅島的黑火', art:'assets/chapters/dark.webp', boss:'blackbeard', bossTitle:'黑鬍子 馬歇爾·D·汀奇',
+   blurb:'他殺了自己的同伴，奪走傳說中的惡魔果實，逃出白鬍子海賊團。追著他的火拳，最後在這座島上追上了他。',
    env:{sky:'#2a1d44', fog:'#231a39', ground:'#2c2440', sun:[0.3,0.8,0.5], fogR:[35,160]},
    spawn:[0,55], bossPos:[0,-60],
    npcs:[
-    {id:'keeper', name:'守燈人 老霧', role:'燈塔最後的守燈人', look:'elder', pos:[-12,40]},
-    {id:'sailor', name:'逃亡的水手', role:'被擊沉船隻的倖存者', look:'worker', pos:[18,30]},
-    {id:'ghost', name:'迷路的少女', role:'不知從哪來的孩子', look:'lady', pos:[-26,8], chat:['霧裡有人在笑……你聽見了嗎？']}
+    {id:'ace', name:'艾斯', role:'白鬍子海賊團二番隊隊長', look:'warrior', pos:[-12,40]},
+    {id:'elder', name:'島上的老人', role:'班納羅島居民', look:'elder', pos:[18,30]},
+    {id:'girl', name:'逃難的少女', role:'被燒毀城鎮的孩子', look:'lady', pos:[-26,8], chat:['那個人一邊笑一邊把房子吞進黑暗裡……']}
    ],
    steps:[
-    {type:'talk', npc:'keeper', title:'熄滅的燈塔', desc:'向守燈人老霧打聽燈塔的事。', reward:1, lines:[
-      ['keeper','燈塔熄了七天。沒有光，船就會一艘一艘撞上暗礁。'],
-      ['keeper','燈芯散落在礁岩間，能找回三根，我就能再點亮它。']]},
-    {type:'collect', title:'找回燈芯', desc:'在礁岩間找回 3 根燈芯。', item:'燈芯', icon:'flame', count:3, spots:[[-40,-6],[38,-14],[6,6]], reward:2},
-    {type:'defeat', title:'霧中的敵人', desc:'擊敗 2 位潛伏在霧中的對手。', count:2, reward:3},
-    {type:'talk', npc:'sailor', title:'倖存者的證言', desc:'聽逃亡的水手說出真相。', reward:1, unlockBoss:true, lines:[
-      ['sailor','燈塔亮了……我終於看清楚了。把我們的船吞下去的，是一團會笑的黑暗。'],
-      ['sailor','他就在北邊的破碎要塞。有光在，他的黑暗屏障就撐不住了。']]},
-    {type:'boss', title:'破碎要塞的黑暗', desc:'前往破碎要塞，擊敗吞噬黑暗的海賊。', reward:5}
+    {type:'talk', npc:'ace', title:'追擊者', desc:'和追到島上的艾斯說話。', reward:1, lines:[
+      ['ace','你也是來找他的？我叫艾斯。汀奇殺了我的隊員，那是船上最不能犯的罪。'],
+      ['ace','身為隊長，我得親手把他帶回去。可這霧太濃了，他的蹤跡很難找。'],
+      ['ace','他的手下一路丟下了通緝令和航海紀錄，幫我找回三份。']]},
+    {type:'collect', title:'黑鬍子的蹤跡', desc:'在焦黑的礁岩間找到 3 份線索。', item:'黑鬍子的線索', icon:'paper', count:3, spots:[[-40,-6],[38,-14],[6,6]], reward:2},
+    {type:'defeat', title:'霧中的敵人', desc:'擊敗 2 位在霧裡伏擊的對手。', count:2, reward:3},
+    {type:'talk', npc:'elder', title:'倖存者的證言', desc:'聽島上的老人說出他看到的事。', reward:1, unlockBoss:true, lines:[
+      ['elder','他往北邊的廢墟去了。那傢伙的黑暗……連火都吞得進去。'],
+      ['elder','被他碰到的人，身上的果實能力會消失。小心，千萬別被他抓住。'],
+      ['elder','艾斯已經先去了。拜託你，也去幫他。']]},
+    {type:'boss', title:'廢墟中的黑暗', desc:'前往北方廢墟，擊敗黑鬍子。', reward:5}
    ]},
- { id:'giant', name:'巨人篇', subtitle:'神木之國的試煉', art:'assets/chapters/giant.webp', boss:'loki', bossTitle:'被封印的王子',
-   blurb:'在巨人之國，只有通過神木試煉的戰士，才有資格和被封印的王子交手。',
+ { id:'giant', name:'巨人篇', subtitle:'艾爾巴夫的詛咒王子', art:'assets/chapters/giant.webp', boss:'loki', bossTitle:'詛咒王子 洛基',
+   blurb:'戰士之國艾爾巴夫，寶樹亞當撐起了整片天空。王子洛基被鎖鏈困在樹下，巨人們說，他是這個國家的詛咒。',
    env:{sky:'#a9d8c8', fog:'#b9dccd', ground:'#3f5a2c', sun:[0.5,0.9,0.3], fogR:[60,220]},
    spawn:[0,58], bossPos:[0,-62],
    npcs:[
-    {id:'elder', name:'巨人長老', role:'神木的守護者', look:'giant', pos:[-16,38]},
-    {id:'warrior', name:'年輕戰士 布隆', role:'巨人族戰士', look:'giant', pos:[20,26]},
-    {id:'scholar', name:'旅行學者', role:'研究巨人文化的人', look:'worker', pos:[-4,48], chat:['巨人的一天，比我們的三天還長。','這裡的每一片葉子都比我的船帆還大。']}
+    {id:'dorry', name:'多利', role:'巨兵海賊團船長', look:'giant', pos:[-16,38]},
+    {id:'hajrudin', name:'哈吉爾汀', role:'新巨兵海賊團船長', look:'giant', pos:[20,26]},
+    {id:'brogy', name:'布洛基', role:'巨兵海賊團船長', look:'giant', pos:[-4,48], chat:['我和多利在小花園決鬥了一百年，勝負還沒分出來！','嘎巴巴巴！小小的戰士，你的膽子倒不小！']}
    ],
    steps:[
-    {type:'talk', npc:'elder', title:'長老的考驗', desc:'和巨人長老交談。', reward:1, lines:[
-      ['elder','小小的戰士，你的腳步聲比螞蟻還輕，膽子倒是很大。'],
-      ['elder','神木結出的果實能讓戰士恢復力量。帶三顆回來，證明你能在這片森林活下去。']]},
-    {type:'collect', title:'採集神木果實', desc:'在森林中採集 3 顆神木果實。', item:'神木果實', icon:'fruit', count:3, spots:[[-42,-6],[40,-8],[2,12]], reward:2},
+    {type:'talk', npc:'dorry', title:'戰士之國', desc:'和巨人多利說話。', reward:1, lines:[
+      ['dorry','葛基基基！是從海上來的小戰士啊。歡迎來到艾爾巴夫。'],
+      ['dorry','在這裡，只有展現驕傲的人才會被當成戰士。寶樹亞當結的果實，是給戰士的禮物。'],
+      ['dorry','去森林裡帶三顆回來，讓大家看看你的本事。']]},
+    {type:'collect', title:'寶樹之果', desc:'在森林中採集 3 顆寶樹亞當的果實。', item:'寶樹之果', icon:'fruit', count:3, spots:[[-42,-6],[40,-8],[2,12]], reward:2},
     {type:'defeat', title:'戰士的證明', desc:'擊敗 2 位在森林中等待的對手。', count:2, reward:3},
-    {type:'talk', npc:'warrior', title:'解開封印', desc:'和年輕戰士布隆一起前往神木。', reward:1, unlockBoss:true, lines:[
-      ['warrior','長老認可你了！那我也沒什麼好擋的。'],
-      ['warrior','王子被封印在神木底下，已經醒了。屏障解開之後，他不會手下留情。']]},
-    {type:'boss', title:'神木下的王子', desc:'前往神木，擊敗被封印的王子。', reward:5}
+    {type:'talk', npc:'hajrudin', title:'被鎖住的王子', desc:'和哈吉爾汀談談洛基的事。', reward:1, unlockBoss:true, lines:[
+      ['hajrudin','你想見洛基？那傢伙犯下了不可原諒的罪，被鎖在寶樹底下。'],
+      ['hajrudin','可是最近鎖鏈一直在響。傳說中的力量，好像要醒過來了。'],
+      ['hajrudin','如果你真是戰士，就去確認吧。我會替你解開外圍的封印。']]},
+    {type:'boss', title:'寶樹下的王子', desc:'前往寶樹亞當，擊敗洛基。', reward:5}
    ]}
 ];
-const CLEAR_BONUS = 3;
-const START_TOKENS = 5;
 
 const CHAPTER_DIFFICULTY = {
  east:{order:1,label:'新手',stars:1,hp:1.00,atk:0,def:0,spd:0,bossHp:1.15,bossStages:1,ai:0.82},
@@ -172,16 +177,16 @@ const CHAPTER_DIFFICULTY = {
  dark:{order:4,label:'極難',stars:4,hp:1.38,atk:2,def:1,spd:1,bossHp:1.30,bossStages:1,ai:1.08},
  giant:{order:5,label:'傳說',stars:5,hp:1.58,atk:2,def:2,spd:2,bossHp:1.35,bossStages:1,ai:1.16}
 };
-const GAME_SETTINGS = {turnSeconds:20, stageStep:0.20, bossRevives:1, itemsPerBattle:3};
+const GAME_SETTINGS = {turnSeconds:20, stageStep:0.20, bossRevives:1, itemsPerBattle:3, startTokens:5, clearBonus:3, dailyLimit:2, unlockAll:false};
 
 const ENCOUNTER_LINES = {
- luffy:['嘿！你看起來很強嘛，來打一場！','我可是要成為海賊王的男人！'],
- loki:['渺小的東西，也敢擋在我面前？','雷錘會替我回答你。'],
- crocodile:['沙子會吞掉一切，包括你的骨頭。','在這片沙漠，我就是規則。'],
- blackbeard:['澤哈哈哈！運氣不錯嘛，撞上我了！','人的夢想是不會結束的！'],
- enel:['凡人啊，你的心跳聲吵到神了。','跪下，或者被審判。'],
- shirahoshi:['對、對不起……可是我不能讓你過去！','海王類們，請借我力量。'],
- robin:['你想知道的事，我都可以讓你看見。','開花吧。']
+ luffy:['嘿！你看起來很強嘛，跟我打一場！','我要成為海賊王，所以不會輸給你！'],
+ loki:['渺小的東西，也敢來看被詛咒的王子？','這條鎖鏈困不住我，你也一樣。'],
+ crocodile:['英雄？那不過是讓蠢貨聽話的稱號。','在沙漠裡，連你的血都會被曬乾。'],
+ blackbeard:['澤哈哈哈！運氣真好，又一個送上門的！','時代要變了，擋路的全都吞掉！'],
+ enel:['凡人啊，你的心跳聲，神都聽得一清二楚。','跪下吧，否則雷會替我審判你。'],
+ shirahoshi:['對、對不起……可是我不能讓你過去！','海王類們，請借我一點勇氣。'],
+ robin:['我想知道的歷史，不會讓任何人擋住。','開花吧。']
 };
 
 /* 扭蛋道具：rarity N/R/SR/SSR */

@@ -164,7 +164,7 @@ void main(){
   else { t = texture2D(uTex, vUV); if(t.a < 0.35) discard; }
   vec3 c = t.rgb * uTint.rgb + vec3(uGlow);
   float f = clamp((vD - uFogR.x) / (uFogR.y - uFogR.x), 0.0, 1.0);
-  gl_FragColor = vec4(mix(c, uFog, f*f*0.9), t.a * uTint.a);
+  gl_FragColor = vec4(mix(c, uFog, f*f*0.25), t.a * uTint.a);
 }`;
 
   function compile(gl, type, src) {

@@ -8,16 +8,16 @@ const SAVE = {
   data: null,
   load() {
     let d = null; try { d = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { }
-    if (!d) d = { tokens: START_TOKENS, inventory: { potion_s: 2, pp_s: 1 }, chapters: {}, player: 'luffy', pulls: 0, pity: 0 };
+    if (!d) d = { tokens: GAME_SETTINGS.startTokens, inventory: { potion_s: 2, pp_s: 1 }, chapters: {}, player: 'luffy', pulls: 0, pity: 0 };
     CHAPTERS.forEach(c => { d.chapters[c.id] = Object.assign({ step: 0, collected: [], defeated: [], roster: null, cleared: false, rewarded: [] }, d.chapters[c.id] || {}); });
     d.inventory = d.inventory || {}; this.data = d; return d;
   },
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { } }
 };
-const DAILY_KEY = 'op_rpg_daily_characters_v1', DAILY_LIMIT = 2;
+const DAILY_KEY = 'op_rpg_daily_characters_v1';
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-function dailyUsage() { let d = { date: today(), ids: [] }; try { const p = JSON.parse(localStorage.getItem(DAILY_KEY) || 'null'); if (p && p.date === today() && Array.isArray(p.ids)) d = { date: p.date, ids: [...new Set(p.ids)].slice(0, DAILY_LIMIT) }; } catch (e) { } return d; }
-function dailyRegister(id) { const d = dailyUsage(); if (d.ids.includes(id)) return true; if (d.ids.length >= DAILY_LIMIT) return false; d.ids.push(id); try { localStorage.setItem(DAILY_KEY, JSON.stringify(d)); } catch (e) { } return true; }
+function dailyUsage() { let d = { date: today(), ids: [] }; try { const p = JSON.parse(localStorage.getItem(DAILY_KEY) || 'null'); if (p && p.date === today() && Array.isArray(p.ids)) d = { date: p.date, ids: [...new Set(p.ids)].slice(0, GAME_SETTINGS.dailyLimit) }; } catch (e) { } return d; }
+function dailyRegister(id) { const d = dailyUsage(); if (d.ids.includes(id)) return true; if (d.ids.length >= GAME_SETTINGS.dailyLimit) return false; d.ids.push(id); try { localStorage.setItem(DAILY_KEY, JSON.stringify(d)); } catch (e) { } return true; }
 
 /* ---------- 共用 UI ---------- */
 let toastT = null;
@@ -31,9 +31,14 @@ function showScreen(id) {
   SCREENS.forEach(k => $(k).classList.toggle('hidden', k !== id)); currentScreen = id;
   const v = $('loginVideo'); if (id === 'loginScreen') { v.play && v.play().catch(() => { }); } else v.pause && v.pause();
   if (id === 'worldScreen') { WORLD && WORLD.start(); } else if (WORLD) WORLD.stop();
+  const song = { loginScreen: 'title', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
+  if (song) AUDIO.playSong(song);
+  AUDIO.ambient(id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
 }
+function syncSound() { const off = AUDIO.pref.muted; document.querySelectorAll('[data-snd]').forEach(b => { b.classList.toggle('off', off); b.setAttribute('aria-pressed', String(!off)); }); $('soundBtn').textContent = '音樂：' + (off ? '關' : '開'); }
+function toggleSound() { AUDIO.setPref({ muted: !AUDIO.pref.muted }); AUDIO.unlock(); syncSound(); }
 function coins() { ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); }
-function addTokens(n, why) { if (!n) return; SAVE.data.tokens += n; SAVE.save(); coins(); toast(`獲得寶藏幣 ×${n}${why ? '・' + why : ''}`, 'gold'); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i) && $(i).parentElement; if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }); }
+function addTokens(n, why) { if (!n) return; SFX.play('coin'); SAVE.data.tokens += n; SAVE.save(); coins(); toast(`獲得寶藏幣 ×${n}${why ? '・' + why : ''}`, 'gold'); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i) && $(i).parentElement; if (el) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }); }
 const ICONS = {
   potion: '<path d="M26 8h12v10l10 16a14 14 0 0 1-12 22h-8A14 14 0 0 1 16 34l10-16z" fill="var(--c)"/><path d="M24 6h16v6H24z" fill="#8a6240"/><path d="M20 38h24a10 10 0 0 1-10 12h-4a10 10 0 0 1-10-12z" fill="#fff" opacity=".35"/>',
   flask: '<path d="M27 8h10v14l14 22a8 8 0 0 1-7 12H20a8 8 0 0 1-7-12l14-22z" fill="var(--c)"/><path d="M25 6h14v5H25z" fill="#8a6240"/><circle cx="28" cy="44" r="3" fill="#fff" opacity=".5"/><circle cx="36" cy="38" r="2" fill="#fff" opacity=".5"/>',
@@ -83,18 +88,18 @@ function loginInfo() { const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters
 let pickChar = null;
 function openCharModal() {
   pickChar = SAVE.data.player || 'luffy'; const u = dailyUsage();
-  $('quotaNote').innerHTML = `每天最多登錄 ${DAILY_LIMIT} 位不同角色，今天已登錄 <b>${u.ids.length}/${DAILY_LIMIT}</b>${u.ids.length ? '：' + u.ids.map(i => CHARACTERS[i].name).join('、') : ''}。`;
+  $('quotaNote').innerHTML = `每天最多登錄 ${GAME_SETTINGS.dailyLimit} 位不同角色，今天已登錄 <b>${u.ids.length}/${GAME_SETTINGS.dailyLimit}</b>${u.ids.length ? '：' + u.ids.map(i => CHARACTERS[i].name).join('、') : ''}。`;
   renderCharGrid(); openModal('charModal');
 }
 function renderCharGrid() {
   const u = dailyUsage();
-  $('charGrid').innerHTML = CHARACTER_ORDER.map(id => { const c = CHARACTERS[id]; const locked = !u.ids.includes(id) && u.ids.length >= DAILY_LIMIT; return `<button class="char ${id === pickChar ? 'on' : ''} ${locked ? 'locked' : ''}" data-id="${id}" aria-pressed="${id === pickChar}"><img src="${c.image}" alt="" loading="lazy"><span class="c-name">${c.name}</span>${u.ids.includes(id) ? '<span class="c-badge">今日已登錄</span>' : locked ? '<span class="c-badge off">明天可用</span>' : ''}</button>`; }).join('');
+  $('charGrid').innerHTML = CHARACTER_ORDER.map(id => { const c = CHARACTERS[id]; const locked = !u.ids.includes(id) && u.ids.length >= GAME_SETTINGS.dailyLimit; return `<button class="char ${id === pickChar ? 'on' : ''} ${locked ? 'locked' : ''}" data-id="${id}" aria-pressed="${id === pickChar}"><img src="${c.image}" alt="" loading="lazy"><span class="c-name">${c.name}</span>${u.ids.includes(id) ? '<span class="c-badge">今日已登錄</span>' : locked ? '<span class="c-badge off">明天可用</span>' : ''}</button>`; }).join('');
   $('charGrid').querySelectorAll('.char').forEach(b => b.onclick = () => { pickChar = b.dataset.id; renderCharGrid(); });
   const c = CHARACTERS[pickChar];
   $('charDetail').innerHTML = `<img src="${c.avatar}" alt=""><div><h3>${c.name}<small>${c.title}</small></h3><div class="pl-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}</div><p>${c.desc}</p><dl><div><dt>體力</dt><dd>${c.maxHp}</dd></div><div><dt>速度</dt><dd>${c.baseSpeed}</dd></div><div><dt>奧義</dt><dd>${(c.skills.find(s => s.ultimate) || c.skills[c.skills.length - 1]).name}</dd></div></dl></div>`;
 }
 function confirmChar() {
-  if (!dailyRegister(pickChar)) { toast(`今天已登錄 ${DAILY_LIMIT} 位角色，請從已登錄的角色中選擇`, 'warn'); renderCharGrid(); return; }
+  if (!dailyRegister(pickChar)) { toast(`今天已登錄 ${GAME_SETTINGS.dailyLimit} 位角色，請從已登錄的角色中選擇`, 'warn'); renderCharGrid(); return; }
   SAVE.data.player = pickChar; SAVE.save(); closeModal('charModal'); openChart();
 }
 
@@ -102,7 +107,7 @@ function confirmChar() {
 const NODE_POS_WIDE = [[12, 70], [31, 38], [51, 64], [70, 30], [86, 58]], NODE_POS_TALL = [[24, 92], [72, 72], [28, 52], [72, 30], [32, 8]];
 let NODE_POS = NODE_POS_WIDE;
 let selChapter = null;
-function chapterUnlocked(i) { return i === 0 || SAVE.data.chapters[CHAPTERS[i - 1].id].cleared; }
+function chapterUnlocked(i) { return i === 0 || GAME_SETTINGS.unlockAll || SAVE.data.chapters[CHAPTERS[i - 1].id].cleared; }
 function openChart(focus) {
   coins(); const d = SAVE.data, pc = CHARACTERS[d.player];
   NODE_POS = innerWidth < 860 ? NODE_POS_TALL : NODE_POS_WIDE;
@@ -181,7 +186,7 @@ function renderQuest() {
 function completeStep() {
   const st = chState(), idx = st.step, s = CH.steps[idx];
   if (!st.rewarded.includes(idx)) { st.rewarded.push(idx); addTokens(s.reward, s.title); }
-  st.step++; SAVE.save();
+  st.step++; SAVE.save(); SFX.play('quest');
   const nx = CH.steps[st.step];
   if (nx && nx.type === 'defeat' && st.defeated.length >= nx.count) { setTimeout(completeStep, 600); }
   refreshWorld();
@@ -195,7 +200,7 @@ function onNear(n) {
 function onPickup(it) {
   const st = chState(), s = CH.steps[st.step]; if (!s || s.type !== 'collect') return;
   if (!st.collected.includes(it.idx)) st.collected.push(it.idx); SAVE.save();
-  toast(`撿到${s.item}（${st.collected.length}/${s.count}）`);
+  SFX.play('pickup'); toast(`撿到${s.item}（${st.collected.length}/${s.count}）`);
   if (st.collected.length >= s.count) { completeStep(); say([[null, `${s.item}都找齊了！`], [null, `下一步：${CH.steps[st.step].title}`]]); }
   else renderQuest();
 }
@@ -222,7 +227,7 @@ function beginFight(n) {
   startBattle({
     playerId: SAVE.data.player, enemyId: n.id, chapterId: CH.id, isBoss: n.boss,
     onEnd: (r) => onBattleEnd(r),
-    onLeave: () => { showScreen('worldScreen'); WORLD.paused = false; refreshWorld(); coins(); if (pendingClear) { const pc = pendingClear; pendingClear = null; setTimeout(() => showClear(pc), 350); } }
+    onLeave: () => { showScreen('worldScreen'); if (pendingClear) AUDIO.stopSong(); WORLD.paused = false; refreshWorld(); coins(); if (pendingClear) { const pc = pendingClear; pendingClear = null; setTimeout(() => showClear(pc), 350); } }
   });
 }
 let pendingClear = null;
@@ -231,7 +236,7 @@ function onBattleEnd(r) {
   const st = chState(); const msgs = [];
   if (r.isBoss) {
     const s = CH.steps[st.step];
-    if (s && s.type === 'boss') { const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += CLEAR_BONUS; msgs.push(`首次通關獎勵：寶藏幣 ×${CLEAR_BONUS}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); pendingClear = { first }; }
+    if (s && s.type === 'boss') { const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); pendingClear = { first }; }
   } else {
     if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
     const s = CH.steps[st.step];
@@ -241,7 +246,7 @@ function onBattleEnd(r) {
 }
 function showClear(pc) {
   const i = CHAPTERS.findIndex(c => c.id === CH.id), next = CHAPTERS[i + 1];
-  $('clearTitle').textContent = `${CH.name} 完成`;
+  AUDIO.jingle('clear', CH.id); $('clearTitle').textContent = `${CH.name} 完成`;
   $('clearDesc').innerHTML = `${CH.bossTitle}被擊敗了，這座島恢復了平靜。${next ? `<br>新的航路已經打開：<b>${next.name}</b>。` : '<br>你走完了整條偉大航路。'}<br>別忘了去扭蛋機換道具。`;
   $('clearOverlay').classList.add('show');
 }
@@ -263,7 +268,7 @@ function nextLine() {
   $('dlgChoices').innerHTML = ''; $('dlgNext').style.visibility = 'visible';
   const el = $('dlgText'); el.textContent = ''; let i = 0; const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) { el.textContent = text; if (!dlgQueue.length && dlgChoices) showChoices(); return; }
-  typing = { full: text, h: setInterval(() => { i += 1; el.textContent = text.slice(0, i); if (i >= text.length) { clearInterval(typing.h); typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); } }, 26) };
+  typing = { full: text, h: setInterval(() => { i += 1; el.textContent = text.slice(0, i); if (i % 3 === 0) SFX.play('blip'); if (i >= text.length) { clearInterval(typing.h); typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); } }, 26) };
 }
 function showChoices() {
   $('dlgNext').style.visibility = 'hidden';
@@ -277,7 +282,7 @@ let gachaReturn = 'chapterScreen', gachaBusy = false;
 function openGacha() {
   gachaReturn = currentScreen === 'gachaScreen' ? gachaReturn : currentScreen; coins();
   $('rateTable').innerHTML = '<caption>出現機率</caption>' + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join('');
-  const caps = $('mCaps'); if (!caps.children.length) { const cols = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#f4f7f2']; for (let i = 0; i < 22; i++) { const s = document.createElement('i'); s.style.cssText = `--c:${cols[i % cols.length]};left:${6 + (i * 37) % 78}%;top:${40 + ((i * 53) % 50)}%;--r:${(i * 47) % 360}deg`; caps.appendChild(s); } }
+  const caps = $('mCaps'); if (!caps.children.length) { const cols = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#f4f7f2']; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; let placed = 0, guard = 0; while (placed < 30 && guard++ < 4000) { const x = 8 + rnd() * 84, y = 40 + rnd() * 52; if (Math.hypot(x - 50, y - 50) > 40) continue; const s = document.createElement('i'); s.style.cssText = `--c:${cols[placed % cols.length]};left:${x - 7}%;top:${y - 7}%;--r:${Math.round(rnd() * 360)}deg;z-index:${Math.round(y)}`; caps.appendChild(s); placed++; } }
   updateGachaBtns(); showScreen('gachaScreen');
 }
 function updateGachaBtns() {
@@ -297,13 +302,30 @@ async function pull(n) {
   if (n === 10 && !res.some(id => ['SR', 'SSR'].includes(ITEMS[id].rarity))) res[9] = rollOne('SR');
   res.forEach(id => { SAVE.data.inventory[id] = (SAVE.data.inventory[id] || 0) + 1; }); SAVE.data.pulls += n; SAVE.save();
   const best = res.map(id => ITEMS[id].rarity).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const m = $('machine'); m.className = 'machine spin'; $('mDrop').className = 'm-drop r-' + best;
-  await wait(matchMedia('(prefers-reduced-motion: reduce)').matches ? 200 : 1500);
-  m.className = 'machine';
+  SFX.play('crank'); await spinCapsules(reduce ? 200 : 1700); SFX.play('crank');
+  m.className = 'machine drop'; await wait(reduce ? 100 : 700); m.className = 'machine';
+  const op = $('gOpen'); op.className = 'g-open show shake r-' + best; SFX.play('pop'); await wait(reduce ? 100 : 750);
+  op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop'); await wait(reduce ? 100 : 520);
+  op.className = 'g-open';
   $('gResTitle').textContent = n === 10 ? '十連結果' : '獲得道具';
   $('gResGrid').className = 'g-res-grid ' + (n === 10 ? 'ten' : 'one');
   $('gResGrid').innerHTML = res.map((id, i) => { const it = ITEMS[id]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`; }).join('');
   $('gResult').classList.add('show'); gachaBusy = false; updateGachaBtns();
+}
+function spinCapsules(ms) {
+  return new Promise(res => {
+    const caps = [...$('mCaps').children], t0 = performance.now();
+    const base = caps.map(c => ({ x: parseFloat(c.style.left) + 7, y: parseFloat(c.style.top) + 7, r: parseFloat(c.style.getPropertyValue('--r')) || 0 }));
+    const orb = base.map((b, i) => ({ rad: 14 + (i * 37 % 26), a0: i * 2.4 }));
+    const frame = (now) => {
+      const k = Math.min(1, (now - t0) / ms), spin = k < .2 ? k / .2 : k > .75 ? (1 - k) / .25 : 1, settle = k > .7 ? (k - .7) / .3 : 0;
+      caps.forEach((c, i) => { const o = orb[i], ang = o.a0 + (now - t0) / 1000 * 9 * (0.5 + spin * .5) * (i % 2 ? 1 : 1.15); const ox = 50 + Math.cos(ang) * o.rad * 1.5, oy = 50 + Math.sin(ang) * o.rad * 1.4; const x = ox + (base[i].x - ox) * settle * settle, y = oy + (base[i].y - oy) * settle * settle; c.style.left = (x - 7) + '%'; c.style.top = (y - 7) + '%'; c.style.transform = `rotate(${base[i].r + ang * 57 * (1 - settle)}deg)`; });
+      if (k < 1) requestAnimationFrame(frame); else { caps.forEach((c, i) => { c.style.left = (base[i].x - 7) + '%'; c.style.top = (base[i].y - 7) + '%'; c.style.transform = `rotate(${base[i].r}deg)`; }); res(); }
+    };
+    requestAnimationFrame(frame);
+  });
 }
 function openBag() {
   const inv = SAVE.data.inventory, ids = Object.keys(ITEMS).filter(id => inv[id] > 0);
@@ -325,9 +347,10 @@ function bindJoystick() {
 function boot() {
   SAVE.load(); renderNewsBoard(); loginInfo(); coins(); bindBattle(); bindJoystick();
   document.querySelectorAll('.modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.classList.remove('show')); });
-  $('startBtn').onclick = openCharModal; $('charConfirm').onclick = confirmChar;
+  $('startBtn').onclick = openCharModal; $('adminBtn').onclick = openAdmin; bindAdmin(); $('charConfirm').onclick = confirmChar;
   $('newsOpenBtn').onclick = () => openNews(); $('newsMoreBtn').onclick = () => openNews(); $('newsEditBtn').onclick = openNewsEditor;
-  $('soundBtn').onclick = () => { const v = $('loginVideo'); v.muted = !v.muted; $('soundBtn').textContent = '影片音效：' + (v.muted ? '關' : '開'); $('soundBtn').setAttribute('aria-pressed', String(!v.muted)); };
+  $('soundBtn').onclick = toggleSound; document.querySelectorAll('[data-snd]').forEach(b => b.onclick = toggleSound); syncSound();
+  document.addEventListener('click', e => { if (e.target.closest('.btn-primary,.btn-gold,.btn-ghost,.node,.char,.chipbtn,.cmd-btn,.icon-btn')) SFX.play('click'); });
   $('chBackBtn').onclick = () => { loginInfo(); showScreen('loginScreen'); };
   $('wBackBtn').onclick = () => openChart(CH && CH.id);
   ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => $(i).onclick = openGacha);

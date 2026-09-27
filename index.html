@@ -29,7 +29,8 @@
       <button class="btn-primary big" id="startBtn">開始冒險</button>
       <div class="login-sub">
         <button class="btn-ghost" id="newsOpenBtn">全部公告</button>
-        <button class="btn-ghost" id="soundBtn" aria-pressed="false">影片音效：關</button>
+        <button class="btn-ghost" id="soundBtn" aria-pressed="false">音樂：開</button>
+        <button class="btn-ghost" id="adminBtn">管理後台</button>
       </div>
     </div>
   </div>
@@ -49,6 +50,7 @@
     <button class="icon-btn" id="chBackBtn" aria-label="回到登入">‹</button>
     <div class="captain" id="captainChip"></div>
     <div class="topbar-right">
+      <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
       <div class="coin" title="寶藏幣：完成劇情任務獲得"><i class="coin-ico"></i><b id="coinTop">0</b></div>
       <button class="btn-ghost" id="bagBtnMap">背包</button>
       <button class="btn-gold" id="gachaBtnMap">扭蛋機</button>
@@ -70,6 +72,7 @@
     <button class="icon-btn" id="wBackBtn" aria-label="回到海圖">‹</button>
     <div class="w-title"><b id="wChapter"></b><span id="wChapterSub"></span></div>
     <div class="topbar-right">
+      <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
       <div class="coin"><i class="coin-ico"></i><b id="coinWorld">0</b></div>
       <button class="btn-ghost" id="bagBtnWorld">背包</button>
       <button class="btn-gold" id="gachaBtnWorld">扭蛋機</button>
@@ -134,6 +137,7 @@
     <div class="fighter L" id="bFL"><div class="f-shadow"></div><img id="bImgL" alt=""></div>
     <div class="fighter R" id="bFR"><div class="f-shadow"></div><img id="bImgR" alt=""></div>
     <div class="b-fx" id="bFx"></div>
+    <canvas class="b-canvas" id="bCanvas"></canvas>
     <div class="b-dmg" id="bDmg"></div>
     <div class="b-banner" id="bBanner"></div>
     <div class="b-ticker" id="bTicker"></div>
@@ -144,6 +148,7 @@
       <button class="cmd-btn" id="bItemBtn"><span>道具</span><small id="bItemCount">3/3</small></button>
       <button class="cmd-btn" id="bLogBtn"><span>紀錄</span><small>L</small></button>
       <button class="cmd-btn flee" id="bFleeBtn"><span>撤退</span></button>
+      <button class="cmd-btn snd" data-snd aria-label="音樂開關"><span>♪</span></button>
     </div>
   </footer>
   <aside class="drawer" id="bBag"><header><h3>背包</h3><button class="icon-btn sm" data-close-drawer aria-label="關閉">×</button></header><p class="drawer-note" id="bBagNote"></p><div class="bag-list" id="bBagList"></div></aside>
@@ -164,7 +169,7 @@
   <header class="topbar">
     <button class="icon-btn" id="gBackBtn" aria-label="返回">‹</button>
     <h2 class="g-title">寶藏扭蛋機</h2>
-    <div class="topbar-right"><div class="coin"><i class="coin-ico"></i><b id="coinGacha">0</b></div><button class="btn-ghost" id="bagBtnGacha">背包</button></div>
+    <div class="topbar-right"><button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button><div class="coin"><i class="coin-ico"></i><b id="coinGacha">0</b></div><button class="btn-ghost" id="bagBtnGacha">背包</button></div>
   </header>
   <div class="g-main">
     <div class="machine" id="machine">
@@ -186,6 +191,7 @@
       <p class="g-empty" id="gEmpty"></p>
     </div>
   </div>
+  <div class="g-open" id="gOpen"><div class="cap"><i class="cap-top"></i><i class="cap-bot"></i></div><div class="cap-light"></div></div>
   <div class="g-result" id="gResult">
     <div class="g-res-card">
       <h3 id="gResTitle">獲得道具</h3>
@@ -225,6 +231,26 @@
   </div>
 </div>
 
+<!-- 管理後台 -->
+<div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+  <div class="modal-card admin">
+    <header><h2 id="adminTitle">遊戲管理後台</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <div class="admin-body">
+      <nav id="adminNav">
+        <button data-tab="general" class="on">基本規則</button>
+        <button data-tab="chars">角色與技能</button>
+        <button data-tab="chapters">篇章與 BOSS</button>
+        <button data-tab="story">劇情與對話</button>
+        <button data-tab="gacha">扭蛋機</button>
+        <button data-tab="news">公告</button>
+        <button data-tab="tools">備份與工具</button>
+      </nav>
+      <main id="adminPane"></main>
+    </div>
+    <footer class="split"><span class="astatus" id="adminStatus"></span><div><button class="btn-ghost" id="adminCancel">放棄修改</button> <button class="btn-gold" id="adminSave">儲存並套用</button></div></footer>
+  </div>
+</div>
+
 <!-- 背包 -->
 <div class="modal" id="bagModal" role="dialog" aria-modal="true" aria-labelledby="bagTitle">
   <div class="modal-card">
@@ -250,6 +276,9 @@
 <script src="js/world.js"></script>
 <script src="js/battle_core.js"></script>
 <script src="js/battle.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

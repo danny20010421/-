@@ -139,7 +139,7 @@
       const list = [];
       const pc = CHARACTERS[this.playerId];
       list.push({ url: pc.image, x: p.x, y: p.y + (p.moving ? Math.abs(Math.sin(p.t)) * .35 : Math.sin(t * 2.2) * .08), z: p.z, h: 5.6, flip: p.flip, d: 0 });
-      for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: e.boss && !this.bossUnlocked ? [.7, .75, .9, 1] : [1, 1, 1, 1] }); }
+      for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: [1, 1, 1, 1] }); }
       list.forEach(o => { if (!o.d) o.d = Math.hypot(o.x - eye[0], o.z - eye[2]); }); list.sort((a, b) => b.d - a.d);
       for (const o of list) { const rec = r.texture(o.url); const asp = rec.ready ? rec.w / rec.h : .75; r.sprite(o.url, o.x, o.y, o.z, o.h * asp, o.h, { flip: o.flip, tint: o.tint }); }
       // BOSS 屏障
