@@ -26,13 +26,13 @@ function toast(msg, kind) { const el = $('toast'); el.textContent = msg; el.clas
 function openModal(id) { const _m = document.getElementById(id); if (_m) _m.querySelectorAll('.modal-card,.cx-detail,.cx-grid').forEach(e => e.scrollTop = 0); $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfOk').textContent = ok || '確定'; $('cfOk').onclick = () => { closeModal('confirmModal'); fn(); }; openModal('confirmModal'); }
-const SCREENS = ['loginScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
+const SCREENS = ['loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
 let currentScreen = 'loginScreen';
 function showScreen(id) {
   SCREENS.forEach(k => $(k).classList.toggle('hidden', k !== id)); currentScreen = id;
   const v = $('loginVideo'); if (id === 'loginScreen') { v.play && v.play().catch(() => { }); } else v.pause && v.pause();
   if (id === 'worldScreen') { WORLD && WORLD.start(); } else if (WORLD) WORLD.stop();
-  const song = { loginScreen: 'title', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
+  const song = { loginScreen: 'title', modeScreen: 'map', runnerScreen: 'east', towerScreen: 'battle', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
   if (song) AUDIO.playSong(song);
   AUDIO.ambient(id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
 }
@@ -49,7 +49,7 @@ function updateDots() {
     set('.m-menu', hub || tr);
   } catch (e) { }
 }
-function coins() { updateDots(); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); }
+function coins() { updateDots(); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); document.querySelectorAll('.coinVal').forEach(el => el.textContent = SAVE.data.tokens); }
 function addBerry(n) { if (!n) return; SAVE.data.berry = (SAVE.data.berry || 0) + n; SAVE.save(); coins(); document.querySelectorAll('.coin.berry').forEach(el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }); }
 /* 陣容：最多 GAME_SETTINGS.lineupMax 人，第一位是先鋒（也是在島上行走的角色） */
 function syncLeader() { const L = SAVE.data.lineup; if (L.length) SAVE.data.player = L[0]; SAVE.save(); }
@@ -198,10 +198,10 @@ function renderCrew() {
 function confirmStarter() {
   STARTERS.forEach(id => addCrew(id, 1)); SAVE.data.lineup = [pickChar, ...STARTERS.filter(x => x !== pickChar)].slice(0, GAME_SETTINGS.lineupMax); syncLeader(); closeModal('charModal');
   toast(`三位初登場船員都上陣了！由${CHARACTERS[pickChar].name}擔任先鋒`, 'gold');
-  openGacha('chapterScreen'); setTimeout(openSlot, 700);
+  openGacha('modeScreen'); setTimeout(openSlot, 700);
 }
 function loginInfo() { if (window.refreshAvatar) refreshAvatar(); const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters[c.id].cleared).length, n = Object.keys(d.roster).length; $('loginSaveInfo').textContent = n ? `歡迎回來，船長。船員 ${n} 位・航海進度 ${cl}/${CHAPTERS.length}・貝里 ${(d.berry || 0).toLocaleString()}` : '第一次出航？初登場的草帽三人組已經在港口等你了。'; $('startBtn').textContent = n ? '繼續航海' : '揚帆出航'; }
-function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openChart(); }
+function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openModes(); }
 
 /* ---------- 篇章海圖 ---------- */
 const NODE_POS_WIDE = [[8, 74], [20, 40], [32, 72], [44, 34], [56, 68], [68, 30], [80, 64], [92, 32]], NODE_POS_TALL = [[28, 94], [72, 81.5], [28, 69], [72, 56.5], [28, 44], [72, 31.5], [28, 19], [72, 6.5]];
@@ -321,7 +321,7 @@ function enterChapter(id) {
     } catch (err) { $('loading').classList.remove('show'); console.error(err); toast('這台裝置無法開啟 3D 場景（WebGL 不可用）', 'warn'); return; }
     $('wChapter').textContent = CH.name; $('wChapterSub').textContent = CH.subtitle; coins();
     stepStarted(); refreshWorld(); onNear(null); hideDialog(); $('clearOverlay').classList.remove('show');
-    showScreen('worldScreen'); $('loading').classList.remove('show');
+    showScreen('worldScreen'); $('loading').classList.remove('show'); if (window.prewarmPortraits) prewarmPortraits(CH.npcs.map(n => n.look));
     const st = chState();
     if (st.step === 0 && !st.cleared) setTimeout(() => say([...(CH.prologue || [[null, `${CH.name}・${CH.subtitle}`], [null, CH.blurb]]), [null, '頭上有「!」的人有事找你，任務欄會告訴你下一步。']], autoStep), 500);
     else if (huntActive()) { const tp = treasurePiece(); setTimeout(() => say([[null, `主線「${TREASURE.title}」`], [null, `這座島上藏著「${tp.name}」。${tp.hint}`], [null, '跟著探測器的溫度走，在最熱的地方按「挖掘」。']]), 500); }
@@ -517,7 +517,10 @@ function showChoices() {
   $('dlgChoices').innerHTML = dlgChoices.map((c, i) => `<button class="${c.primary ? 'btn-primary' : 'btn-ghost'}" data-i="${i}">${c.label}</button>`).join('');
   $('dlgChoices').querySelectorAll('button').forEach(b => b.onclick = (e) => { e.stopPropagation(); const c = dlgChoices[+b.dataset.i]; dlgChoices = null; hideDialog(); c.fn(); });
 }
-function hideDialog() { dialogOpen = false; $('dialog').classList.remove('show'); if (WORLD && currentScreen === 'worldScreen') WORLD.paused = false; }
+/* 對話收合：縮成底部小膠囊，不擋畫面 */
+function setDialogMin(on) { const d = $('dialog'); if (!d) return; d.classList.toggle('min', !!on); const n = $('dlgName'); $('dlgPillName').textContent = n && n.firstChild ? (n.firstChild.textContent || '').trim() : ''; }
+window.addEventListener('DOMContentLoaded', () => { const m = $('dlgMin'), p = $('dlgPill'); if (m) m.addEventListener('click', e => { e.stopPropagation(); setDialogMin(true); }); if (p) p.addEventListener('click', e => { e.stopPropagation(); setDialogMin(false); }); });
+function hideDialog() { setDialogMin(false); dialogOpen = false; $('dialog').classList.remove('show'); if (WORLD && currentScreen === 'worldScreen') WORLD.paused = false; }
 
 /* ---------- 懸賞處 ---------- */
 let gachaReturn = 'chapterScreen', gachaBusy = false;
@@ -588,15 +591,29 @@ async function pullFree() {
   const x = { char: pool[Math.floor(Math.random() * pool.length)], lv: MAX_LV, setCap: true };
   grant([x]); await playMachine('SSR'); showResults([x], '新手召喚：LV 100 船員加入！');
 }
+/* 扭蛋翻滾：在玻璃球上用畫布畫出會彈跳碰撞的扭蛋（不再旋轉複製圖片，避免割裂感） */
 function spinCapsules(ms) {
   return new Promise(res => {
-    const caps = [...$('mCaps').children], t0 = performance.now();
-    const base = caps.map(c => ({ x: parseFloat(c.style.left) + 7, y: parseFloat(c.style.top) + 7, r: parseFloat(c.style.getPropertyValue('--r')) || 0 }));
-    const orb = base.map((b, i) => ({ rad: 8 + (i * 37 % 20), a0: i * 2.4 }));
-    const frame = (now) => {
-      const k = Math.min(1, (now - t0) / ms), spin = k < .2 ? k / .2 : k > .75 ? (1 - k) / .25 : 1, settle = k > .7 ? (k - .7) / .3 : 0;
-      caps.forEach((c, i) => { const o = orb[i], ang = o.a0 + (now - t0) / 1000 * 9 * (0.5 + spin * .5) * (i % 2 ? 1 : 1.15); const ox = 50 + Math.cos(ang) * o.rad * 1.1, oy = 50 + Math.sin(ang) * o.rad * 1.05; const x = ox + (base[i].x - ox) * settle * settle, y = oy + (base[i].y - oy) * settle * settle; c.style.left = (x - 7) + '%'; c.style.top = (y - 7) + '%'; c.style.transform = `rotate(${base[i].r + ang * 57 * (1 - settle)}deg)`; });
-      if (k < 1) requestAnimationFrame(frame); else { caps.forEach((c, i) => { c.style.left = (base[i].x - 7) + '%'; c.style.top = (base[i].y - 7) + '%'; c.style.transform = `rotate(${base[i].r}deg)`; }); res(); }
+    const cv = $('gCv'); if (!cv) return setTimeout(res, ms);
+    const box = cv.parentElement.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), W = box.width, H = box.height;
+    cv.width = W * dpr; cv.height = H * dpr; const cx = cv.getContext('2d'); cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const R = W * .4, C = [W / 2, H * .54], r = W * .07, COL = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#ff8a4a', '#5f8fff'];
+    const caps = Array.from({ length: 15 }, (_, i) => { const a = Math.random() * Math.PI, d = Math.random() * R * .6; return { x: C[0] + Math.cos(a) * d * (Math.random() < .5 ? -1 : 1), y: C[1] + R * .35 - Math.random() * R * .4, vx: 0, vy: 0, a: Math.random() * 6.28, va: 0, c: COL[i % COL.length], s: .85 + Math.random() * .3 }; });
+    const t0 = performance.now(); let last = t0, kick = 0; cv.classList.add('on');
+    const frame = now => {
+      const dt = Math.min(.033, (now - last) / 1000), el = now - t0, power = el < ms * .8 ? 1 : Math.max(0, 1 - (el - ms * .8) / (ms * .2)); last = now; kick -= dt;
+      if (kick <= 0 && power > .05) { kick = .11; caps.forEach(c => { if (c.y > C[1]) { const ang = Math.atan2(c.y - C[1], c.x - C[0]) + Math.PI / 2; c.vx += Math.cos(ang) * 260 * power + (Math.random() - .5) * 120 * power; c.vy -= (180 + Math.random() * 260) * power; c.va += (Math.random() - .5) * 18 * power; } }); }
+      caps.forEach(c => { c.vy += 900 * dt; c.vx *= .995; c.x += c.vx * dt; c.y += c.vy * dt; c.a += c.va * dt; c.va *= .98;
+        const dx = c.x - C[0], dy = c.y - C[1], d = Math.hypot(dx, dy), lim = R - r * c.s; if (d > lim) { const nx = dx / d, ny = dy / d, vn = c.vx * nx + c.vy * ny; c.x = C[0] + nx * lim; c.y = C[1] + ny * lim; if (vn > 0) { c.vx -= 1.6 * vn * nx; c.vy -= 1.6 * vn * ny; c.vx *= .9; c.vy *= .9; } } });
+      for (let i = 0; i < caps.length; i++) for (let k = i + 1; k < caps.length; k++) { const A = caps[i], B = caps[k], dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || .01, m = r * (A.s + B.s) * .95; if (d < m) { const push = (m - d) / 2, nx = dx / d, ny = dy / d; A.x -= nx * push; A.y -= ny * push; B.x += nx * push; B.y += ny * push; const rv = (B.vx - A.vx) * nx + (B.vy - A.vy) * ny; if (rv < 0) { A.vx += rv * nx * .5; A.vy += rv * ny * .5; B.vx -= rv * nx * .5; B.vy -= rv * ny * .5; } } }
+      cx.clearRect(0, 0, W, H);
+      const g = cx.createRadialGradient(C[0], C[1], R * .2, C[0], C[1], R * 1.02); g.addColorStop(0, 'rgba(40,22,8,.42)'); g.addColorStop(.85, 'rgba(40,22,8,.3)'); g.addColorStop(1, 'rgba(40,22,8,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(C[0], C[1], R * 1.02, 0, 6.29); cx.fill();
+      caps.slice().sort((p, q) => p.y - q.y).forEach(c => { const rr = r * c.s; cx.save(); cx.translate(c.x, c.y); cx.rotate(c.a);
+        cx.beginPath(); cx.arc(0, 0, rr, Math.PI, 0); cx.closePath(); const gt = cx.createLinearGradient(0, -rr, 0, 0); gt.addColorStop(0, c.c); gt.addColorStop(1, c.c); cx.fillStyle = gt; cx.fill();
+        cx.beginPath(); cx.arc(0, 0, rr, 0, Math.PI); cx.closePath(); cx.fillStyle = '#f6f1e4'; cx.fill();
+        cx.rotate(-c.a); const sh = cx.createRadialGradient(-rr * .35, -rr * .4, rr * .1, 0, 0, rr); sh.addColorStop(0, 'rgba(255,255,255,.55)'); sh.addColorStop(.45, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.35)'); cx.fillStyle = sh; cx.beginPath(); cx.arc(0, 0, rr, 0, 6.29); cx.fill(); cx.rotate(c.a);
+        cx.lineWidth = Math.max(1, rr * .09); cx.strokeStyle = 'rgba(40,24,10,.85)'; cx.beginPath(); cx.arc(0, 0, rr, 0, 6.29); cx.stroke(); cx.beginPath(); cx.moveTo(-rr, 0); cx.lineTo(rr, 0); cx.stroke(); cx.restore(); });
+      if (el < ms) requestAnimationFrame(frame); else { cv.classList.remove('on'); setTimeout(() => cx.clearRect(0, 0, W, H), 350); res(); }
     };
     requestAnimationFrame(frame);
   });
@@ -625,11 +642,11 @@ function boot() {
   $('newsOpenBtn').onclick = () => openNews(); $('newsMoreBtn').onclick = () => openNews(); $('newsEditBtn').onclick = openNewsEditor;
   $('soundBtn').onclick = toggleSound; document.querySelectorAll('[data-snd]').forEach(b => b.onclick = toggleSound); syncSound();
   document.addEventListener('click', e => { if (e.target.closest('.btn-primary,.btn-gold,.btn-ghost,.node,.char,.chipbtn,.cmd-btn,.icon-btn')) SFX.play('click'); });
-  $('chBackBtn').onclick = () => { loginInfo(); showScreen('loginScreen'); };
+  $('chBackBtn').onclick = () => openModes();
   $('wBackBtn').onclick = () => openChart(CH && CH.id);
   ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => $(i).onclick = () => openGacha());
   ['bagBtnMap', 'bagBtnWorld', 'bagBtnGacha'].forEach(i => $(i).onclick = openBag);
-  $('gBackBtn').onclick = () => { if (gachaReturn === 'worldScreen') { showScreen('worldScreen'); coins(); } else openChart(); };
+  $('gBackBtn').onclick = () => { if (gachaReturn === 'worldScreen') { showScreen('worldScreen'); coins(); } else if (gachaReturn === 'modeScreen') openModes(); else if (gachaReturn === 'towerScreen') openTower(); else openChart(); };
   $('pull1').onclick = () => pull(1); $('pull10').onclick = () => pull(10); $('mCrank').onclick = () => pull(1);
   $('gResOk').onclick = () => $('gResult').classList.remove('show');
   $('actBtn').onclick = () => WORLD && WORLD.interact();
@@ -667,7 +684,9 @@ async function spinSlot() {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tick = setInterval(() => SFX.play('blip'), 90);
   const anims = [0, 1, 2].map(r => { const ids = []; for (let i = 0; i < N; i++) ids.push(pool[Math.floor(Math.random() * pool.length)]); ids[N - 2] = target; const el = $('reel' + r); slotStrip(el, ids);
-    return el.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-(N - 3) * CH_}px)` }], { duration: reduce ? 300 : 1500 + r * 550, easing: 'cubic-bezier(.12,.8,.22,1.04)', fill: 'forwards' }).finished.then(() => SFX.play('punch')); });
+    const end = -(N - 3) * CH_, dur = reduce ? 300 : 1700 + r * 650;
+    el.animate([{ filter: 'blur(0)' }, { filter: 'blur(3px)', offset: .15 }, { filter: 'blur(3px)', offset: .7 }, { filter: 'blur(0)' }], { duration: dur, delay: r * 120, fill: 'forwards' });
+    return el.animate([{ transform: 'translateY(0)', easing: 'cubic-bezier(.45,0,.9,.6)' }, { transform: `translateY(${end * .18}px)`, offset: .18 }, { transform: `translateY(${end - 14}px)`, offset: .9, easing: 'ease-out' }, { transform: `translateY(${end}px)` }], { duration: dur, delay: r * 120, fill: 'forwards' }).finished.then(() => { SFX.play('punch'); const c = el.children[N - 2]; if (c) c.classList.add('hit'); }); });
   await Promise.all(anims); clearInterval(tick);
   SAVE.data.freeDraw = true; addCrew(target, MAX_LV); SAVE.save(); SFX.play('rare'); AUDIO.sfx('ult');
   $('slotModal').querySelector('.slot').classList.add('win'); $('slotSpin').style.display = 'none';

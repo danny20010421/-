@@ -136,6 +136,9 @@ const RARITY = {
 const GACHA_COST = {single:1, ten:9};
 
 const DEFAULT_NEWS = [
+ {id:'n22', date:'2026-09-28', tag:'更新', title:'三大模式登場：奪寶大冒險・關卡挑戰・勇者之塔', body:'出航後先選擇冒險模式。奪寶大冒險用左右槳交替划船、閃避障礙搶金幣；勇者之塔共 120 層，每 10 層一位 BOSS。新增玩家資料（名稱、ID、登船時間、稱號）；角色背包改為出戰／待命、大立繪與攻擊・防禦・速度・體力數值。NPC 對話更順暢。'},
+ {id:'n21', date:'2026-09-28', tag:'調整', title:'各種裝置的畫面排版修正', body:'戰鬥畫面的屬性相剋資訊條與戰鬥紀錄會依裝置自動避開其他介面；在手機、平板與橫向畫面，對話選項改放進對話框內，不再擋住角色與場景。'},
+ {id:'n20', date:'2026-09-28', tag:'調整', title:'拉霸・扭蛋・對話體驗優化', body:'拉霸機置中並修正中獎框位置，轉輪依序停下；扭蛋翻滾改為玻璃球內的立體扭蛋彈跳；對話框可以收合成底部小膠囊；任務方向箭頭置中。'},
  {id:'n19', date:'2026-09-28', tag:'調整', title:'奧義卡・開蛋動畫・海軍本部改版', body:'第五技能改為傳說級奧義卡；扭蛋翻滾改為玻璃球內的扭蛋真的在翻動，開蛋時依稀有度顯示不同顏色的扭蛋；海軍本部換上大廳背景；道具商店排版對齊。'},
  {id:'n18', date:'2026-09-28', tag:'調整', title:'奧義徽章登場', body:'第五技能改為奧義徽章：中央是屬性能量核心（雷、龍、火……），外圍是旋轉的金色刻度環與屬性色光環，可施放時會發光並有光點環繞，下方紅色緞帶顯示技能名，寶石代表剩餘次數。'},
  {id:'n17', date:'2026-09-28', tag:'更新', title:'懸賞召喚搬進海賊酒館', body:'扭蛋機搬進了燈火搖曳的海賊酒館：轉動船舵、玻璃球裡的扭蛋翻滾，寶藏扭蛋從投幣口滾落桌面。點扭蛋機本身也能直接抽一次。'},
@@ -199,8 +202,24 @@ function ppDeltaAt(lv) { return lv >= MAX_LV ? 0 : lv >= 60 ? -1 : lv >= 30 ? -2
 function tierOf(lv) { let t = 0; TIERS.forEach((x, i) => { if (lv >= x.min) t = i; }); return t; }
 function lvStats(c, lv) {
   const k = lv / MAX_LV, t = tierOf(lv);
-  return { hp: Math.round(c.maxHp * (0.40 + 0.60 * Math.pow(k, 0.9))), spd: Math.round(c.baseSpeed * (0.8 + 0.2 * k)), dmg: +(0.45 + 0.55 * k).toFixed(3), ppAdj: lv >= 100 ? 0 : lv >= 60 ? -1 : lv >= 30 ? -2 : -3 };
+  const dmg = +(0.45 + 0.55 * k).toFixed(3);
+  /* 攻擊力＝傷害倍率×1000；防禦力依體力與等級計算（每 100 點約減傷 1.6%，最多 25%） */
+  return { hp: Math.round(c.maxHp * (0.40 + 0.60 * Math.pow(k, 0.9))), spd: Math.round(c.baseSpeed * (0.8 + 0.2 * k)), dmg, atk: Math.round(dmg * 1000), def: Math.round(c.maxHp * 0.3 * (0.45 + 0.55 * k)), ppAdj: lv >= 100 ? 0 : lv >= 60 ? -1 : lv >= 30 ? -2 : -3 };
 }
+
+/* 稱號：闖關、勇者之塔、奪寶大冒險、主線達成後取得 */
+const TITLES = [
+ {id:'rookie', name:'見習海賊', how:'初次出航'},
+ {id:'ch_east', name:'東海的新星', how:'完成東海篇'}, {id:'ch_alabasta', name:'沙之國的英雄', how:'完成阿拉巴斯坦篇'},
+ {id:'ch_skypiea', name:'空島的敲鐘人', how:'完成空島篇'}, {id:'ch_enies', name:'向世界政府宣戰者', how:'完成司法島篇'},
+ {id:'ch_dark', name:'蜂巢島的逃脫者', how:'完成蜂巢島篇'}, {id:'ch_fishman', name:'魚人島的恩人', how:'完成魚人島篇'},
+ {id:'ch_wano', name:'和之國的解放者', how:'完成和之國篇'}, {id:'ch_giant', name:'艾爾巴夫的戰士', how:'完成巨人篇'},
+ {id:'tower10', name:'塔之挑戰者', how:'勇者之塔突破第 10 層'}, {id:'tower50', name:'塔之勇者', how:'勇者之塔突破第 50 層'}, {id:'tower120', name:'塔之霸主', how:'勇者之塔登頂第 120 層'},
+ {id:'run500', name:'航海新手', how:'奪寶大冒險航行 500 公尺'}, {id:'run2000', name:'疾風水手', how:'奪寶大冒險航行 2000 公尺'}, {id:'run5000', name:'暴風之王', how:'奪寶大冒險航行 5000 公尺'},
+ {id:'laughtale', name:'抵達拉夫德魯的人', how:'完成主線「拉夫德魯之路」'}
+];
+/* 勇者之塔：120 層，每 10 層一位 BOSS */
+const TOWER = { floors:120, bosses:['crocodile','enel','lucci','blackbeard','hody','shirahoshi','robin','yamato','kaido','luffy','loki','kaido'] };
 
 /* 商店：用貝里購買（貝里由戰鬥與任務取得） */
 const SHOP = [

@@ -72,48 +72,45 @@
   }
 
   /* ---------- 我的船員 ---------- */
+  let rightTab = 'info';
+  function tile(id, sel) { const ch = CHARACTERS[id], lv = crewLv(id), tr = isTraining(id), k = SAVE.data.lineup.indexOf(id);
+    return `<button class="sb-tile ${sel ? 'on' : ''}" data-id="${id}" style="--rc:${RAR_COLOR[rarOf(id)]}"><img src="${ch.avatar}" alt=""><em>LV.${lv}</em>${k === 0 ? '<i class="sb-lead">先鋒</i>' : ''}${tr ? '<i class="sb-tr">訓練中</i>' : ''}<span>${ch.name}</span></button>`; }
   function renderMine() {
     const ids = ownedIds(); if (!owned(pickChar)) pickChar = ids[0];
-    $('cxMineNote').innerHTML = `已擁有 <b>${ids.length}</b> 位船員・陣容 <b>${SAVE.data.lineup.length}/${GAME_SETTINGS.lineupMax}</b>・訓練中 <b>${training().length}</b>`;
-    $('cxGrid').innerHTML = ids.map(id => card(id, { on: id === pickChar })).join('');
-    $('cxGrid').querySelectorAll('.char').forEach(b => b.onclick = () => { pickChar = b.dataset.id; renderMine(); if (innerWidth <= 860) $('cxDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-    if (typeof renderLineupBar === 'function') { const bar = $('lineupBar'); $('cxLineupSlot').appendChild(bar); renderLineupBar(); }
-    const id = pickChar, c = CHARACTERS[id], lv = crewLv(id), r = SAVE.data.roster[id], need = expNeed(lv), tr = training().find(t => t.id === id), k = SAVE.data.lineup.indexOf(id);
-    const pct = lv >= MAX_LV ? 100 : Math.min(100, r.exp / need * 100), tier = TIERS[tierOf(lv)], next = TIERS[tierOf(lv) + 1];
+    const L = SAVE.data.lineup, max = GAME_SETTINGS.lineupMax, bench = ids.filter(id => !L.includes(id));
+    const id = pickChar, c = CHARACTERS[id], lv = crewLv(id), r = SAVE.data.roster[id], need = expNeed(lv), S = lvStats(c, lv), tr = training().find(t => t.id === id), k = L.indexOf(id);
+    const pct = lv >= MAX_LV ? 100 : Math.min(100, r.exp / need * 100);
+    const slots = Array.from({ length: max }, (_, i) => L[i] ? tile(L[i], L[i] === id).replace('class="sb-tile', `data-slot="${i}" class="sb-tile slot`) : `<div class="sb-tile empty"><span>空位 ${i + 1}</span></div>`).join('');
+    const skills = c.skills.map((s, i) => { const need2 = SKILL_UNLOCK[i] || 1, ok = lv >= need2, pp = Math.max(1, s.maxPP + S.ppAdj);
+      return `<div class="sb-sk ${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}" title="${esc(s.desc)}"><b>${s.ultimate ? '★ ' : ''}${s.name}</b><span>威力 ${s.power || '—'}</span><span>次數 ${ok ? pp : 0}/${s.maxPP}</span>${ok ? '' : `<i>LV ${need2} 解鎖</i>`}<p>${s.desc}</p></div>`; }).join('');
     const BOOKS = ['exp_s', 'exp_m', 'exp_l'];
-    const books = `<details class="exp-panel" ${expPanelOpen ? 'open' : ''}><summary>升級：使用經驗道具<small>${BOOKS.some(b => SAVE.data.inventory[b] > 0) ? BOOKS.filter(b => SAVE.data.inventory[b] > 0).map(b => `${ITEMS[b].name}×${SAVE.data.inventory[b]}`).join('、') : '目前沒有經驗書，可在懸賞處抽到或在商店購買'}</small></summary>
-      ${BOOKS.map(b => { const n = SAVE.data.inventory[b] || 0, q = Math.min(n, bookQty[b] || 1), pv = previewLv(id, ITEMS[b].effect.exp * q); return `<div class="exp-row ${n ? '' : 'off'}" data-row="${b}">${itemIcon(ITEMS[b])}<div class="er-name"><b>${ITEMS[b].name}</b><small>每本 +${ITEMS[b].effect.exp.toLocaleString()}・持有 ${n}</small></div>
+    const books = BOOKS.map(b => { const n = SAVE.data.inventory[b] || 0, q = Math.min(n, bookQty[b] || 1), pv = previewLv(id, ITEMS[b].effect.exp * q); return `<div class="exp-row ${n ? '' : 'off'}" data-row="${b}">${itemIcon(ITEMS[b])}<div class="er-name"><b>${ITEMS[b].name}</b><small>每本 +${ITEMS[b].effect.exp.toLocaleString()}・持有 ${n}</small></div>
         <div class="stepper"><button data-q="-1" aria-label="減少" ${n ? '' : 'disabled'}>−</button><output>${n ? q : 0}</output><button data-q="1" aria-label="增加" ${n ? '' : 'disabled'}>＋</button><button data-q="max" ${n ? '' : 'disabled'}>全部</button></div>
-        <span class="er-prev">${n ? (pv > lv ? `LV ${lv} → <b>LV ${pv}</b>` : `LV ${lv}`) : ''}</span><button class="btn-gold sm" data-use="${b}" ${n && lv < MAX_LV ? '' : 'disabled'}>使用</button></div>`; }).join('')}</details>`;
-    const actions = tr ? `<span class="cx-state train">訓練中・剩下 <b data-end="${tr.end}">${fmt(tr.end - Date.now())}</b></span><button class="btn-ghost" data-go="train">查看訓練營</button>`
-      : k >= 0 ? `<span class="cx-state">陣容第 ${k + 1} 位${k === 0 ? '・先鋒' : ''}</span>${k ? '<button class="btn-gold" data-act="lead">設為先鋒</button>' : ''}<button class="btn-ghost" data-act="out" ${SAVE.data.lineup.length <= 1 ? 'disabled' : ''}>移出陣容</button>${lv < MAX_LV ? '<button class="btn-ghost" data-go="train">送去訓練</button>' : ''}`
-      : `<button class="btn-primary" data-act="in">${SAVE.data.lineup.length >= GAME_SETTINGS.lineupMax ? '上陣（替換最後一位）' : '加入陣容'}</button>${lv < MAX_LV ? '<button class="btn-ghost" data-go="train">送去訓練</button>' : ''}`;
-    $('cxDetail').innerHTML = `<div class="cx-hero" style="--rc:${RAR_COLOR[rarOf(id)]}">
-        <div class="cx-art"><img src="${c.image}" alt=""><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><span class="cx-no">${noOf(id)}</span></div>
-        <div class="cx-head">
-          <h3>${c.name}<small>${c.title}</small></h3>
-          <div class="cx-row"><div class="pl-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}</div>${tierBadge(lv)}</div>
-          <div class="cx-lv"><div class="cx-lvnum"><small>LV</small><b>${lv}</b></div><div class="cx-lvbar"><div class="bar"><i style="width:${pct}%"></i></div><small>${lv >= MAX_LV ? '已達最高等級' : `經驗 ${r.exp.toLocaleString()} / ${need.toLocaleString()}・再 ${Math.max(0, need - r.exp).toLocaleString()} 升級`}</small>${next ? `<small class="cx-next">LV ${next.min} 晉升「${next.name}」</small>` : ''}</div></div>
-          ${statTiles(c, lv)}
-          <div class="cx-actions">${actions}</div>
-        </div></div>
-      <p class="cx-desc">${c.desc}</p>
-      ${lv < MAX_LV ? books : ''}
-      <h4 class="cx-h">技能</h4>${skillCards(c, lv, true)}`;
-    bindDetail(id);
-  }
-  function bindDetail(id) {
-    const D = $('cxDetail'), c = CHARACTERS[id];
-    D.querySelectorAll('[data-act]').forEach(b => b.onclick = () => { const a = b.dataset.act;
-      if (a === 'in') { lineupAdd(id); toast(`${c.name} 加入陣容`); } if (a === 'out' && lineupRemove(id)) toast(`${c.name} 移出陣容`); if (a === 'lead') { lineupAdd(id, true); toast(`${c.name} 成為先鋒`); }
-      renderMine(); if (currentScreen === 'chapterScreen') openChart(selChapter); });
-    D.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { crewTab = 'train'; trainPick = isTraining(id) ? null : { slot: training().length, id }; render(); });
-    const ep = D.querySelector('.exp-panel'); if (ep) ep.ontoggle = () => { expPanelOpen = ep.open; };
-    D.querySelectorAll('.exp-row').forEach(row => { const b = row.dataset.row, n = SAVE.data.inventory[b] || 0;
+        <span class="er-prev">${n ? (pv > lv ? `LV ${lv} → <b>LV ${pv}</b>` : `LV ${lv}`) : ''}</span><button class="btn-gold sm" data-use="${b}" ${n && lv < MAX_LV ? '' : 'disabled'}>使用</button></div>`; }).join('');
+    const act = tr ? `<span class="sb-state">訓練中・剩 <b data-end="${tr.end}">${fmt(tr.end - Date.now())}</b></span>`
+      : k >= 0 ? `${k ? '<button class="btn-gold" data-act="lead">設為先鋒</button>' : '<span class="sb-state">先鋒</span>'}<button class="btn-ghost" data-act="out" ${L.length <= 1 ? 'disabled' : ''}>下陣</button>`
+        : `<button class="btn-primary" data-act="in">${L.length >= max ? '上陣（替換最後一位）' : '上陣'}</button>`;
+    $('cxPane_crew').innerHTML = `<div class="sb">
+      <aside class="sb-left"><h4>出戰陣容 <small>${L.length}/${max}</small></h4><div class="sb-slots">${slots}</div>
+        <h4>待命船員 <small>${bench.length}</small></h4><div class="sb-bench">${bench.map(x => tile(x, x === id)).join('') || '<p class="sb-none">沒有待命的船員</p>'}</div></aside>
+      <section class="sb-stage" style="--rc:${RAR_COLOR[rarOf(id)]}"><div class="sb-plat"></div><img src="${c.image}" alt="${c.name}"><div class="sb-acts">${act}</div></section>
+      <aside class="sb-right">
+        <div class="sb-head"><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><h3>${c.name}<small>${c.title}</small></h3></div>
+        <div class="sb-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}${tierBadge(lv)}</div>
+        <div class="sb-lv"><b>LV ${lv}</b><div class="bar"><i style="width:${pct}%"></i></div><small>${lv >= MAX_LV ? '已達最高等級' : `${r.exp.toLocaleString()} / ${need.toLocaleString()}`}</small></div>
+        <nav class="sb-tabs" role="tablist"><button data-rt="info" class="${rightTab === 'info' ? 'on' : ''}">訊息</button><button data-rt="grow" class="${rightTab === 'grow' ? 'on' : ''}">培養</button><button data-rt="train">訓練場</button></nav>
+        ${rightTab === 'grow' ? `<div class="sb-grow">${lv < MAX_LV ? books : '<p class="sb-none">已達最高等級，不需要經驗道具。</p>'}</div>` : `
+        <dl class="sb-stats"><div><dt>⚔ 攻擊力</dt><dd>${S.atk}</dd></div><div><dt>🛡 防禦力</dt><dd>${S.def}</dd></div><div><dt>💨 速度</dt><dd>${S.spd}</dd></div><div><dt>❤ 體力</dt><dd>${S.hp}</dd></div></dl>
+        <div class="sb-skills">${skills}</div>`}
+      </aside></div>`;
+    const P = $('cxPane_crew');
+    P.querySelectorAll('.sb-tile[data-id]').forEach(b => b.onclick = () => { pickChar = b.dataset.id; renderMine(); });
+    P.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => { if (b.dataset.rt === 'train') { crewTab = 'train'; trainPick = isTraining(id) || lv >= MAX_LV ? null : { slot: training().length, id }; render(); return; } rightTab = b.dataset.rt; renderMine(); });
+    P.querySelectorAll('[data-act]').forEach(b => b.onclick = () => { const a = b.dataset.act; if (a === 'in') lineupAdd(id); if (a === 'out') lineupRemove(id); if (a === 'lead') lineupAdd(id, true); renderMine(); if (currentScreen === 'chapterScreen') openChart(selChapter); });
+    P.querySelectorAll('.exp-row').forEach(row => { const b = row.dataset.row, n = SAVE.data.inventory[b] || 0;
       row.querySelectorAll('[data-q]').forEach(x => x.onclick = () => { const v = x.dataset.q; bookQty[b] = v === 'max' ? n : Math.max(1, Math.min(n, (bookQty[b] || 1) + +v)); renderMine(); });
       const u = row.querySelector('[data-use]'); if (u) u.onclick = () => { const q = Math.min(n, bookQty[b] || 1); if (!q || crewLv(id) >= MAX_LV) return; SAVE.data.inventory[b] -= q; SAVE.save(); bookQty[b] = 1; gainExp(id, ITEMS[b].effect.exp * q, false, true); renderMine(); coins(); }; });
   }
-
   /* ---------- 角色圖鑑 ---------- */
   let codexPick = null;
   function renderCodex() {

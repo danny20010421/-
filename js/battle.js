@@ -3,6 +3,16 @@ let battle = null;
 const STRUGGLE = { name: '奮力一擊', type: 'attack', pp: 99, maxPP: 99, power: 40, accuracy: 100, desc: '技能次數用光時的最後手段。', anima: 'punch', effect: {} };
 const BATTLE_ANIM = { icefang: 'blue', hakke: 'purple', kagamiyama: 'blue', onigiri: 'green', shishi: 'green', sanzen: 'green', ashura: 'red', collier: 'gold', diable: 'red', skywalk: 'gold', ifrit: 'blue', darkpull: 'purple', quake: 'purple', release: 'purple', limbs: 'purple', demonflower: 'purple', poseidon: 'blue', seaking: 'blue', summonsea: 'blue', punch: 'red', snake: 'red', barrage: 'red', beam: 'blue', hammer: 'blue', world: 'blue', thunderfive: 'blue', lightning: 'blue', flash: 'blue', judgment: 'blue', sandslash: 'gold', sandtrap: 'gold', sandtriple: 'gold', sandstorm: 'gold', dry: 'gold', darkpull: 'gold', quake: 'gold', darkcopy: 'gold', release: 'gold' };
 
+/* 戰鬥介面自動排版：相剋條放在體力欄與計時器下方、跑馬燈放在指令區上方，避免在不同裝置互相重疊 */
+function layoutBattleHud() {
+  const scr = $('battleScreen'); if (!scr || scr.classList.contains('hidden')) return;
+  const S = scr.getBoundingClientRect(), bot = ids => Math.max(...ids.map(i => { const e = $(i); if (!e || !e.offsetParent) return 0; const r = e.getBoundingClientRect(); return r.height ? r.bottom : 0; }));
+  const tb = $('bTypeBar'); if (tb) tb.style.top = (bot(['bPlateL', 'bPlateR', 'bTimerWrap']) - S.top + 6) + 'px';
+  const tk = $('bTicker'), cmd = document.querySelector('#battleScreen .b-cmd'); if (tk && cmd) { tk.style.transform = 'translateX(-50%)'; const a = tk.getBoundingClientRect(), c = cmd.getBoundingClientRect(); const over = a.bottom - (c.top - 6); if (over > 0) tk.style.transform = `translate(-50%, ${-over}px)`; }
+}
+window.layoutBattleHud = layoutBattleHud;
+window.addEventListener('resize', () => requestAnimationFrame(layoutBattleHud));
+window.addEventListener('orientationchange', () => setTimeout(layoutBattleHud, 300));
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
@@ -19,7 +29,7 @@ function startBattle(opts) {
   $('bPlateR').classList.toggle('boss', !!isBoss);
   $('bLvR').textContent = (isBoss ? 'BOSS ' : '') + 'LV ' + e.level; $('bLvL').textContent = 'LV ' + p.level;
   renderHUD(true); renderSkills(); renderBag(); renderTeam();
-  showScreen('battleScreen'); FXE.clear();
+  showScreen('battleScreen'); FXE.clear(); requestAnimationFrame(layoutBattleHud); setTimeout(layoutBattleHud, 450);
   AUDIO.playSong(isBoss ? 'boss' : 'battle'); AUDIO.ambient(null);
   // 入場動畫
   ['L', 'R'].forEach(s => { const el = $('bF' + s); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); });

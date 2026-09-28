@@ -38,10 +38,12 @@
     if (el && W && W.running && bubOpts.length) { const s = W.r.project(W.p.x, W.p.y + 3.2, W.p.z); if (s) { const maxX = innerWidth - el.offsetWidth - (innerWidth < 860 ? 84 : 16); el.style.transform = `translate(${Math.round(Math.max(8, Math.min(s.x + 46, maxX)))}px,${Math.round(s.y - 60)}px)`; } }
     requestAnimationFrame(placeBubbles);
   }
-  setInterval(scanBubbles, 150); requestAnimationFrame(placeBubbles);
+  setInterval(scanBubbles, 220); requestAnimationFrame(placeBubbles);
 
   /* ---------- NPC 半身立繪：用離屏渲染器把 3D 模型拍成大頭照 ---------- */
   const PORTRAIT = {}; let pr = null, pc = null;
+  /* 進島後在空閒時預先拍好 NPC 大頭照，避免第一次對話時卡頓 */
+  window.prewarmPortraits = function (looks) { const todo = [...new Set(looks)].filter(l => !PORTRAIT[l]); const step = () => { const l = todo.shift(); if (!l) return; try { npcPortrait(l); } catch (e) { } (window.requestIdleCallback || (f => setTimeout(f, 120)))(step, { timeout: 600 }); }; setTimeout(step, 800); };
   function npcPortrait(look) {
     if (PORTRAIT[look]) return PORTRAIT[look];
     try {
@@ -103,6 +105,7 @@
     const a = typeMult(battle.player, battle.enemy), d = typeMult(battle.enemy, battle.player);
     const alive = battle.team.filter(f => f.hp > 0).length;
     el.innerHTML = `${typeLabel(a)}<i class="arr r">›››</i><span class="tb-mid">我方 ${alive}/${battle.team.length}</span><i class="arr l">‹‹‹</i>${typeLabel(d)}`;
+    if (window.layoutBattleHud) requestAnimationFrame(layoutBattleHud);
   }
   const _hud = window.renderHUD; window.renderHUD = function () { const r = _hud.apply(this, arguments); renderTypeBar(); return r; };
   const _start = window.startBattle;

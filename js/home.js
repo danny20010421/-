@@ -57,7 +57,7 @@
   function chars() { if (typeof openCrew === 'function') openCrew('codex', { reveal: true }); }
   function refreshAvatar() {
     const img = $('homeAvatarImg'); if (!img) return; const id = SAVE.data && SAVE.data.player && SAVE.data.roster && SAVE.data.roster[SAVE.data.player] ? SAVE.data.player : null;
-    img.src = id ? CHARACTERS[id].avatar : 'assets/ui/denden.webp'; $('homeAvatar').title = id ? `船長：${CHARACTERS[id].name}` : '尚未出航';
+    img.src = id ? CHARACTERS[id].avatar : 'assets/ui/denden.webp'; if ($('homeAvatar')) $('homeAvatar').title = id ? `船長：${CHARACTERS[id].name}` : '尚未出航';
   }
   window.refreshAvatar = refreshAvatar;
   const ACT = { home: () => { }, features, chars, community, support };
@@ -66,7 +66,7 @@
     tick(); setInterval(tick, 1000); refreshAvatar();
     document.querySelectorAll('#homeNav [data-home]').forEach(b => b.onclick = () => go(b.dataset.home));
     $('homeSettings').onclick = settings;
-    $('homeAvatar').onclick = () => { if (Object.keys(SAVE.data.roster || {}).length) openCrew(); else toast('先按「揚帆出航」選擇你的船員吧！'); };
+    if ($('homeAvatar')) $('homeAvatar').onclick = () => { if (Object.keys(SAVE.data.roster || {}).length) openCrew(); else toast('先按「揚帆出航」選擇你的船員吧！'); };
     $('homeMenuBtn').onclick = () => {
       const items = [['home', '首頁'], ['features', '遊戲特色'], ['chars', '角色介紹'], ['community', '社區'], ['support', '客服中心'], ['settings', '設定']];
       $('menuGrid').innerHTML = items.map(([k, l]) => `<button class="btn-ghost" data-k="${k}">${l}</button>`).join('');
