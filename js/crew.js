@@ -4,7 +4,7 @@
   const rarOf = id => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'R';
   const noOf = id => 'No.' + String(CHARACTERS[id].no || 0).padStart(3, '0');
   const ownedIds = () => CHARACTER_ORDER.filter(owned);
-  let crewTab = 'crew', trainPick = null;
+  let crewTab = 'crew', trainPick = null, revealAll = false;
 
   /* ---------- 訓練營資料 ---------- */
   const training = () => (SAVE.data.training = SAVE.data.training || []);
@@ -34,10 +34,10 @@
   }
 
   /* ---------- 開啟 ---------- */
-  window.openCrew = function (tab) {
-    crewMode = 'crew'; crewTab = tab || 'crew'; trainPick = null;
+  window.openCrew = function (tab, opts) {
+    crewMode = 'crew'; crewTab = tab || 'crew'; trainPick = null; revealAll = !!(opts && opts.reveal); $('charModal').classList.toggle('reveal', revealAll);
     const ids = ownedIds(); if (!owned(pickChar) || !pickChar) pickChar = owned(SAVE.data.player) ? SAVE.data.player : ids[0];
-    $('charTitle').textContent = '角色背包'; $('charConfirm').style.display = 'none';
+    $('charTitle').textContent = revealAll ? '角色介紹' : '角色背包'; $('charConfirm').style.display = 'none';
     $('charModal').classList.add('crew-v2'); openModal('charModal'); render();
   };
   const _old = window.renderCrew;
@@ -55,8 +55,8 @@
   /* ---------- 共用：角色卡 ---------- */
   function card(id, opts) {
     const c = CHARACTERS[id], own = owned(id), lv = own ? crewLv(id) : 0, r = rarOf(id), k = SAVE.data.lineup.indexOf(id), tr = isTraining(id);
-    const tags = [k === 0 ? '<span class="c-team">先鋒</span>' : k > 0 ? `<span class="c-team">陣容 ${k + 1}</span>` : '', tr ? '<span class="c-badge train">訓練中</span>' : '', opts.codex && !own ? '<span class="c-badge off">未獲得</span>' : ''].join('');
-    return `<button class="char ${opts.on ? 'on' : ''} ${opts.codex && !own ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}"><img src="${c.image}" alt="" loading="lazy"><span class="rar c-rar r-${r}">${r}</span>${own ? `<span class="c-lv" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-lv cno-tag">${noOf(id)}</span>`}${tags ? `<span class="c-tags">${tags}</span>` : ''}<span class="c-name">${c.name}</span></button>`;
+    const tags = [k === 0 ? '<span class="c-team">先鋒</span>' : k > 0 ? `<span class="c-team">陣容 ${k + 1}</span>` : '', tr ? '<span class="c-badge train">訓練中</span>' : '', opts.codex && !own && !revealAll ? '<span class="c-badge off">未獲得</span>' : ''].join('');
+    return `<button class="char ${opts.on ? 'on' : ''} ${opts.codex && !own && !revealAll ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}"><img src="${c.image}" alt="" loading="lazy"><span class="rar c-rar r-${r}">${r}</span>${own ? `<span class="c-lv" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-lv cno-tag">${noOf(id)}</span>`}${tags ? `<span class="c-tags">${tags}</span>` : ''}<span class="c-name">${c.name}</span></button>`;
   }
   function statTiles(c, lv) {
     const L = lvStats(c, lv), items = [['體力', L.hp, L.hp / 2100], ['速度', L.spd, L.spd / 150], ['傷害倍率', '×' + L.dmg.toFixed(2), L.dmg / 1], ['技能次數', L.ppAdj ? L.ppAdj : '滿', (L.ppAdj + 3) / 3]];
@@ -123,7 +123,7 @@
     $('cxCodexGrid').querySelectorAll('.char').forEach(b => b.onclick = () => { codexPick = b.dataset.id; renderCodex(); if (innerWidth <= 860) $('cxCodexDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     const id = codexPick, c = CHARACTERS[id], own = owned(id);
     $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:${RAR_COLOR[rarOf(id)]}">
-        <div class="cx-art ${own ? '' : 'sil'}"><img src="${c.image}" alt=""><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><span class="cx-no">${noOf(id)}</span></div>
+        <div class="cx-art ${own || revealAll ? '' : 'sil'}"><img src="${c.image}" alt=""><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><span class="cx-no">${noOf(id)}</span></div>
         <div class="cx-head"><h3>${c.name}<small>${c.title}</small></h3>
           <div class="cx-row"><div class="pl-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}</div>${own ? `<span class="cx-own">已獲得・LV ${crewLv(id)}</span>` : '<span class="cx-own off">尚未獲得</span>'}</div>
           <p class="cx-desc">${c.desc}</p>

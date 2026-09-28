@@ -205,7 +205,7 @@ void main(){
   class Renderer {
     constructor(canvas) {
       this.canvas = canvas;
-      const LOWDEV = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 700;
+      const LOWDEV = localStorage.getItem('op_gfx') === 'low' || matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 700;
       const gl = canvas.getContext('webgl', { antialias: !LOWDEV, alpha: false, powerPreference: 'high-performance' }) || canvas.getContext('experimental-webgl');
       if (!gl) throw new Error('WebGL 不可用');
       this.gl = gl; this.lit = program(gl, VS, FS); this.bb = program(gl, BVS, BFS);
@@ -213,7 +213,7 @@ void main(){
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-.5,0, .5,0, .5,1, -.5,0, .5,1, -.5,1]), gl.STATIC_DRAW);
       this.tex = new Map(); this.env = {}; this.time = 0; this.flash = 0;
       gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
-      this.maxDpr = Math.min(window.devicePixelRatio || 1, LOWDEV ? 1.25 : 1.6); this.dpr = this.maxDpr; this.low = LOWDEV;
+      this.maxDpr = localStorage.getItem('op_gfx') === 'low' ? .75 : Math.min(window.devicePixelRatio || 1, LOWDEV ? 1.25 : 1.6); this.dpr = this.maxDpr; this.low = LOWDEV;
     }
     resize() {
       const c = this.canvas, w = Math.max(1, c.clientWidth), h = Math.max(1, c.clientHeight);

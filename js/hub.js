@@ -26,6 +26,7 @@ function bounties() {
   return d.bounty.list.map(x => { const def = BOUNTY_POOL.find(b => b.id === x.id); return { ...def, ...x, prog: Math.min(def.goal, statOf(def.stat) - x.base) }; });
 }
 
+const COIN_STACK = '<svg class="coin-stack" viewBox="0 0 40 32" aria-hidden="true"><defs><linearGradient id="cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#b8801a"/></linearGradient></defs><g stroke="#6b4a0a" stroke-width="1.2"><ellipse cx="14" cy="26" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="14" cy="21" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="14" cy="16" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="28" cy="24" rx="10" ry="3.6" fill="url(#cs)"/><ellipse cx="28" cy="19.5" rx="10" ry="3.6" fill="url(#cs)"/><circle cx="24" cy="10" r="7.5" fill="url(#cs)"/></g><text x="24" y="13.2" font-size="8" text-anchor="middle" fill="#6b4a0a" font-weight="900">฿</text></svg>';
 let hubTab = 'summon';
 function openHub(tab) { if (currentScreen !== 'gachaScreen') openGacha(); switchHub(tab || hubTab); }
 function switchHub(tab) {
@@ -38,9 +39,9 @@ function switchHub(tab) {
 function renderBounty() {
   const list = bounties();
   $('bountyList').innerHTML = list.map(b => { const done = b.prog >= b.goal; return `<article class="bounty ${b.claimed ? 'claimed' : done ? 'done' : ''}">
-    <div class="bt-poster"><span>WANTED</span><b>${b.claimed ? '已領取' : done ? '可領取' : `${b.prog}/${b.goal}`}</b></div>
+    <div class="bt-poster"><span>WANTED</span><i class="bt-face" aria-hidden="true"></i><b>${b.claimed ? '已領取' : done ? '可領取' : `${b.prog}/${b.goal}`}</b></div>
     <div class="bt-body"><h4>${b.text}</h4><div class="bar"><i style="width:${b.prog / b.goal * 100}%"></i></div>
-      <p class="bt-rew"><i class="berry-ico">B</i>${b.berry.toLocaleString()}${b.tokens ? ` ＋ <i class="coin-ico"></i>×${b.tokens}` : ''}</p></div>
+      <p class="bt-rew">${COIN_STACK}<b>${b.berry.toLocaleString()}</b>${b.tokens ? `<span class="bt-plus">＋</span><i class="coin-ico"></i><b>×${b.tokens}</b>` : ''}</p></div>
     <button class="btn-gold" data-claim="${b.id}" ${done && !b.claimed ? '' : 'disabled'}>${b.claimed ? '已領取' : '領取賞金'}</button></article>`; }).join('');
   $('bountyList').querySelectorAll('[data-claim]').forEach(btn => btn.onclick = () => {
     const x = SAVE.data.bounty.list.find(y => y.id === btn.dataset.claim), def = BOUNTY_POOL.find(b => b.id === x.id); if (x.claimed) return;

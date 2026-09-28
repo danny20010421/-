@@ -1,5 +1,5 @@
 /* 資料版本：每次改動角色或劇情資料時加一。後台設定若來自舊版本會自動停用，避免舊劇情覆蓋新內容。 */
-const DATA_VERSION = 14;
+const DATA_VERSION = 15;
 /* 遊戲資料：角色（沿用原版數值）、篇章劇情、道具、公告 */
 const CHARACTERS = {
  luffy0:{"id":"luffy0","name":"初登場魯夫","title":"草帽小子","types":["格鬥"],"image":"assets/chars/luffy0.webp","avatar":"assets/chars/luffy0_face.webp","scale":0.86,"worldScale":0.86,"maxHp":1180,"baseSpeed":112,"desc":"剛從風車村出海的橡膠人，靠伸縮自如的拳腳和不服輸的鬥志戰鬥。","ultimateBg":"assets/chars/luffy0.webp","ai":"aggressive","skills":[{"name":"橡膠手槍","type":"attack","pp":15,"maxPP":15,"power":90,"accuracy":100,"desc":"伸長手臂的直拳，25% 機率造成 1.8 倍傷害。","tags":[["爆發","red"]],"anima":"punch","effect":{"critBoost":0.25,"critMult":1.8}},{"name":"橡膠鞭","type":"attack","pp":12,"maxPP":12,"power":100,"accuracy":95,"desc":"甩出伸長的腿橫掃，25% 機率使對手麻痺 1 回合。","tags":[["麻痺","gold"]],"anima":"whip","effect":{"skipAttackChance":0.25,"skipAttackTurns":1}},{"name":"橡膠加特林","type":"attack","pp":8,"maxPP":8,"power":0,"accuracy":100,"desc":"連續出拳 6 次，每次造成對手最大體力 1%～5% 傷害。","tags":[["六連擊","blue"]],"anima":"barrage","effect":{"randomPercentHits":[6,0.01,0.05,false]}},{"name":"橡膠風船","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"把身體吹成氣球，下一次受到的攻擊以 1.5 倍反彈，並回復 10% 體力。","tags":[["反彈","gold"],["回復","green"]],"anima":"balloon","effect":{"reflectTurns":1,"reflectMultiplier":1.5,"healRatio":0.1}},{"name":"二檔","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"血液加速流動、全身冒出蒸氣：接下來的攻擊傷害 3.5 倍，50% 使對手恐懼 1 回合。","tags":[["強化","gold"],["恐懼","gold"]],"anima":"gear2","ultimate":true,"effect":{"nextAttackMult":3.5,"nextAttackMultTurns":2,"fearChance":0.5,"fearTurns":1}}],"no":1},
@@ -136,6 +136,9 @@ const RARITY = {
 const GACHA_COST = {single:1, ten:9};
 
 const DEFAULT_NEWS = [
+ {id:'n18', date:'2026-09-28', tag:'調整', title:'奧義徽章登場', body:'第五技能改為奧義徽章：中央是屬性能量核心（雷、龍、火……），外圍是旋轉的金色刻度環與屬性色光環，可施放時會發光並有光點環繞，下方紅色緞帶顯示技能名，寶石代表剩餘次數。'},
+ {id:'n17', date:'2026-09-28', tag:'更新', title:'懸賞召喚搬進海賊酒館', body:'扭蛋機搬進了燈火搖曳的海賊酒館：轉動船舵、玻璃球裡的扭蛋翻滾，寶藏扭蛋從投幣口滾落桌面。點扭蛋機本身也能直接抽一次。'},
+ {id:'n16', date:'2026-09-28', tag:'更新', title:'介面全面改版', body:'全新首頁（遊戲特色、角色介紹、社區、客服中心、設定）、木框骷髏拉霸機與噴金幣演出、扭蛋舞台與開蛋動畫、統一風格的道具圖示、新版懸賞單，以及電話蟲助手。'},
  {id:'n15', date:'2026-09-28', tag:'更新', title:'島嶼改版・任務指引・寶箱探索', body:'每座島的上岸地點、道路、海岬與 BOSS 擂台都不同了；BOSS 等級大幅提升。新增任務光圈、畫面邊緣方向箭頭、小地圖路線與「自動前往」；每座島藏有 3 個寶箱。'},
  {id:'n14', date:'2026-09-28', tag:'調整', title:'奧義卡全新設計＆蜂巢島修正', body:'第五技能改為立繪背景的奧義卡，可施放時會發光。修正舊版後台設定把蜂巢島篇蓋回舊劇情的問題。'},
  {id:'n13', date:'2026-09-28', tag:'更新', title:'角色背包改版：圖鑑與訓練營', body:'角色背包分為「我的船員」「角色圖鑑」「訓練營」。圖鑑收錄所有角色與取得方式；訓練營可放入最多 3 位船員，10 分鐘到 24 小時後領取經驗，訓練中的船員不能出戰。'},

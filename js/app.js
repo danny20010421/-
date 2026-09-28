@@ -200,7 +200,7 @@ function confirmStarter() {
   toast(`三位初登場船員都上陣了！由${CHARACTERS[pickChar].name}擔任先鋒`, 'gold');
   openGacha('chapterScreen'); setTimeout(openSlot, 700);
 }
-function loginInfo() { const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters[c.id].cleared).length, n = Object.keys(d.roster).length; $('loginSaveInfo').textContent = n ? `歡迎回來，船長。船員 ${n} 位・航海進度 ${cl}/${CHAPTERS.length}・貝里 ${(d.berry || 0).toLocaleString()}` : '第一次出航？初登場的草帽三人組已經在港口等你了。'; $('startBtn').textContent = n ? '繼續航海' : '揚帆出航'; }
+function loginInfo() { if (window.refreshAvatar) refreshAvatar(); const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters[c.id].cleared).length, n = Object.keys(d.roster).length; $('loginSaveInfo').textContent = n ? `歡迎回來，船長。船員 ${n} 位・航海進度 ${cl}/${CHAPTERS.length}・貝里 ${(d.berry || 0).toLocaleString()}` : '第一次出航？初登場的草帽三人組已經在港口等你了。'; $('startBtn').textContent = n ? '繼續航海' : '揚帆出航'; }
 function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openChart(); }
 
 /* ---------- 篇章海圖 ---------- */
@@ -544,17 +544,26 @@ function rollOne(minR) {
 }
 const rarOf = (x) => x.char ? 'SSR' : ITEMS[x.item].rarity;
 async function playMachine(best) {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const m = $('machine'); m.className = 'machine spin'; $('mDrop').className = 'm-drop r-' + best;
-  SFX.play('crank'); await spinCapsules(reduce ? 200 : 1700); SFX.play('crank');
-  m.className = 'machine drop'; await wait(reduce ? 100 : 700); m.className = 'machine';
-  const op = $('gOpen'); op.className = 'g-open show shake r-' + best; SFX.play('pop'); await wait(reduce ? 100 : 750);
-  op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop'); await wait(reduce ? 100 : 520);
-  op.className = 'g-open';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, W = ms => wait(reduce ? Math.min(ms, 120) : ms);
+  const m = $('machine'); $('mDrop').className = 'm-drop r-' + best;
+  // ① 轉動搖桿 ② 扭蛋翻滾
+  m.classList.remove('drop'); m.classList.add('spin', 'crank'); SFX.play('crank'); const ck = setInterval(() => SFX.play('blip'), 160);
+  await spinCapsules(reduce ? 200 : 1500); clearInterval(ck); SFX.play('crank');
+  // ③ 一顆扭蛋掉進出口並彈跳
+  m.classList.remove('spin', 'crank'); m.classList.add('drop'); SFX.play('pop'); await W(1000); m.classList.remove('drop');
+  // ④ 扭蛋飛到畫面中央，依稀有度搖晃次數不同
+  const op = $('gOpen'), shakes = { N: 1, R: 2, SR: 3, SSR: 3 }[best] || 1;
+  op.className = 'g-open show enter r-' + best; await W(520);
+  for (let k = 0; k < shakes; k++) { op.className = 'g-open show shake r-' + best; SFX.play('pop'); await W(420); op.className = 'g-open show r-' + best + (k === shakes - 1 && ['SR', 'SSR'].includes(best) ? ' glow' : ''); await W(160); }
+  // ⑤ 打開：閃光、光芒、稀有時噴金幣
+  op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop');
+  if (['SR', 'SSR'].includes(best)) coinBurst($('gCoinBurst'), best === 'SSR' ? 70 : 36);
+  await W(best === 'SSR' ? 1000 : 650); op.className = 'g-open';
 }
 function showResults(res, title) {
   $('gResTitle').textContent = title;
   $('gResGrid').className = 'g-res-grid ' + (res.length > 1 ? 'ten' : 'one');
+  setTimeout(() => { if (res.some(r => r.char || ['SSR'].includes(rarOf(r)))) coinBurst($('gResBurst'), 40); }, 400);
   $('gResGrid').innerHTML = res.map((x, i) => {
     if (x.char) { const c = CHARACTERS[x.char]; return `<div class="g-cap r-SSR char" style="--d:${i * 90}ms"><span class="rar c-rar r-${CHAR_RARITY[x.char] || 'SSR'}">${CHAR_RARITY[x.char] || 'SSR'}</span><span class="c-tags"><span class="c-badge">新船員</span></span><img src="${c.image}" alt=""><b>${c.name}</b><small>LV ${x.lv}・${TIERS[tierOf(x.lv)].name}</small>${x.setCap ? `<button class="btn-gold sm" data-cap="${x.char}">加入陣容並設為先鋒</button>` : ''}</div>`; }
     const it = ITEMS[x.item]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`;
@@ -583,10 +592,10 @@ function spinCapsules(ms) {
   return new Promise(res => {
     const caps = [...$('mCaps').children], t0 = performance.now();
     const base = caps.map(c => ({ x: parseFloat(c.style.left) + 7, y: parseFloat(c.style.top) + 7, r: parseFloat(c.style.getPropertyValue('--r')) || 0 }));
-    const orb = base.map((b, i) => ({ rad: 14 + (i * 37 % 26), a0: i * 2.4 }));
+    const orb = base.map((b, i) => ({ rad: 8 + (i * 37 % 20), a0: i * 2.4 }));
     const frame = (now) => {
       const k = Math.min(1, (now - t0) / ms), spin = k < .2 ? k / .2 : k > .75 ? (1 - k) / .25 : 1, settle = k > .7 ? (k - .7) / .3 : 0;
-      caps.forEach((c, i) => { const o = orb[i], ang = o.a0 + (now - t0) / 1000 * 9 * (0.5 + spin * .5) * (i % 2 ? 1 : 1.15); const ox = 50 + Math.cos(ang) * o.rad * 1.5, oy = 50 + Math.sin(ang) * o.rad * 1.4; const x = ox + (base[i].x - ox) * settle * settle, y = oy + (base[i].y - oy) * settle * settle; c.style.left = (x - 7) + '%'; c.style.top = (y - 7) + '%'; c.style.transform = `rotate(${base[i].r + ang * 57 * (1 - settle)}deg)`; });
+      caps.forEach((c, i) => { const o = orb[i], ang = o.a0 + (now - t0) / 1000 * 9 * (0.5 + spin * .5) * (i % 2 ? 1 : 1.15); const ox = 50 + Math.cos(ang) * o.rad * 1.1, oy = 50 + Math.sin(ang) * o.rad * 1.05; const x = ox + (base[i].x - ox) * settle * settle, y = oy + (base[i].y - oy) * settle * settle; c.style.left = (x - 7) + '%'; c.style.top = (y - 7) + '%'; c.style.transform = `rotate(${base[i].r + ang * 57 * (1 - settle)}deg)`; });
       if (k < 1) requestAnimationFrame(frame); else { caps.forEach((c, i) => { c.style.left = (base[i].x - 7) + '%'; c.style.top = (base[i].y - 7) + '%'; c.style.transform = `rotate(${base[i].r}deg)`; }); res(); }
     };
     requestAnimationFrame(frame);
@@ -642,6 +651,15 @@ function openSlot() {
   [0, 1, 2].forEach(r => slotStrip($('reel' + r), [0, 1, 2].map(k => pool[(k + r * 2) % pool.length])));
   openModal('slotModal');
 }
+/* 噴金幣：從中央往上噴出後落下 */
+function coinBurst(host, n) {
+  if (!host) return; const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; if (reduce) n = Math.min(n, 12);
+  const r = host.getBoundingClientRect(), cx = r.width / 2, cy = r.height * .55;
+  for (let i = 0; i < n; i++) { const c = document.createElement('i'); c.className = 'coin-fly'; host.appendChild(c);
+    const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, v = 260 + Math.random() * 360, dx = Math.cos(a) * v, up = Math.sin(a) * v, s = .6 + Math.random() * .7, rot = (Math.random() - .5) * 1080, dur = 1300 + Math.random() * 700;
+    c.style.left = cx + 'px'; c.style.top = cy + 'px';
+    c.animate([{ transform: `translate(-50%,-50%) scale(${s * .3}) rotateY(0deg)`, opacity: 1 }, { transform: `translate(calc(-50% + ${dx * .55}px), calc(-50% + ${up * .55}px)) scale(${s}) rotateY(${rot * .5}deg)`, opacity: 1, offset: .35 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${up * .2 + 420}px)) scale(${s}) rotateY(${rot}deg)`, opacity: 0 }], { duration: dur, delay: i * 12, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).onfinish = () => c.remove(); }
+}
 async function spinSlot() {
   if (slotBusy || SAVE.data.freeDraw) return; const pool = unownedChars(); if (!pool.length) return;
   slotBusy = true; $('slotSpin').disabled = true; const lever = $('slotLever'); lever.classList.remove('pull'); void lever.offsetWidth; lever.classList.add('pull');
@@ -653,6 +671,7 @@ async function spinSlot() {
   await Promise.all(anims); clearInterval(tick);
   SAVE.data.freeDraw = true; addCrew(target, MAX_LV); SAVE.save(); SFX.play('rare'); AUDIO.sfx('ult');
   $('slotModal').querySelector('.slot').classList.add('win'); $('slotSpin').style.display = 'none';
+  coinBurst($('coinBurst'), 60); SFX.play('coin'); setTimeout(() => SFX.play('coin'), 180);
   const c = CHARACTERS[target], full = SAVE.data.lineup.length >= GAME_SETTINGS.lineupMax;
   $('slotResult').innerHTML = `<div class="sr-card"><img src="${c.image}" alt=""><div><small>JACKPOT</small><h3>${c.name}<em>${c.title}</em></h3><p>LV 100・${TIERS[tierOf(MAX_LV)].name}，已放進角色背包。要讓他上陣嗎？</p>
     <div class="sr-actions"><button class="btn-gold" data-sl="lead">上陣並設為先鋒</button><button class="btn-primary" data-sl="add">${full ? '上陣（替換最後一位）' : '加入陣容'}</button><button class="btn-ghost" data-sl="bag">先放在背包</button></div></div></div>`;

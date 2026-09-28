@@ -9,17 +9,33 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=14">
-<link rel="stylesheet" href="css/fx.css?v=14">
-<link rel="stylesheet" href="css/mobile.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/fx.css?v=18">
+<link rel="stylesheet" href="css/mobile.css?v=18">
+<link rel="stylesheet" href="css/ui2.css?v=18">
 </head>
 <body>
 <div id="app">
 
 <!-- ================= 登入 ================= -->
 <section class="screen" id="loginScreen">
-  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=14" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4?v=14" type="video/mp4"></video>
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=18" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4?v=18" type="video/mp4"></video>
   <div class="login-shade"></div>
+  <header class="home-nav">
+    <div class="hn-logo">海賊王</div>
+    <button class="hn-menu" id="homeMenuBtn" aria-label="開啟選單">☰</button>
+    <nav class="hn-links" id="homeNav" aria-label="首頁選單">
+      <button class="on" data-home="home">首頁</button>
+      <button data-home="features">遊戲特色</button>
+      <button data-home="chars">角色介紹</button>
+      <button data-home="community">社區</button>
+      <button data-home="support">客服中心</button>
+    </nav>
+    <div class="hn-right">
+      <button class="hn-set" id="homeSettings" aria-label="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 4.9l1.8 1.4-2 3.4-2.1-.8a7.7 7.7 0 0 1-2 1.2l-.3 2.2h-4l-.3-2.2a7.7 7.7 0 0 1-2-1.2l-2.1.8-2-3.4 1.8-1.4a7.8 7.8 0 0 1 0-2.4L1.8 9.6l2-3.4 2.1.8a7.7 7.7 0 0 1 2-1.2l.3-2.2h4l.3 2.2a7.7 7.7 0 0 1 2 1.2l2.1-.8 2 3.4-1.8 1.4a7.8 7.8 0 0 1 0 2.4z" fill="currentColor"/></svg><span>設定</span></button>
+      <button class="hn-avatar" id="homeAvatar" aria-label="我的船長"><img id="homeAvatarImg" alt=""></button>
+    </div>
+  </header>
   <div class="login-main">
     <div class="logo">
       <span class="logo-small">海賊王</span>
@@ -27,16 +43,16 @@
       <p>戴上草帽，從風車村揚帆。<br>招募夥伴、組好三人陣容，闖過八座傳說之島，寫下屬於你的航海日誌。</p>
     </div>
     <div class="login-actions">
-      <button class="btn-primary big" id="startBtn">揚帆出航</button>
+      <button class="btn-primary big start-btn" id="startBtn">揚帆出航</button>
       <div class="login-sub">
-        <button class="btn-ghost" id="newsOpenBtn">全部公告</button>
-        <button class="btn-ghost" id="soundBtn" aria-pressed="false">音樂：開</button>
-        <button class="btn-ghost" id="adminBtn">管理後台</button>
+        <button class="pill" id="newsOpenBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h3l5 4V6L6 10zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z" fill="currentColor"/></svg>全部公告</button>
+        <button class="pill" id="soundBtn" aria-pressed="false">音樂：開</button>
+        <button class="pill" id="adminBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 9V7A5 5 0 0 0 7 7v2H5v12h14V9zm-8-2a3 3 0 0 1 6 0v2H9zm3 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="currentColor"/></svg>管理後台</button>
       </div>
     </div>
   </div>
   <aside class="news-board" aria-label="最新公告">
-    <header><button class="news-toggle" id="newsToggle" aria-expanded="true" aria-controls="newsBody"><h2>船上告示</h2><span class="nt-count" id="newsCount"></span><i class="nt-arrow" aria-hidden="true">▾</i></button></header>
+    <header><button class="news-toggle" id="newsToggle" aria-expanded="true" aria-controls="newsBody"><h2>船上告示</h2><span class="nt-count" id="newsCount"></span><i class="nt-arrow" aria-hidden="true">▾</i></button><time class="news-clock" id="newsClock"></time></header>
     <div class="news-body" id="newsBody"><div class="news-tabs" id="newsTabs"></div>
     <ol class="news-list" id="newsBoard"></ol>
     <button class="news-more" id="newsMoreBtn">查看全部與管理公告</button></div>
@@ -199,16 +215,17 @@
     <button data-hub="shop" role="tab">道具商店</button>
     <button data-hub="navy" role="tab">海軍本部</button>
   </nav>
-  <div class="g-main" data-pane="summon">
-    <div class="machine" id="machine">
-      <div class="m-sign">寶藏扭蛋</div>
-      <div class="m-globe"><div class="m-caps" id="mCaps"></div><div class="m-glass"></div></div>
-      <div class="m-body">
-        <div class="m-slot"><i></i></div>
-        <button class="m-crank" id="mCrank" aria-label="轉動"><i></i></button>
-        <div class="m-chute"><div class="m-drop" id="mDrop"></div></div>
-      </div>
-    </div>
+  <div class="g-main tavern" data-pane="summon">
+    <div class="g-scene-wrap"><div class="g-scene" id="machine">
+      <img class="g-bg" src="assets/ui/gacha_tavern.webp?v=18" alt="海賊酒館裡的寶藏扭蛋機">
+      <i class="g-lamp" style="--x:16.16%;--y:12.96%"></i><i class="g-lamp" style="--x:5.72%;--y:24.54%;--d:-.7s"></i><i class="g-lamp" style="--x:18.05%;--y:80.56%;--d:-1.3s"></i><i class="g-lamp" style="--x:57.58%;--y:70.83%;--d:-.3s"></i><i class="g-lamp" style="--x:65.66%;--y:45.68%;--d:-1.9s"></i>
+      <div class="g-motes" aria-hidden="true"><i style="--x:0%;--s:2px;--t:6s;--d:-0.0s"></i><i style="--x:37%;--s:3px;--t:7s;--d:-0.7s"></i><i style="--x:74%;--s:4px;--t:8s;--d:-1.4s"></i><i style="--x:11%;--s:2px;--t:9s;--d:-2.1s"></i><i style="--x:48%;--s:3px;--t:10s;--d:-2.8s"></i><i style="--x:85%;--s:4px;--t:6s;--d:-3.5s"></i><i style="--x:22%;--s:2px;--t:7s;--d:-4.2s"></i><i style="--x:59%;--s:3px;--t:8s;--d:-4.9s"></i><i style="--x:96%;--s:4px;--t:9s;--d:-5.6s"></i><i style="--x:33%;--s:2px;--t:10s;--d:-6.3s"></i><i style="--x:70%;--s:3px;--t:6s;--d:-7.0s"></i><i style="--x:7%;--s:4px;--t:7s;--d:-7.7s"></i><i style="--x:44%;--s:2px;--t:8s;--d:-8.4s"></i><i style="--x:81%;--s:3px;--t:9s;--d:-9.1s"></i><i style="--x:18%;--s:4px;--t:10s;--d:-9.8s"></i><i style="--x:55%;--s:2px;--t:6s;--d:-10.5s"></i><i style="--x:92%;--s:3px;--t:7s;--d:-11.2s"></i><i style="--x:29%;--s:4px;--t:8s;--d:-11.9s"></i><i style="--x:66%;--s:2px;--t:9s;--d:-12.6s"></i><i style="--x:3%;--s:3px;--t:10s;--d:-13.3s"></i><i style="--x:40%;--s:4px;--t:6s;--d:-14.0s"></i><i style="--x:77%;--s:2px;--t:7s;--d:-14.7s"></i></div>
+      <div class="g-globe"><div class="m-caps" id="mCaps"></div><i class="g-glass"></i></div>
+      <div class="g-wheel"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="whb" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#fff0b8"/><stop offset=".6" stop-color="#c9973a"/><stop offset="1" stop-color="#7a4a10"/></radialGradient></defs><g stroke="#3a2008" stroke-width="2"><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(0 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(45 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(90 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(135 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(180 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(225 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(270 50 50)"/><rect x="47" y="2" width="6" height="30" rx="3" fill="#8a4a22" transform="rotate(315 50 50)"/><circle cx="50" cy="50" r="34" fill="none" stroke="#6b3a14" stroke-width="9"/><circle cx="50" cy="50" r="34" fill="none" stroke="url(#whb)" stroke-width="5"/><circle cx="50" cy="50" r="12" fill="url(#whb)"/></g></svg></div>
+      <i class="g-slotglow"></i>
+      <div class="m-drop" id="mDrop"></div>
+      <button class="g-hit" id="mCrank" aria-label="轉動扭蛋機（抽 1 次）"></button>
+    </div></div>
     <div class="g-panel">
       <div class="free-box hidden" id="freeBox"><div><b>新手福利</b><p>免費召喚一位 LV 100 的強力船員！</p></div><button class="btn-gold big" id="pullFree">免費拉霸</button></div>
       <p class="g-lead">完成劇情任務獲得寶藏幣。有機會直接抽到新船員；經驗書在「船員」畫面使用，戰鬥道具在對戰中按「道具」使用。</p>
@@ -235,9 +252,9 @@
       <div class="char-detail navy-detail" id="navyDetail"></div>
     </div>
   </div></div>
-  <div class="g-open" id="gOpen"><div class="cap"><i class="cap-top"></i><i class="cap-bot"></i></div><div class="cap-light"></div></div>
+  <div class="g-open" id="gOpen"><div class="cap-rays"></div><div class="cap"><i class="cap-top"></i><i class="cap-bot"></i><i class="cap-band"></i></div><div class="cap-light"></div><div class="coin-burst" id="gCoinBurst"></div></div>
   <div class="g-result" id="gResult">
-    <div class="g-res-card">
+    <div class="g-res-card"><div class="coin-burst" id="gResBurst"></div>
       <h3 id="gResTitle">獲得道具</h3>
       <div class="g-res-grid" id="gResGrid"></div>
       <button class="btn-primary" id="gResOk">收下</button>
@@ -284,6 +301,13 @@
   <div class="sheet-card"><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-grid" id="menuGrid"></div><button class="btn-ghost sheet-close" id="menuClose">關閉</button></div>
 </div>
 
+<div class="modal" id="homeModal" role="dialog" aria-modal="true" aria-labelledby="homeTitle">
+  <div class="modal-card home-card">
+    <header><h2 id="homeTitle"></h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <div class="home-body" id="homeBody"></div>
+  </div>
+</div>
+
 <!-- 公告 -->
 <div class="modal" id="newsModal" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
   <div class="modal-card">
@@ -324,12 +348,20 @@
 <!-- 新手拉霸 -->
 <div class="modal" id="slotModal" role="dialog" aria-modal="true" aria-labelledby="slotTitle">
   <div class="modal-card slot-card">
-    <header><h2 id="slotTitle">新手拉霸</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
-    <p class="modal-note">拉下拉桿！三格停在同一位船員，他就會以 <b>LV 100</b> 加入角色背包。新手福利只有一次。</p>
-    <div class="slot"><div class="slot-frame"><div class="reel"><div class="strip" id="reel0"></div></div><div class="reel"><div class="strip" id="reel1"></div></div><div class="reel"><div class="strip" id="reel2"></div></div><div class="slot-line"></div></div>
-      <button class="slot-lever" id="slotLever" aria-label="拉下拉桿"><i></i><b></b></button></div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#f3c969"/><stop offset="1" stop-color="#a8741a"/></linearGradient></defs></svg>
+    <button class="icon-btn sm slot-close" data-close aria-label="關閉">×</button>
+    <div class="slot-deco" aria-hidden="true"><i class="dc c1"></i><i class="dc c2"></i><i class="dc c3"></i><i class="dc c4"></i><i class="chest l"></i><i class="chest r"></i></div>
+    <h2 id="slotTitle" class="slot-title">新手拉霸</h2>
+    <p class="slot-note">拉下拉桿！三格停在同一位船員<br>他就會以 <b>LV 100</b> 加入角色背包・新手福利只有一次</p>
+    <div class="slot">
+      <div class="slot-frame"><svg class="skull tl" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4C11 4 5 10 5 18c0 5 2 8 5 10v5h20v-5c3-2 5-5 5-10 0-8-6-14-15-14z" fill="url(#gold)" stroke="#5a3a0a" stroke-width="1.5"/><circle cx="14" cy="18" r="4" fill="#3a0a0a"/><circle cx="26" cy="18" r="4" fill="#3a0a0a"/><circle cx="14" cy="18" r="1.6" fill="#ff3b30"/><circle cx="26" cy="18" r="1.6" fill="#ff3b30"/><path d="M18 24l2-3 2 3z" fill="#3a0a0a"/><path d="M14 33v3M18 33v3M22 33v3M26 33v3" stroke="#5a3a0a" stroke-width="1.5"/></svg><svg class="skull tr" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4C11 4 5 10 5 18c0 5 2 8 5 10v5h20v-5c3-2 5-5 5-10 0-8-6-14-15-14z" fill="url(#gold)" stroke="#5a3a0a" stroke-width="1.5"/><circle cx="14" cy="18" r="4" fill="#3a0a0a"/><circle cx="26" cy="18" r="4" fill="#3a0a0a"/><circle cx="14" cy="18" r="1.6" fill="#ff3b30"/><circle cx="26" cy="18" r="1.6" fill="#ff3b30"/><path d="M18 24l2-3 2 3z" fill="#3a0a0a"/><path d="M14 33v3M18 33v3M22 33v3M26 33v3" stroke="#5a3a0a" stroke-width="1.5"/></svg><svg class="skull bl" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4C11 4 5 10 5 18c0 5 2 8 5 10v5h20v-5c3-2 5-5 5-10 0-8-6-14-15-14z" fill="url(#gold)" stroke="#5a3a0a" stroke-width="1.5"/><circle cx="14" cy="18" r="4" fill="#3a0a0a"/><circle cx="26" cy="18" r="4" fill="#3a0a0a"/><circle cx="14" cy="18" r="1.6" fill="#ff3b30"/><circle cx="26" cy="18" r="1.6" fill="#ff3b30"/><path d="M18 24l2-3 2 3z" fill="#3a0a0a"/><path d="M14 33v3M18 33v3M22 33v3M26 33v3" stroke="#5a3a0a" stroke-width="1.5"/></svg><svg class="skull br" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4C11 4 5 10 5 18c0 5 2 8 5 10v5h20v-5c3-2 5-5 5-10 0-8-6-14-15-14z" fill="url(#gold)" stroke="#5a3a0a" stroke-width="1.5"/><circle cx="14" cy="18" r="4" fill="#3a0a0a"/><circle cx="26" cy="18" r="4" fill="#3a0a0a"/><circle cx="14" cy="18" r="1.6" fill="#ff3b30"/><circle cx="26" cy="18" r="1.6" fill="#ff3b30"/><path d="M18 24l2-3 2 3z" fill="#3a0a0a"/><path d="M14 33v3M18 33v3M22 33v3M26 33v3" stroke="#5a3a0a" stroke-width="1.5"/></svg>
+        <div class="slot-window"><div class="reel"><div class="strip" id="reel0"></div></div><div class="reel"><div class="strip" id="reel1"></div></div><div class="reel"><div class="strip" id="reel2"></div></div><div class="slot-line"></div></div>
+      </div>
+      <button class="slot-lever" id="slotLever" aria-label="拉下拉桿"><span class="lv-base"><i class="gear"></i></span><span class="lv-arm"><span class="lv-rod"></span><svg class="skull knob" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4C11 4 5 10 5 18c0 5 2 8 5 10v5h20v-5c3-2 5-5 5-10 0-8-6-14-15-14z" fill="url(#gold)" stroke="#5a3a0a" stroke-width="1.5"/><circle cx="14" cy="18" r="4" fill="#3a0a0a"/><circle cx="26" cy="18" r="4" fill="#3a0a0a"/><circle cx="14" cy="18" r="1.6" fill="#ff3b30"/><circle cx="26" cy="18" r="1.6" fill="#ff3b30"/><path d="M18 24l2-3 2 3z" fill="#3a0a0a"/><path d="M14 33v3M18 33v3M22 33v3M26 33v3" stroke="#5a3a0a" stroke-width="1.5"/></svg></span></button>
+    </div>
     <div class="slot-result" id="slotResult"></div>
-    <footer><button class="btn-gold big" id="slotSpin">拉下拉桿</button></footer>
+    <footer class="slot-foot"><button class="slot-go" id="slotSpin">拉下拉桿</button></footer>
+    <div class="coin-burst" id="coinBurst" aria-hidden="true"></div>
   </div>
 </div>
 <!-- 商店 -->
@@ -352,20 +384,22 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="loading" id="loading"><div class="ld-wheel"></div><span>載入中</span></div>
 
-<script src="js/data.js?v=14"></script>
-<script src="js/engine3d.js?v=14"></script>
-<script src="js/scenes.js?v=14"></script>
-<script src="js/world.js?v=14"></script>
-<script src="js/battle_core.js?v=14"></script>
-<script src="js/battle.js?v=14"></script>
-<script src="js/audio.js?v=14"></script>
-<script src="js/fx.js?v=14"></script>
-<script src="js/fx_choreo.js?v=14"></script>
-<script src="js/admin.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
-<script src="js/hub.js?v=14"></script>
-<script src="js/seer.js?v=14"></script>
-<script src="js/treasure.js?v=14"></script>
-<script src="js/crew.js?v=14"></script>
+<script src="js/data.js?v=18"></script>
+<script src="js/engine3d.js?v=18"></script>
+<script src="js/scenes.js?v=18"></script>
+<script src="js/world.js?v=18"></script>
+<script src="js/battle_core.js?v=18"></script>
+<script src="js/battle.js?v=18"></script>
+<script src="js/audio.js?v=18"></script>
+<script src="js/fx.js?v=18"></script>
+<script src="js/fx_choreo.js?v=18"></script>
+<script src="js/admin.js?v=18"></script>
+<script src="js/app.js?v=18"></script>
+<script src="js/hub.js?v=18"></script>
+<script src="js/seer.js?v=18"></script>
+<script src="js/treasure.js?v=18"></script>
+<script src="js/crew.js?v=18"></script>
+<script src="js/icons.js?v=18"></script>
+<script src="js/home.js?v=18"></script>
 </body>
 </html>
