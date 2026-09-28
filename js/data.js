@@ -1,5 +1,7 @@
 /* 資料版本：每次改動角色或劇情資料時加一。後台設定若來自舊版本會自動停用，避免舊劇情覆蓋新內容。 */
 const DATA_VERSION = 15;
+/* 圖片版本：換圖時加一，瀏覽器就會重新下載（不影響後台設定） */
+const ASSET_VERSION = 24;
 /* 遊戲資料：角色（沿用原版數值）、篇章劇情、道具、公告 */
 const CHARACTERS = {
  luffy0:{"id":"luffy0","name":"初登場魯夫","title":"草帽小子","types":["格鬥"],"image":"assets/chars/luffy0.webp","avatar":"assets/chars/luffy0_face.webp","scale":0.86,"worldScale":0.86,"maxHp":1180,"baseSpeed":112,"desc":"剛從風車村出海的橡膠人，靠伸縮自如的拳腳和不服輸的鬥志戰鬥。","ultimateBg":"assets/chars/luffy0.webp","ai":"aggressive","skills":[{"name":"橡膠手槍","type":"attack","pp":15,"maxPP":15,"power":90,"accuracy":100,"desc":"伸長手臂的直拳，25% 機率造成 1.8 倍傷害。","tags":[["爆發","red"]],"anima":"punch","effect":{"critBoost":0.25,"critMult":1.8}},{"name":"橡膠鞭","type":"attack","pp":12,"maxPP":12,"power":100,"accuracy":95,"desc":"甩出伸長的腿橫掃，25% 機率使對手麻痺 1 回合。","tags":[["麻痺","gold"]],"anima":"whip","effect":{"skipAttackChance":0.25,"skipAttackTurns":1}},{"name":"橡膠加特林","type":"attack","pp":8,"maxPP":8,"power":0,"accuracy":100,"desc":"連續出拳 6 次，每次造成對手最大體力 1%～5% 傷害。","tags":[["六連擊","blue"]],"anima":"barrage","effect":{"randomPercentHits":[6,0.01,0.05,false]}},{"name":"橡膠風船","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"把身體吹成氣球，下一次受到的攻擊以 1.5 倍反彈，並回復 10% 體力。","tags":[["反彈","gold"],["回復","green"]],"anima":"balloon","effect":{"reflectTurns":1,"reflectMultiplier":1.5,"healRatio":0.1}},{"name":"二檔","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"血液加速流動、全身冒出蒸氣：接下來的攻擊傷害 3.5 倍，50% 使對手恐懼 1 回合。","tags":[["強化","gold"],["恐懼","gold"]],"anima":"gear2","ultimate":true,"effect":{"nextAttackMult":3.5,"nextAttackMultTurns":2,"fearChance":0.5,"fearTurns":1}}],"no":1},
@@ -136,6 +138,8 @@ const RARITY = {
 const GACHA_COST = {single:1, ten:9};
 
 const DEFAULT_NEWS = [
+ {id:'n24', date:'2026-09-28', tag:'調整', title:'新封面與結尾演出', body:'和之國篇、蜂巢島篇換上新封面；選擇冒險頁換上港口背景；懸賞任務換上懸賞牆背景與新的懸賞單。打贏篇章 BOSS 後會出現「To Be Continued」結尾演出。'},
+ {id:'n23', date:'2026-09-28', tag:'更新', title:'奪寶大冒險與勇者之塔改版', body:'奪寶大冒險換上前進梅利號與全海洋場景，撞上礁石會遭到砲彈攻擊，背景是海浪與風聲；勇者之塔換上地牢場景與陰森配樂。訓練營可付貝里立即完成；戰鬥中長按技能可查看說明。'},
  {id:'n22', date:'2026-09-28', tag:'更新', title:'三大模式登場：奪寶大冒險・關卡挑戰・勇者之塔', body:'出航後先選擇冒險模式。奪寶大冒險用左右槳交替划船、閃避障礙搶金幣；勇者之塔共 120 層，每 10 層一位 BOSS。新增玩家資料（名稱、ID、登船時間、稱號）；角色背包改為出戰／待命、大立繪與攻擊・防禦・速度・體力數值。NPC 對話更順暢。'},
  {id:'n21', date:'2026-09-28', tag:'調整', title:'各種裝置的畫面排版修正', body:'戰鬥畫面的屬性相剋資訊條與戰鬥紀錄會依裝置自動避開其他介面；在手機、平板與橫向畫面，對話選項改放進對話框內，不再擋住角色與場景。'},
  {id:'n20', date:'2026-09-28', tag:'調整', title:'拉霸・扭蛋・對話體驗優化', body:'拉霸機置中並修正中獎框位置，轉輪依序停下；扭蛋翻滾改為玻璃球內的立體扭蛋彈跳；對話框可以收合成底部小膠囊；任務方向箭頭置中。'},
@@ -228,6 +232,6 @@ const SHOP = [
 ];
 
 /* 圖片加上版本參數，部署新版後瀏覽器會重新下載，不會卡在舊圖 */
-(function () { const v = '?v=' + DATA_VERSION, add = u => (u && !u.includes('?') && u.startsWith('assets/')) ? u + v : u;
+(function () { const v = '?v=' + ASSET_VERSION, add = u => (u && !u.includes('?') && u.startsWith('assets/')) ? u + v : u;
   Object.values(CHARACTERS).forEach(c => { c.image = add(c.image); c.avatar = add(c.avatar); if (c.ultimateBg) c.ultimateBg = add(c.ultimateBg); });
   CHAPTERS.forEach(c => { c.art = add(c.art); }); })();

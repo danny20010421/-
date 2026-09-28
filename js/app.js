@@ -29,12 +29,13 @@ function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('
 const SCREENS = ['loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
 let currentScreen = 'loginScreen';
 function showScreen(id) {
+  document.querySelectorAll('.sk-tip.show').forEach(t => t.classList.remove('show'));
   SCREENS.forEach(k => $(k).classList.toggle('hidden', k !== id)); currentScreen = id;
   const v = $('loginVideo'); if (id === 'loginScreen') { v.play && v.play().catch(() => { }); } else v.pause && v.pause();
   if (id === 'worldScreen') { WORLD && WORLD.start(); } else if (WORLD) WORLD.stop();
-  const song = { loginScreen: 'title', modeScreen: 'map', runnerScreen: 'east', towerScreen: 'battle', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
-  if (song) AUDIO.playSong(song);
-  AUDIO.ambient(id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
+  const song = { loginScreen: 'title', modeScreen: 'map', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
+  if (song) AUDIO.playSong(song); else if (id === 'runnerScreen' || id === 'towerScreen') AUDIO.stopSong();
+  AUDIO.ambient(id === 'runnerScreen' ? 'seawind' : id === 'towerScreen' ? 'dungeon' : id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
 }
 function syncSound() { const off = AUDIO.pref.muted; document.querySelectorAll('[data-snd]').forEach(b => { b.classList.toggle('off', off); b.setAttribute('aria-pressed', String(!off)); }); $('soundBtn').textContent = '音樂：' + (off ? '關' : '開'); }
 function toggleSound() { AUDIO.setPref({ muted: !AUDIO.pref.muted }); AUDIO.unlock(); syncSound(); }
@@ -475,7 +476,7 @@ function onBattleEnd(r) {
   }
   if (!r.win) return {};
   if (r.isBoss) {
-    if (s && s.type === 'boss') { const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = ob.boss != null ? ob.boss : first ? GAME_SETTINGS.bossJoinFirst : GAME_SETTINGS.bossJoinRepeat, again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
+    if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = ob.boss != null ? ob.boss : first ? GAME_SETTINGS.bossJoinFirst : GAME_SETTINGS.bossJoinRepeat, again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
     if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
     if (s && s.type === 'defeat') { if (st.defeated.length >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); } else msgs.push(`任務進度：${st.defeated.length}/${s.count}`); }

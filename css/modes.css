@@ -143,3 +143,57 @@
 @media (max-width:420px){.sb-slots,.sb-bench{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 .sb-tile{width:100%!important;max-width:100%!important;box-sizing:border-box}
 .sb-tile img{max-width:100%;display:block}
+
+/* ===== v23 ===== */
+.m-run .mc-art{background:url('../assets/ui/mode_run.webp?v=23') center 40%/cover!important}
+.m-tower .mc-art{background:url('../assets/ui/mode_tower.webp?v=23') center 35%/cover!important}
+.m-run .mc-art::after,.m-tower .mc-art::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(8,18,32,.55))}
+#towerScreen{background:linear-gradient(180deg,rgba(6,12,10,.55),rgba(6,12,10,.35) 40%,rgba(6,12,10,.75)),url('../assets/ui/tower_bg.webp?v=23') center/cover no-repeat,#0c0a1c!important}
+.tw-floors,.tw-panel{background:rgba(12,18,16,.72)!important;backdrop-filter:blur(8px);border:1px solid rgba(90,220,160,.25)!important}
+.tw-f.now{box-shadow:0 0 0 2px #7fe0b0!important;background:linear-gradient(90deg,rgba(90,220,160,.28),rgba(90,220,160,.06))!important}
+.tw-f.now .tw-st,.tw-info small{color:#9dffcf!important}
+#gachaScreen[data-tab=shop]{background:linear-gradient(180deg,rgba(20,10,4,.55),rgba(20,10,4,.25) 35%,rgba(20,10,4,.7)),url('../assets/ui/shop_bg.webp?v=23') center/cover no-repeat,#2a1a0a!important}
+#gachaScreen[data-tab=shop] .hub-inner{padding:18px 20px;border-radius:18px;background:rgba(24,14,6,.72);border:1px solid rgba(243,201,105,.35);backdrop-filter:blur(8px)}
+.tc-btns{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+/* 長按技能說明 */
+.sk-tip{position:fixed;z-index:200;max-width:min(320px,92vw);padding:12px 14px;border-radius:14px;background:rgba(8,18,32,.96);border:1px solid rgba(243,201,105,.55);box-shadow:0 12px 30px rgba(0,0,0,.55);color:#fff;opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .15s,transform .15s}
+.sk-tip.show{opacity:1;transform:none}
+.sk-tip b{display:block;font-size:16px;color:#ffd26c}.sk-tip small{display:block;color:#cfd9e3;font-size:12px;margin:2px 0 6px}.sk-tip p{margin:0;font-size:13.5px;line-height:1.6}.sk-tip em{display:block;margin-top:6px;font-style:normal;font-size:11px;color:var(--muted)}.sk-tip .sk-tags{margin-top:6px}
+#bSkills .skill{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* 按鈕內文字與符號水平垂直置中 */
+.icon-btn,.btn-ghost,.btn-gold,.btn-primary,.pill,.hn-set,.cmd-btn,.coin{display:inline-flex;align-items:center!important;justify-content:center!important;text-align:center;line-height:1.15!important}
+.m-menu{align-items:center!important;justify-content:center!important;line-height:1!important}
+.icon-btn{padding:0!important}
+.coin{gap:6px}.coin>i{flex-shrink:0;display:inline-grid!important;place-items:center}
+.topbar-right{align-items:center!important}
+.snd{font-size:18px}
+/* 關卡挑戰：右側資訊欄從頂部列下方開始，避免被按鈕遮住 */
+@media (min-width:861px){
+  #chapterScreen .arc-card{top:calc(72px + var(--safeT,0px))!important;border-radius:18px 0 0 0;height:auto!important}
+  #chapterScreen .topbar{z-index:6}
+}
+
+/* ===== v24 ===== */
+#modeScreen{background:linear-gradient(180deg,rgba(6,18,34,.55),rgba(6,18,34,.25) 40%,rgba(6,18,34,.7)),url('../assets/ui/mode_bg.webp?v=24') center/cover no-repeat,#0c2440!important}
+.mode-head{filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+#gachaScreen[data-tab=bounty]{background:linear-gradient(180deg,rgba(20,6,6,.55),rgba(20,6,6,.2) 35%,rgba(20,6,6,.72)),url('../assets/ui/bounty_bg.webp?v=24') center/cover no-repeat,#1a0c0c!important}
+#gachaScreen[data-tab=bounty] .hub-inner{padding:18px 20px;border-radius:18px;background:rgba(20,10,8,.66);border:1px solid rgba(255,120,100,.3);backdrop-filter:blur(6px)}
+/* 懸賞單：使用 WANTED 海報圖，進度放在照片欄 */
+.bt-poster{width:78px!important;height:114px!important;padding:0!important;border-radius:2px!important;clip-path:none!important;transform:rotate(-3deg);background:url('../assets/ui/wanted.webp?v=24') center/100% 100% no-repeat!important;box-shadow:0 6px 12px rgba(0,0,0,.5)!important;position:relative;display:block!important}
+.bt-poster span,.bt-poster .bt-face{display:none!important}
+.bt-poster b{position:absolute;left:12%;right:12%;top:19%;height:41%;display:grid!important;place-items:center;font-family:var(--num);font-size:18px!important;color:#5a2a10!important;line-height:1.1;text-align:center}
+.bounty.done .bt-poster b{color:#b8231a!important;font-size:14px!important}
+.bounty{grid-template-columns:92px 1fr auto!important}
+@media (max-width:860px){.bounty{grid-template-columns:80px 1fr!important}.bt-poster{width:68px!important;height:100px!important}.bt-poster b{font-size:15px!important}}
+/* To Be Continued 結尾 */
+.tbc{position:fixed;inset:0;z-index:300;display:none;place-items:center;background:#000;cursor:pointer}
+.tbc.show{display:grid;animation:tbcIn .35s ease-out}
+.tbc img{width:min(78vmin,620px);height:auto;animation:tbcSlam .6s cubic-bezier(.2,1.4,.4,1) both,tbcShake .08s linear .6s 5}
+.tbc small{position:absolute;bottom:calc(24px + var(--safeB,0px));left:0;right:0;text-align:center;color:rgba(255,255,255,.45);font-size:13px;letter-spacing:.2em;animation:tbcIn 1s 1.2s both}
+.tbc.out{animation:tbcOut .5s forwards}
+@keyframes tbcIn{from{opacity:0}}
+@keyframes tbcOut{to{opacity:0}}
+@keyframes tbcSlam{from{transform:scale(2.4);opacity:0;filter:blur(8px)}to{transform:none;opacity:1;filter:none}}
+@keyframes tbcShake{50%{transform:translate(3px,-2px)}}
+@media (prefers-reduced-motion:reduce){.tbc img{animation:tbcIn .3s both}}
+.tbc{z-index:99999!important}

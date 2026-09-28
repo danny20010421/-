@@ -28,6 +28,13 @@
     training().splice(i, 1); SAVE.save(); const r = gainExp(t.id, t.exp, false, true);
     SFX.play('rare'); if (r && r.to === r.from) toast(`${CHARACTERS[t.id].name} 完成訓練，經驗 +${t.exp.toLocaleString()}`, 'gold'); render(); coins();
   }
+  /* 付貝里立即完成：剩餘每分鐘 15 貝里，最少 50 */
+  const rushCost = t => Math.max(50, Math.ceil(Math.max(0, t.end - Date.now()) / 60000) * 15);
+  function rushTraining(i) {
+    const t = training()[i]; if (!t || Date.now() >= t.end) return; const cost = rushCost(t);
+    if ((SAVE.data.berry || 0) < cost) { toast(`貝里不足，需要 ${cost.toLocaleString()} 貝里`, 'warn'); return; }
+    confirmBox('立即完成訓練？', `花費 <b>${cost.toLocaleString()} 貝里</b>，${CHARACTERS[t.id].name} 會馬上結束訓練，可以直接領取經驗。`, '立即完成', () => { SAVE.data.berry -= cost; t.end = Date.now() - 1; t.notified = true; SAVE.save(); coins(); SFX.play('coin'); render(); });
+  }
   function cancelTraining(i) {
     const t = training()[i]; if (!t) return;
     confirmBox('中止訓練？', `${CHARACTERS[t.id].name} 會立刻回到背包，這次訓練<b>不會獲得任何經驗</b>。`, '中止訓練', () => { training().splice(i, 1); SAVE.save(); render(); });
@@ -142,11 +149,12 @@
       if (t) { const c = CHARACTERS[t.id], p = planOf(t.plan), done = now >= t.end, pct = Math.min(100, (now - t.start) / (t.end - t.start) * 100), pv = previewLv(t.id, t.exp);
         html += `<div class="tc-slot ${done ? 'done' : ''}"><img src="${c.avatar}" alt=""><div class="tc-info"><b>${c.name}<small>LV ${crewLv(t.id)}${pv > crewLv(t.id) ? ` → LV ${pv}` : ''}</small></b><span>${p.label}・經驗 +${t.exp.toLocaleString()}</span>
           <div class="bar"><i style="width:${pct}%"></i></div><small class="tc-left">${done ? '訓練完成！' : `剩下 <b data-end="${t.end}">${fmt(t.end - now)}</b>`}</small></div>
-          ${done ? `<button class="btn-gold" data-claim="${i}">領取經驗</button>` : `<button class="btn-ghost sm" data-cancel="${i}">中止</button>`}</div>`; }
+          ${done ? `<button class="btn-gold" data-claim="${i}">領取經驗</button>` : `<div class="tc-btns"><button class="btn-gold sm" data-rush="${i}">立即完成・${rushCost(t).toLocaleString()} 貝里</button><button class="btn-ghost sm" data-cancel="${i}">中止</button></div>`}</div>`; }
       else html += `<div class="tc-slot empty"><div class="tc-empty">空位 ${i + 1}</div><button class="btn-primary" data-pick="${i}">放入船員</button></div>`; }
     $('cxSlots').innerHTML = html;
     $('cxSlots').querySelectorAll('[data-claim]').forEach(b => b.onclick = () => claimTraining(+b.dataset.claim));
     $('cxSlots').querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => cancelTraining(+b.dataset.cancel));
+    $('cxSlots').querySelectorAll('[data-rush]').forEach(b => b.onclick = () => rushTraining(+b.dataset.rush));
     $('cxSlots').querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { trainPick = { slot: +b.dataset.pick, id: null }; renderTrain(); });
     // 選角與方案
     const P = $('cxPicker');

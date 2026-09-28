@@ -13,6 +13,26 @@ function layoutBattleHud() {
 window.layoutBattleHud = layoutBattleHud;
 window.addEventListener('resize', () => requestAnimationFrame(layoutBattleHud));
 window.addEventListener('orientationchange', () => setTimeout(layoutBattleHud, 300));
+/* 長按技能顯示效果說明（手機；桌機也可用） */
+(function () {
+  let timer = 0, longed = false, tip = null;
+  const hide = () => { if (tip) tip.classList.remove('show'); };
+  function show(btn) { const i = +btn.dataset.i, s = battle && battle.player && battle.player.skills[i]; if (!s) return; if (!tip) { tip = document.createElement('div'); tip.className = 'sk-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+    tip.innerHTML = `<b>${s.name}</b><small>${s.ultimate ? '奧義' : s.type === 'attack' ? '攻擊' : '輔助'}・威力 ${s.power || '—'}・命中 ${s.accuracy}・次數 ${s.pp}/${s.maxPP}</small><p>${s.desc}</p>${(s.tags || []).length ? `<div class="sk-tags">${s.tags.map(([t, cl]) => `<span class="tag ${cl}">${t}</span>`).join('')}</div>` : ''}<em>放開後點一下別處關閉</em>`;
+    const r = btn.getBoundingClientRect(); tip.classList.add('show'); const tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.max(8, Math.min(innerWidth - tw - 8, r.left + r.width / 2 - tw / 2)) + 'px'; tip.style.top = Math.max(8, r.top - th - 10) + 'px'; if (navigator.vibrate) navigator.vibrate(15); }
+  document.addEventListener('pointerdown', e => { const btn = e.target.closest && e.target.closest('#bSkills .skill'); if (!btn) { hide(); return; } longed = false; clearTimeout(timer); timer = setTimeout(() => { longed = true; show(btn); }, 450); }, true);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => document.addEventListener(ev, () => clearTimeout(timer), true));
+  document.addEventListener('click', e => { if (longed && e.target.closest && e.target.closest('#bSkills .skill')) { e.stopImmediatePropagation(); e.preventDefault(); longed = false; } }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('#bSkills .skill')) e.preventDefault(); }, true);
+})();
+/* 篇章 BOSS 擊敗後的「To Be Continued」結尾演出（模仿動畫每集結尾） */
+function showTBC() {
+  let el = document.getElementById('tbc'); if (!el) { el = document.createElement('div'); el.id = 'tbc'; el.className = 'tbc'; el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'To Be Continued'); el.innerHTML = '<img src="assets/ui/tbc.webp?v=' + (typeof ASSET_VERSION !== 'undefined' ? ASSET_VERSION : 1) + '" alt=""><small>點一下繼續</small>'; document.body.appendChild(el); el.addEventListener('click', () => hideTBC()); }
+  el.classList.remove('out'); void el.offsetWidth; el.classList.add('show'); AUDIO.stopSong();
+  try { SFX.play('explode'); setTimeout(() => SFX.play('rare'), 380); } catch (e) { }
+  clearTimeout(showTBC._t); showTBC._t = setTimeout(hideTBC, 3200);
+}
+function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.classList.contains('show')) return; el.classList.add('out'); setTimeout(() => el.classList.remove('show', 'out'), 500); AUDIO.jingle && AUDIO.jingle('victory'); }
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
@@ -267,6 +287,7 @@ function finishBattle(win, fled) {
   if (!fled) AUDIO.jingle(win ? 'victory' : 'defeat'); else AUDIO.stopSong();
   setTimeout(() => {
     const res = b.onEnd ? b.onEnd({ win, fled, enemyId: b.enemy.id, isBoss: b.isBoss, rounds: b.round, team: b.team.map(f => ({ id: f.id, hp: f.hp })) }) : {};
+    if (win && window.__tbcNext) { window.__tbcNext = false; showTBC(); } else window.__tbcNext = false;
     $('bResTitle').textContent = fled ? '撤退' : win ? '勝利' : '戰敗';
     $('bResult').className = 'b-result show ' + (fled ? 'fled' : win ? 'win' : 'lose');
     $('bResImg').src = win ? b.player.image : b.enemy.image;

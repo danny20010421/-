@@ -186,14 +186,39 @@ const AUDIO = (() => {
   function ambient(kind) {
     if (!ctx || ctx.state !== 'running') { ambPending = kind; return; }
     if (ambName === kind) return; ambName = kind;
-    ambNodes.forEach(n => { try { n.stop(); } catch (e) { } }); ambNodes = [];
+    ambNodes.forEach(n => { try { n.stop(); } catch (e) { } }); ambNodes = []; ambTimers.forEach(clearTimeout); ambTimers = [];
     if (!kind) return;
+    if (kind === 'seawind') { layerSea(); layerWind(); return; }
+    if (kind === 'dungeon') { layerDungeon(); return; }
     const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
     const f = ctx.createBiquadFilter(); f.type = kind === 'wind' ? 'bandpass' : 'lowpass'; f.frequency.value = kind === 'wind' ? 900 : 520; f.Q.value = kind === 'wind' ? .6 : .3;
     const g = ctx.createGain(); g.gain.value = kind === 'wind' ? .12 : .18;
     const lfo = ctx.createOscillator(); lfo.frequency.value = kind === 'wind' ? .13 : .09; const lg = ctx.createGain(); lg.gain.value = kind === 'wind' ? .08 : .14; lfo.connect(lg); lg.connect(g.gain);
     if (kind === 'wind') { const l2 = ctx.createOscillator(); l2.frequency.value = .07; const l2g = ctx.createGain(); l2g.gain.value = 500; l2.connect(l2g); l2g.connect(f.frequency); l2.start(); ambNodes.push(l2); }
     src.connect(f); f.connect(g); g.connect(ambBus); src.start(); lfo.start(); ambNodes.push(src, lfo);
+  }
+
+  let ambTimers = [];
+  function noiseLayer(type, freq, q, vol, lfoF, lfoAmt, fLfoF, fLfoAmt) {
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true; src.playbackRate.value = .7 + Math.random() * .3;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain(); g.gain.value = vol; const lfo = ctx.createOscillator(); lfo.frequency.value = lfoF; const lg = ctx.createGain(); lg.gain.value = lfoAmt; lfo.connect(lg); lg.connect(g.gain);
+    if (fLfoF) { const l2 = ctx.createOscillator(); l2.frequency.value = fLfoF; const l2g = ctx.createGain(); l2g.gain.value = fLfoAmt; l2.connect(l2g); l2g.connect(f.frequency); l2.start(); ambNodes.push(l2); }
+    src.connect(f); f.connect(g); g.connect(ambBus); src.start(); lfo.start(); ambNodes.push(src, lfo);
+  }
+  /* 海浪：低頻湧動＋浪花嘶聲；風：帶通呼嘯，音色緩慢變化 */
+  function layerSea() { noiseLayer('lowpass', 420, .4, .22, .11, .18, .05, 160); noiseLayer('highpass', 2600, .3, .035, .17, .03); }
+  function layerWind() { noiseLayer('bandpass', 750, .9, .1, .09, .07, .06, 420); noiseLayer('bandpass', 1500, 2.5, .03, .21, .025, .13, 600); }
+  /* 地牢：低沉持續音＋水滴＋不時的鐵鍊晃動 */
+  function layerDungeon() {
+    [[55, .06], [58.3, .05], [82.4, .02]].forEach(([fr, v]) => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180; const g = ctx.createGain(); g.gain.value = v; const l = ctx.createOscillator(); l.frequency.value = .05 + Math.random() * .05; const lg = ctx.createGain(); lg.gain.value = v * .8; l.connect(lg); lg.connect(g.gain); o.connect(f); f.connect(g); g.connect(ambBus); o.start(); l.start(); ambNodes.push(o, l); });
+    noiseLayer('lowpass', 300, .5, .07, .06, .05, .03, 80);
+    const drip = () => { if (!ctx) return; const t = ctx.currentTime, g = ctx.createGain(); g.connect(ambBus); g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .35); const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(1400 + Math.random() * 900, t); o.frequency.exponentialRampToValueAtTime(420, t + .12); o.connect(g); o.start(t); o.stop(t + .4); ambTimers.push(setTimeout(drip, 1800 + Math.random() * 4200)); };
+    const chain = () => { if (!ctx) return; const t0 = ctx.currentTime, n = 5 + ((Math.random() * 6) | 0), pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; const bus = ctx.createGain(); bus.gain.value = .5 + Math.random() * .4; if (pan) { pan.pan.value = Math.random() * 1.6 - .8; bus.connect(pan); pan.connect(ambBus); } else bus.connect(ambBus);
+      for (let i = 0; i < n; i++) { const t = t0 + i * (.07 + Math.random() * .09); const fr = 1800 + Math.random() * 2400; const g = ctx.createGain(); g.connect(bus); g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = fr; f.Q.value = 18; f.connect(g); const s2 = ctx.createBufferSource(); s2.buffer = noiseBuf; s2.connect(f); s2.start(t, Math.random()); s2.stop(t + .08);
+        const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = fr * .5; const og = ctx.createGain(); og.gain.setValueAtTime(.03, t); og.gain.exponentialRampToValueAtTime(.001, t + .3); o.connect(og); og.connect(bus); o.start(t); o.stop(t + .32); }
+      ambTimers.push(setTimeout(chain, 4000 + Math.random() * 6000)); };
+    ambTimers.push(setTimeout(drip, 1200), setTimeout(chain, 2500));
   }
 
   /* ---------- 音效 ---------- */
