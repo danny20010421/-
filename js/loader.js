@@ -9,6 +9,7 @@
     const push = (u, group) => { if (!u || u.startsWith('data:')) return; const abs = new URL(u, location.href).href; if (seen.has(abs)) return; seen.add(abs); L.push({ url: abs, group }); };
     try { Object.values(CHARACTERS).forEach(c => { push(c.image, '角色立繪'); push(c.avatar, '角色頭像'); if (c.ultimateBg) push(c.ultimateBg, '角色立繪'); }); } catch (e) { }
     try { CHAPTERS.forEach(c => push(c.art, '篇章封面')); } catch (e) { }
+    try { Object.values(SKINS).forEach(s => { push(s.image, '角色皮膚'); push(s.avatar, '角色皮膚'); }); } catch (e) { }
     for (const sh of document.styleSheets) { let rules; try { rules = sh.cssRules; } catch (e) { continue; } const base = sh.href || location.href;
       const walk = rs => { for (const r of rs) { if (r.cssRules) walk(r.cssRules); const t = r.cssText || ''; for (const m of t.matchAll(/url\(["']?([^"')]+)["']?\)/g)) { if (/\.(webp|png|jpe?g|gif|svg)(\?|$)/i.test(m[1]) && !m[1].startsWith('data:')) { const abs = new URL(m[1], base).href; if (!seen.has(abs)) { seen.add(abs); L.push({ url: abs, group: '介面背景' }); } } } } };
       walk(rules); }

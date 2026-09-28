@@ -36,10 +36,10 @@ function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.c
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
-  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
+  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
-  const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV), chapterId, isBoss);
+  const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
   if (battle) clearInterval(battle.timerHandle);
   battle = { team, pi, mustSwitch: false, player: p, enemy: e, round: 1, timer: 20, timerHandle: null, isBusy: false, gameOver: false, isBoss, bossRevivesUsed: 0, chapterId, onEnd, itemsUsed: 0, opts, difficulty: CHAPTER_DIFFICULTY[chapterId] || CHAPTER_DIFFICULTY.east };
   const ch = CHAPTERS.find(c => c.id === chapterId);
@@ -112,6 +112,9 @@ function statusChips(c) {
   if (st.damageDealtReductionTurns > 0 && st.damageDealtReductionValue > 0) chip('輸出 -' + Math.round(st.damageDealtReductionValue * 100) + '%', 'bad');
   if (st.shield > 0) chip('護盾 ' + Math.round(st.shield), 'good');
   if (st.decoys > 0) chip('小兵替身 ×' + st.decoys, 'good');
+  if (st.healBlock > 0) chip('禁止回復 ' + st.healBlock, 'bad');
+  if (st.lives > 0) chip('剩餘 ' + st.lives + ' 命', 'good');
+  if (st.defDownTurns > 0) chip('防禦下降 ' + st.defDownTurns, 'bad');
   if (battle && battle.eruption && battle.eruption.owner.hp > 0) chip(battle.eruption.owner === c ? '火山噴發・回復' : (battle.team.includes(battle.eruption.owner) !== battle.team.includes(c) ? '熔岩灼燒 -10%' : ''), battle.eruption.owner === c ? 'good' : 'bad');
   if (st.immunePermanent) chip('永久免疫', 'good'); else if (st.immune > 0) chip('免疫異常 ' + st.immune, 'good');
   if (st.regen > 0) chip('回復 ' + st.regen, 'good');
@@ -133,7 +136,7 @@ function renderSkills() {
   const root = $('bSkills'); const p = battle.player;
   const none = p.skills.every(s => s.pp <= 0);
   root.innerHTML = p.skills.map((s, i) => {
-    if (s.locked) return `<div class="skill locked"><span class="sk-top"><kbd>${i + 1}</kbd><span class="sk-kind">未解鎖</span></span><span class="sk-name">${s.name}</span><span class="sk-desc">LV ${s.locked} 解鎖</span></div>`;
+    if (s.locked) return `<div class="skill locked"><span class="sk-top"><kbd>${i + 1}</kbd><span class="sk-kind">未解鎖</span></span><span class="sk-name">${s.name}</span><span class="sk-desc">${s.locked === 'skin' ? '需要裝備皮膚' : `LV ${s.locked} 解鎖`}</span></div>`;
     const pct = Math.min(100, s.pp / Math.max(1, s.maxPP) * 100);
     const dis = battle.isBusy || s.pp <= 0 || battle.gameOver || battle.mustSwitch;
     const tags = (s.tags || []).map(t => `<span class="tag ${t[1]}">${t[0]}</span>`).join('');
@@ -221,7 +224,7 @@ async function applyItem(id) {
   const it = ITEMS[id], p = battle.player, ef = it.effect;
   track('items'); log(`${p.name} 使用了「${it.name}」`); banner(it.name, 'item'); SFX.play('buff');
   const fw = $('bFL'); fw.classList.add('cast'); spawnSupport('L', true); await wait(420); fw.classList.remove('cast');
-  if (ef.healRatio) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
+  if (ef.healRatio && healOk(p)) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
   if (ef.cleanse) { clearAbnormal(p); clearNegativeStages(p); log('異常狀態與負面能力全部清除。'); }
   if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppAll; }); log(`所有技能使用次數 +${ef.ppAll}`); }
   if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppUlt; }); }
@@ -266,8 +269,10 @@ async function executeAction(side, idx) {
   if (result.damage > 0) triggerImpact(T, BATTLE_ANIM[skill.anima] || 'red', result.damage > target.maxHp * .25);
   renderHUD(); renderSkills(); await wait(640);
 }
+function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }
 function checkBattleEnd() {
   const b = battle;
+  for (const [f, side] of [[b.enemy, 'R'], [b.player, 'L']]) { if (f.hp <= 0 && !f.status.dominated && f.status.lives > 0) { f.status.lives--; f.hp = f.maxHp; const st = f.status; st.freeze = 0; st.petrify = 0; st.skipAttack = 0; st.attackFail = 0; st.dots = []; log(`👑 ${f.name} 再次站了起來！（剩下 ${st.lives} 條命）`); banner('最初的20人', 'boss'); renderHUD(true); return false; } }
   if (b.enemy.hp <= 0 && b.isBoss && b.bossRevivesUsed < (battle.opts.revives ?? battle.difficulty.revives ?? GAME_SETTINGS.bossRevives)) {
     b.bossRevivesUsed++; b.enemy.hp = b.enemy.maxHp; const st = b.enemy.status; st.freeze = 0; st.petrify = 0; st.skipAttack = 0; st.attackFail = 0; st.dots = []; st.skillNullify = 0;
     log(`${b.enemy.name} 再次站了起來，體力全滿`); banner('BOSS 復活', 'boss'); spawnSupport('R', false); renderHUD(true); return false;

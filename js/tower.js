@@ -3,10 +3,22 @@
   const TIER = ['east', 'alabasta', 'skypiea', 'enies', 'dark', 'fishman', 'wano', 'giant'];
   const state = () => { SAVE.data.tower = SAVE.data.tower || { floor: 1, best: 0 }; return SAVE.data.tower; };
   const isBoss = f => f % 10 === 0;
+  /* 一般樓層：把全部角色打亂成一輪輪出場，相鄰兩層不重複，同一位角色約隔一整輪才會再出現 */
+  let SEQ = null;
+  function buildSeq() {
+    const pool = CHARACTER_ORDER.filter(id => !TOWER.bosses.includes(id) || !['imu'].includes(id)).filter(id => id !== 'imu');
+    let seed = 20260928; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const seq = []; while (seq.length < TOWER.floors) { const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (seq.length && a[0] === seq[seq.length - 1]) a.push(a.shift()); seq.push(...a); }
+    return seq;
+  }
   function foeOf(f) {
     if (isBoss(f)) return TOWER.bosses[(f / 10 - 1) % TOWER.bosses.length];
-    const pool = CHARACTER_ORDER.filter(id => !STARTERS.includes(id)); return pool[(f * 7 + 3) % pool.length];
+    SEQ = SEQ || buildSeq(); let k = 0; for (let x = 1; x < f; x++) if (!isBoss(x)) k++;
+    let id = SEQ[k % SEQ.length]; const prevBoss = isBoss(f - 1) ? TOWER.bosses[(f - 1) / 10 - 1] : null, nextBoss = isBoss(f + 1) ? TOWER.bosses[(f + 1) / 10 - 1] : null;
+    if (id === prevBoss || id === nextBoss) id = SEQ[(k + 1) % SEQ.length];
+    return id;
   }
+  const skinOf = f => (TOWER.bossSkin || {})[f] || null;
   const lvOf = f => Math.min(MAX_LV, Math.round(6 + f * .85 + (isBoss(f) ? 4 : 0)));
   const chapterOf = f => TIER[Math.min(TIER.length - 1, Math.floor((f - 1) / 15))];
   function rewardOf(f) {
@@ -24,11 +36,11 @@
     $('twSub').textContent = done ? '已登頂 120 層！' : `目前第 ${cur} 層・最高紀錄 ${s.best} 層`;
     const from = Math.max(1, Math.min(TOWER.floors - 11, cur - 3)), rows = [];
     for (let f = Math.min(TOWER.floors, from + 11); f >= from; f--) {
-      const st = f < s.floor ? 'clear' : f === cur && !done ? 'now' : 'lock', c = CHARACTERS[foeOf(f)];
+      const st = f < s.floor ? 'clear' : f === cur && !done ? 'now' : 'lock', c = { ...CHARACTERS[foeOf(f)], ...(skinOf(f) ? { avatar: SKINS[skinOf(f)].avatar, name: SKINS[skinOf(f)].name } : {}) };
       rows.push(`<li class="tw-f ${st} ${isBoss(f) ? 'boss' : ''}" data-f="${f}"><span class="tw-no">${f}</span><img src="${c.avatar}" alt=""><span class="tw-n"><b>${isBoss(f) ? 'BOSS・' : ''}${c.name}</b><small>LV ${lvOf(f)}</small></span><i class="tw-st">${st === 'clear' ? '✓' : st === 'now' ? '挑戰中' : '🔒'}</i></li>`);
     }
     $('twFloors').innerHTML = rows.join('');
-    const f = cur, c = CHARACTERS[foeOf(f)], r = rewardOf(f), L = lvStats(c, lvOf(f));
+    const f = cur, c = { ...CHARACTERS[foeOf(f)], ...(skinOf(f) ? { image: SKINS[skinOf(f)].image, name: SKINS[skinOf(f)].name } : {}) }, r = rewardOf(f), L = lvStats(CHARACTERS[foeOf(f)], lvOf(f));
     $('twPanel').innerHTML = done ? `<div class="tw-done"><h3>🏆 登頂成功</h3><p>你已經打敗了勇者之塔的所有對手。</p><button class="btn-ghost" id="twReset">重新挑戰（不再給獎勵）</button></div>` :
       `<div class="tw-foe ${isBoss(f) ? 'boss' : ''}"><div class="tw-art"><img src="${c.image}" alt=""></div>
         <div class="tw-info"><small>第 ${f} 層${isBoss(f) ? '・BOSS 層' : ''}</small><h3>${c.name}</h3><p class="tw-lv">LV ${lvOf(f)}・${c.title}</p>
@@ -41,7 +53,7 @@
   }
   function fight(f) {
     const s = state();
-    startBattle({ team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })), enemyId: foeOf(f), enemyLv: lvOf(f), chapterId: chapterOf(f), isBoss: isBoss(f), revives: isBoss(f) ? 1 : 0,
+    startBattle({ team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })), enemyId: foeOf(f), enemySkin: skinOf(f), enemyLv: lvOf(f), chapterId: chapterOf(f), isBoss: isBoss(f), revives: isBoss(f) ? 1 : 0,
       onEnd: r => {
         if (!r.win) return { message: `第 ${f} 層挑戰失敗。調整陣容、升級船員後再來挑戰吧！` };
         track('wins'); track('towerWins'); if (isBoss(f)) track('bossWins');

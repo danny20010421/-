@@ -2,7 +2,7 @@
 (function () {
   const RAR_COLOR = { R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
   const rarOf = id => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'R';
-  const noOf = id => 'No.' + String(CHARACTERS[id].no || 0).padStart(3, '0');
+  const noOf = id => 'No.' + (CHARACTERS[id].noText || String(CHARACTERS[id].no || 0).padStart(3, '0'));
   const ownedIds = () => CHARACTER_ORDER.filter(owned);
   let crewTab = 'crew', trainPick = null, revealAll = false;
 
@@ -80,6 +80,13 @@
 
   /* ---------- 我的船員 ---------- */
   let rightTab = 'info';
+  /* 皮膚欄：列出這位角色的皮膚，可裝備或卸下 */
+  function skinBox(id) {
+    const list = Object.entries(typeof SKINS !== 'undefined' ? SKINS : {}).filter(([, s]) => s.char === id); if (!list.length) return '';
+    const S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }, eq = S.equip[id];
+    return `<h4 class="sb-h">皮膚</h4><div class="sb-skins">${list.map(([k, s]) => { const own = (S.owned || []).includes(k); return `<div class="sb-skin ${eq === k ? 'on' : ''} ${own ? '' : 'lock'}"><img src="${s.avatar}" alt=""><div><b>${s.name}</b><small>${eq === k ? '裝備中' : own ? '已擁有' : s.how || '尚未獲得'}</small></div>${own ? `<button class="btn-${eq === k ? 'ghost' : 'gold'} sm" data-skin="${k}">${eq === k ? '卸下' : '裝備'}</button>` : '<span class="sb-lock">🔒</span>'}</div>`; }).join('')}</div>${CHARACTERS[id].skinSkills ? `<p class="sb-note">裝備皮膚後才能使用第 ${CHARACTERS[id].skinSkills.map(i => i + 1).join('、')} 招。</p>` : ''}`;
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-skin]'); if (!b) return; const S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }; const k = b.dataset.skin, ch = SKINS[k].char; S.equip = S.equip || {}; if (S.equip[ch] === k) delete S.equip[ch]; else S.equip[ch] = k; SAVE.save(); toast(S.equip[ch] ? `已裝備「${SKINS[k].name}」` : '已卸下皮膚'); renderMine(); });
   function tile(id, sel) { const ch = CHARACTERS[id], lv = crewLv(id), tr = isTraining(id), k = SAVE.data.lineup.indexOf(id);
     return `<button class="sb-tile ${sel ? 'on' : ''}" data-id="${id}" style="--rc:${RAR_COLOR[rarOf(id)]}"><img src="${ch.avatar}" alt=""><em>LV.${lv}</em>${k === 0 ? '<i class="sb-lead">先鋒</i>' : ''}${tr ? '<i class="sb-tr">訓練中</i>' : ''}<span>${ch.name}</span></button>`; }
   function renderMine() {
@@ -88,8 +95,8 @@
     const id = pickChar, c = CHARACTERS[id], lv = crewLv(id), r = SAVE.data.roster[id], need = expNeed(lv), S = lvStats(c, lv), tr = training().find(t => t.id === id), k = L.indexOf(id);
     const pct = lv >= MAX_LV ? 100 : Math.min(100, r.exp / need * 100);
     const slots = Array.from({ length: max }, (_, i) => L[i] ? tile(L[i], L[i] === id).replace('class="sb-tile', `data-slot="${i}" class="sb-tile slot`) : `<div class="sb-tile empty"><span>空位 ${i + 1}</span></div>`).join('');
-    const skills = c.skills.map((s, i) => { const need2 = SKILL_UNLOCK[i] || 1, ok = lv >= need2, pp = skillPP(s, lv, S.ppAdj);
-      return `<div class="sb-sk ${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}" title="${esc(s.desc)}"><b>${s.ultimate ? '★ ' : ''}${s.name}</b><span>威力 ${s.power || '—'}</span><span>次數 ${ok ? pp : 0}/${s.maxPP}</span>${ok ? '' : `<i>LV ${need2} 解鎖</i>`}<p>${s.desc}</p></div>`; }).join('');
+    const skills = c.skills.map((s, i) => { const need2 = SKILL_UNLOCK[i] || 1, skinLock = c.skinSkills && c.skinSkills.includes(i) && !((SAVE.data.skins || {}).equip || {})[id], ok = lv >= need2 && !skinLock, pp = skillPP(s, lv, S.ppAdj);
+      return `<div class="sb-sk ${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}" title="${esc(s.desc)}"><b>${s.ultimate ? '★ ' : ''}${s.name}</b><span>威力 ${s.power || '—'}</span><span>次數 ${ok ? pp : 0}/${s.maxPP}</span>${ok ? '' : `<i>${skinLock ? '需要皮膚' : `LV ${need2} 解鎖`}</i>`}<p>${s.desc}</p></div>`; }).join('');
     const BOOKS = ['exp_s', 'exp_m', 'exp_l'];
     const books = BOOKS.map(b => { const n = SAVE.data.inventory[b] || 0, q = Math.min(n, bookQty[b] || 1), pv = previewLv(id, ITEMS[b].effect.exp * q); return `<div class="exp-row ${n ? '' : 'off'}" data-row="${b}">${itemIcon(ITEMS[b])}<div class="er-name"><b>${ITEMS[b].name}</b><small>每本 +${ITEMS[b].effect.exp.toLocaleString()}・持有 ${n}</small></div>
         <div class="stepper"><button data-q="-1" aria-label="減少" ${n ? '' : 'disabled'}>−</button><output>${n ? q : 0}</output><button data-q="1" aria-label="增加" ${n ? '' : 'disabled'}>＋</button><button data-q="max" ${n ? '' : 'disabled'}>全部</button></div>
@@ -100,7 +107,7 @@
     $('cxPane_crew').innerHTML = `<div class="sb">
       <aside class="sb-left"><h4>出戰陣容 <small>${L.length}/${max}</small></h4><div class="sb-slots">${slots}</div>
         <h4>待命船員 <small>${bench.length}</small></h4><div class="sb-bench">${bench.map(x => tile(x, x === id)).join('') || '<p class="sb-none">沒有待命的船員</p>'}</div></aside>
-      <section class="sb-stage" style="--rc:${RAR_COLOR[rarOf(id)]}"><div class="sb-plat"></div><img src="${c.image}" alt="${c.name}"><div class="sb-acts">${act}</div></section>
+      <section class="sb-stage" style="--rc:${RAR_COLOR[rarOf(id)]}"><div class="sb-plat"></div><img src="${(() => { const k = ((SAVE.data.skins || {}).equip || {})[id]; return k && typeof SKINS !== 'undefined' && SKINS[k] ? SKINS[k].image : c.image; })()}" alt="${c.name}"><div class="sb-acts">${act}</div></section>
       <aside class="sb-right">
         <div class="sb-head"><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><h3>${c.name}<small>${c.title}</small></h3></div>
         <div class="sb-types">${c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('')}${tierBadge(lv)}</div>
@@ -108,7 +115,7 @@
         <nav class="sb-tabs" role="tablist"><button data-rt="info" class="${rightTab === 'info' ? 'on' : ''}">訊息</button><button data-rt="grow" class="${rightTab === 'grow' ? 'on' : ''}">培養</button><button data-rt="train">訓練場</button></nav>
         ${rightTab === 'grow' ? `<div class="sb-grow">${lv < MAX_LV ? books : '<p class="sb-none">已達最高等級，不需要經驗道具。</p>'}</div>` : `
         <dl class="sb-stats"><div><dt>⚔ 攻擊力</dt><dd>${S.atk}</dd></div><div><dt>🛡 防禦力</dt><dd>${S.def}</dd></div><div><dt>💨 速度</dt><dd>${S.spd}</dd></div><div><dt>❤ 體力</dt><dd>${S.hp}</dd></div></dl>
-        <div class="sb-skills">${skills}</div>`}
+        <div class="sb-skills">${skills}</div>${skinBox(id)}`}
       </aside></div>`;
     const P = $('cxPane_crew');
     P.querySelectorAll('.sb-tile[data-id]').forEach(b => b.onclick = () => { pickChar = b.dataset.id; renderMine(); });

@@ -4,10 +4,10 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rand(a,b){return a+Math.random()*(b-a)}
 function chance(p){return Math.random()<p}
 function weightedChoice(items){const total=items.reduce((s,it)=>s+it[0],0);let r=Math.random()*total;for(const [w,v] of items){r-=w;if(r<=0)return v}return items[0][1]}
-function buildFighter(id,lv){
-  const base=deepClone(CHARACTERS[id]);
+function buildFighter(id,lv,skin){
+  const base=deepClone(CHARACTERS[id]); const SK=(typeof SKINS!=='undefined'&&skin)?SKINS[skin]:null; if(SK&&SK.char===id){base.image=SK.image;base.avatar=SK.avatar;base.ultimateBg=SK.image;base.skinName=SK.name;}
   lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; base.atk=L.atk; base.def=L.def;
-  base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=skillPP(s,lv,L.ppAdj);s.pp=s.maxPP}});
+  base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=skillPP(s,lv,L.ppAdj);s.pp=s.maxPP} if(base.skinSkills&&base.skinSkills.includes(i)&&!(SK&&SK.char===id)){s.locked='skin';s.pp=0;s.maxPP=0}});
   base.hp=base.maxHp;
   base.buffs={atk:0,def:0,spd:0};
   base.status={freeze:0,petrify:0,immune:0,immunePermanent:false,regen:0,regenRatio:0,fullRestoreTurns:0,dots:[],reflect:0,reflectMultiplier:1,reflectNegative:false,priority:0,attackFail:0,attackFailChance:0,skipAttack:0,skillNullify:0,shield:0,dodge:0,damageMultTurns:0,damageMultValue:1,damageReductionTurns:0,damageReductionValue:0,damageDealtReductionTurns:0,damageDealtReductionValue:0,nextAttackMultTurns:0,nextAttackMultValue:1,buffBlock:0,awaken:'',frostBoostTurns:0,allyBoostPer:0,lastSkill:'',executeBuffTurns:0,executeBuffChance:0,clutchHealThreshold:0,clutchHealCharges:0,weak:0,weakMin:1.2,weakMax:1.5,burn:0,paralyze:0,fatigue:0,fear:0,armorBreak:0,hitDouble:0};
@@ -78,7 +78,8 @@ function copiedSkillDamage(actor,target,picked){
   return {damage:0,picked};
 }
 function computeSkillOutcome(actor,target,skill,blockedEffects){
- const ef=skill.effect||{}; let damage=0; let meta={};
+ if(skill.effect&&skill.effect.variants){const v=skill.effect.variants[Math.floor(Math.random()*skill.effect.variants.length)];log(`⚔️ 魔氣變化：${v.name}！`);return computeSkillOutcome(actor,target,{...skill,name:v.name,power:v.power,effect:deepClone(v.effect)},blockedEffects);}
+ const ef=skill.effect||{}; let damage=0; let meta={}; if(ef.executeChanceRange)ef.executeChance=rand(ef.executeChanceRange[0],ef.executeChanceRange[1]);
  if(actor.status.executeBuffTurns>0 && skill.type==='attack' && chance(actor.status.executeBuffChance||0)){log('⚡ 覺醒之力直接秒殺對手！');return {damage:target.hp,meta:{executeBuff:true}};}
  if(ef.copyOpponentSkillSafe){
    const picked=safeCopiedSkill(target);
@@ -112,13 +113,20 @@ function computeSkillOutcome(actor,target,skill,blockedEffects){
  return {damage:0,meta};
 }
 function calcAttackDamage(actor,target,skill){let power=skill.power||90;let mult=(actor.status.weak>0?1-(GAME_SETTINGS.weakDealt??0.15):1)*atkMul(actor.buffs.atk)*defTake(target.buffs.def)*((actor.dmgMul||1)/(target.dmgMul||1))*typeMult(actor,target)*(1-Math.min(.25,(target.def||0)/6000));if(skill.effect&&skill.effect.critBoost&&chance(skill.effect.critBoost)){mult*=skill.effect.critMult;log('💥 造成爆發傷害！')}if(skill.effect&&skill.effect.forceMultiplier)mult*=skill.effect.forceMultiplier;if(actor.status.damageMultTurns>0)mult*=actor.status.damageMultValue;if(actor.status.damageDealtReductionTurns>0)mult*=Math.max(0,1-actor.status.damageDealtReductionValue);if(actor.status.nextAttackMultTurns>0)mult*=actor.status.nextAttackMultValue;if(actor.status.awaken==='nika'){const team=(typeof battle!=='undefined'&&battle&&battle.team&&battle.team.includes(actor))?battle.team:[];const alive=team.filter(f=>f!==actor&&f.hp>0).length;if(actor.status.allyAliveBoost&&alive>0)mult*=1+actor.status.allyAliveBoost;else if(actor.status.allyBoostPer)mult*=(1+alive*actor.status.allyBoostPer)}if(actor.status.awaken==='nidhogg'&&actor.status.frostBoostTurns>0){const extra=Math.max(1,Math.floor(target.maxHp*0.04));power+=extra;if(target.status.immune<=0&&chance(0.4))target.status.freeze=Math.max(target.status.freeze,1)}const variance=rand(.92,1.08);return Math.max(1,Math.floor(power*mult*variance*(actor.dmgMul||1)))}
+function healOk(c){if(c.status&&c.status.healBlock>0){log(`🩸 ${c.name} 處於禁止回復狀態，無法回復體力！`);return false}return true}
 function applySkillEffects(actor,target,skill,result){
- const ef=skill.effect||{};
- if(ef.healRatio){const heal=Math.floor(actor.maxHp*ef.healRatio);actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 恢復 ${heal} HP。`)}if(result.meta&&result.meta.fallbackHealRatio){const heal=Math.floor(actor.maxHp*result.meta.fallbackHealRatio);actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 因波賽頓未秒殺而恢復 ${heal} HP。`)}if(ef.regenTurns){actor.status.regen=ef.regenTurns; actor.status.regenRatio=ef.regenRatio; actor.status.immune=Math.max(actor.status.immune,ef.immuneTurns||0); log(`💚 ${actor.name} 進入持續回復狀態！`)}
+ const ef=skill.effect||{}; if(ef.damageMultRange)ef.damageMultValue=Math.round(rand(ef.damageMultRange[0],ef.damageMultRange[1])*10)/10;
+ if(ef.healBlockTurns){target.status.healBlock=Math.max(target.status.healBlock||0,ef.healBlockTurns);log(`🩸 ${target.name} ${ef.healBlockTurns} 回合內無法回復體力！`)}
+ if(ef.randomSelfPPUp){const pool=actor.skills.filter(s=>!s.ultimate&&!s.locked&&s.maxPP>0);if(pool.length){const s=pool[Math.floor(Math.random()*pool.length)];s.pp+=ef.randomSelfPPUp;log(`🧲 「${s.name}」使用次數 +${ef.randomSelfPPUp}！`)}}
+ if(ef.enemyDefDownTemp){const[amt,turns]=ef.enemyDefDownTemp;if(ef.clearBuffs){target.buffs.atk=Math.min(0,target.buffs.atk);target.buffs.def=Math.min(0,target.buffs.def);target.buffs.spd=Math.min(0,target.buffs.spd)}target.buffs.def=clamp(target.buffs.def-amt,-6,6);target.status.defDownTemp=(target.status.defDownTemp||0)+amt;target.status.defDownTurns=turns;log(`🧲 ${target.name} 防禦 -${amt}，持續 ${turns} 回合！`)}
+ if(ef.drainHits){const[a,b,mn,mx]=ef.drainHits,n=a+Math.floor(Math.random()*(b-a+1));let tot=0;for(let i=0;i<n;i++){const d=Math.max(1,Math.floor(target.maxHp*rand(mn,mx)));target.hp=Math.max(0,target.hp-d);tot+=d}showDamage(target===battle.player?'L':'R',tot,'#8fe8ff');log(`🌊 衝擊波動連續吸取 ${n} 次，共 ${tot} 體力！`);if(healOk(actor)){actor.hp=Math.min(actor.maxHp,actor.hp+tot);showHeal(actor===battle.player?'L':'R',tot)}}
+ if(ef.extraLives){actor.status.lives=(actor.status.lives||0)+ef.extraLives;log(`👑 ${actor.name} 獲得 ${ef.extraLives} 條命！`)}
+ if(ef.dominate){const enemySide=actor===battle.enemy;if(enemySide){target.status.dominated=true;target.hp=0;log(`👑 黑轉支配！${target.name} 被奪走意志，成為 ${actor.name} 的部下！`)}else if(battle.team.length>=GAME_SETTINGS.lineupMax){target.status.skipAttack=Math.max(target.status.skipAttack||0,3);log(`👑 隊伍已滿，${target.name} 被封印 3 回合！`)}else{target.status.dominated=true;target.hp=0;log(`👑 黑轉支配！${target.name} 成為你的部下！`)}}
+ if(ef.healRatio&&healOk(actor)){const heal=Math.floor(actor.maxHp*ef.healRatio);actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 恢復 ${heal} HP。`)}if(result.meta&&result.meta.fallbackHealRatio){const heal=Math.floor(actor.maxHp*result.meta.fallbackHealRatio);actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 因波賽頓未秒殺而恢復 ${heal} HP。`)}if(ef.regenTurns){actor.status.regen=ef.regenTurns; actor.status.regenRatio=ef.regenRatio; actor.status.immune=Math.max(actor.status.immune,ef.immuneTurns||0); log(`💚 ${actor.name} 進入持續回復狀態！`)}
  if(ef.fullRestoreTurns){actor.status.fullRestoreTurns=Math.max(actor.status.fullRestoreTurns, ef.fullRestoreTurns); log(`✨ ${actor.name} 接下來將持續恢復至滿血！`)}
  if(ef.selfPriority){actor.status.priority=ef.selfPriority; log(`⚡ ${actor.name} 下回合將先制！`)}
  if(ef.attackFailTurns){target.status.attackFail=ef.attackFailTurns; target.status.attackFailChance=ef.attackFailChance; if(target.status.immune<=0&&!target.status.immunePermanent) log(`🔒 ${target.name} 接下來有攻擊失效判定！`)}
- if(ef.fullHeal){const recovered=actor.maxHp-actor.hp; actor.hp=actor.maxHp; if(recovered>0)showHeal(actor===battle.player?'L':'R',recovered); log(`✨ ${actor.name} 完全恢復了體力！`)}
+ if(ef.fullHeal&&healOk(actor)){const recovered=actor.maxHp-actor.hp; actor.hp=actor.maxHp; if(recovered>0)showHeal(actor===battle.player?'L':'R',recovered); log(`✨ ${actor.name} 完全恢復了體力！`)}
  if(ef.statUpAll && actor.status.buffBlock<=0){actor.buffs.atk=clamp(actor.buffs.atk+ef.statUpAll,-6,6); actor.buffs.def=clamp(actor.buffs.def+ef.statUpAll,-6,6); actor.buffs.spd=clamp(actor.buffs.spd+ef.statUpAll,-6,6); log(`📈 ${actor.name} 的全能力提升了！`)}
  if(ef.selfBuffAtk&&actor.status.buffBlock<=0){actor.buffs.atk=clamp(actor.buffs.atk+ef.selfBuffAtk,-6,6)}
  if(ef.selfBuffDef&&actor.status.buffBlock<=0){actor.buffs.def=clamp(actor.buffs.def+ef.selfBuffDef,-6,6)}
@@ -137,7 +145,7 @@ function applySkillEffects(actor,target,skill,result){
  ['burn','fear','fatigue','paralyze','armorBreak'].forEach(k=>{if(ef[k+'Chance']&&chance(ef[k+'Chance']))inflict(target,k,ef[k+'Turns']||(k==='burn'||k==='armorBreak'?3:1))});
  if(ef.dotTurns&&!ef.dotChance&&target.status.immune<=0&&!target.status.immunePermanent){target.status.dots.push({turns:ef.dotTurns,ratio:ef.dotRatio,label:ef.dotLabel}); log(`☠️ ${target.name} 陷入${ef.dotLabel}！`)}
  if(ef.dotSequence&&target.status.immune<=0&&!target.status.immunePermanent){target.status.dots.push({turns:ef.dotSequence.length,sequence:ef.dotSequence,label:ef.dotLabel,index:0}); log(`🌪️ ${target.name} 陷入${ef.dotLabel}！`)}
- if(ef.clearBuffs){target.buffs.atk=0; target.buffs.def=0; target.buffs.spd=0; log(`🌀 ${target.name} 的能力提升被清除！`)}
+ if(ef.clearBuffs){target.buffs.atk=Math.min(0,target.buffs.atk); target.buffs.def=Math.min(0,target.buffs.def); target.buffs.spd=Math.min(0,target.buffs.spd); log(`🌀 ${target.name} 的能力提升被清除！`)}
  if(ef.clearSelfDebuffs){clearAbnormal(actor);clearNegativeStages(actor);log(`✨ ${actor.name} 清除了自身的異常狀態與負面能力！`)}
  if(ef.freezeChance&&chance(ef.freezeChance))inflict(target,'freeze',ef.freezeTurns||2);
  if(ef.petrifyChance&&chance(ef.petrifyChance))inflict(target,'petrify',ef.petrifyTurns||1);
@@ -148,8 +156,8 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.selfShieldMaxHpRatio){const sh=Math.floor(actor.maxHp*ef.selfShieldMaxHpRatio);actor.status.shield+=sh;log(`🛡️ ${actor.name} 獲得 ${sh} 點護盾！`)}
  if(ef.freezeForce)inflict(target,'freeze',ef.freezeForce,true);
  if(ef.transferDebuffs){const A=actor.status,T=target.status;let moved=0;[...Object.keys(ABN),'skipAttack','skillNullify','buffBlock'].forEach(k=>{if(A[k]>0){T[k]=Math.max(T[k],A[k]);A[k]=0;moved++}});if(A.weak===0&&T.weak>0){T.weakMin=T.weakMin||1.2;T.weakMax=T.weakMax||1.5}if(A.attackFail>0){T.attackFail=Math.max(T.attackFail,A.attackFail);T.attackFailChance=Math.max(T.attackFailChance,A.attackFailChance||0.5);A.attackFail=0;moved++}if(A.dots.length){T.dots.push(...A.dots.map(d=>({...d})));A.dots=[];moved++}if(A.damageDealtReductionTurns>0){T.damageDealtReductionTurns=A.damageDealtReductionTurns;T.damageDealtReductionValue=A.damageDealtReductionValue;A.damageDealtReductionTurns=0;A.damageDealtReductionValue=0;moved++}['atk','def','spd'].forEach(k=>{if(actor.buffs[k]<0){target.buffs[k]=clamp(target.buffs[k]+actor.buffs[k],-6,6);actor.buffs[k]=0;moved++}});log(moved?`🏹 ${actor.name} 把負面效果全部轉移給 ${target.name}！`:`🏹 ${actor.name} 身上沒有負面效果可以轉移。`)}
- if(ef.healRange){const heal=Math.floor(actor.maxHp*rand(ef.healRange[0],ef.healRange[1]));actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 回復 ${heal} 體力。`)}
- if(result.meta&&result.meta.lifesteal){const heal=result.meta.lifesteal;actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`🩸 ${actor.name} 把傷害轉為回復 ${heal} 體力！`)}
+ if(ef.healRange&&healOk(actor)){const heal=Math.floor(actor.maxHp*rand(ef.healRange[0],ef.healRange[1]));actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`💚 ${actor.name} 回復 ${heal} 體力。`)}
+ if(result.meta&&result.meta.lifesteal&&healOk(actor)){const heal=result.meta.lifesteal;actor.hp=Math.min(actor.maxHp,actor.hp+heal);showHeal(actor===battle.player?'L':'R',heal);log(`🩸 ${actor.name} 把傷害轉為回復 ${heal} 體力！`)}
  if(ef.ccOr){const o=ef.ccOr;if(chance(o.chance)&&inflict(target,o.kind,o.turns||1)){}else if(o.elseStat&&chance(o.elseChance||0)&&target.status.buffBlock<=0){target.buffs[o.elseStat]=clamp(target.buffs[o.elseStat]+(o.elseAmount||-1),-6,6);log(`📉 ${target.name} 的${{atk:'攻擊',def:'防禦',spd:'速度'}[o.elseStat]} ${o.elseAmount||-1}！`)}}
  if(ef.copyReplace){const slot=actor.skills.indexOf(skill);const pool=target.skills.slice(0,4).map((s,j)=>({s,j})).filter(x=>x.s&&!x.s.locked&&x.s.maxPP>0&&!(x.s.effect&&x.s.effect.copyReplace));
    if(slot>=0&&pool.length){const pk=pool[Math.floor(Math.random()*pool.length)];const cp=deepClone(pk.s);cp.copiedFrom={id:pk.s.copiedFrom?pk.s.copiedFrom.id:target.id,idx:pk.s.copiedFrom?pk.s.copiedFrom.idx:pk.j};cp.pp=cp.maxPP;actor.skills[slot]=cp;log(`🌀 ${actor.name} 複製了「${cp.name}」！這個技能已經變成「${cp.name}」。`)}
@@ -189,16 +197,18 @@ function applyReflectedNegativeEffects(skill,source,dest){
 function applyDamage(target,amount,side,opts){let final=amount;if(target.status.armorBreak>0)final=Math.round(final*(1+(GAME_SETTINGS.armorBreak??0.05)));if(target.status.weak>0)final=Math.floor(final*rand(target.status.weakMin||1.2,target.status.weakMax||1.5));if(target.status.damageReductionTurns>0)final=Math.max(1,Math.floor(final*(1-target.status.damageReductionValue)));if(target.status.decoys>0&&final>0){target.status.decoys--;log(`🎖️ 海軍小兵替 ${target.name} 擋下了攻擊！（剩 ${target.status.decoys} 名）`);showFx('BLOCK');renderHUD();return}let absorbed=0;if(target.status.shield>0&&!(opts&&opts.ignoreShield)){absorbed=Math.min(target.status.shield,final);target.status.shield-=absorbed;final-=absorbed;if(absorbed>0)log(`🛡️ 護盾吸收了 ${absorbed} 點傷害！`)}if(final>0){target.hp=Math.max(0,target.hp-final);showDamage(side,final,side==='L'?'#ff8888':'#8fe8ff')}if(target.hp>0&&target.status.clutchHealCharges>0&&target.hp/target.maxHp<=(target.status.clutchHealThreshold||0.10)){target.status.clutchHealCharges--;const heal=target.maxHp-target.hp;target.hp=target.maxHp;showHeal(side,heal);log(`🌺 ${target.name} 觸發巨大人形保護，瞬間回滿血！`)}if(absorbed>0&&final<=0)showFx('BLOCK');renderHUD()}
 function endTurnStatus(c){
  const side=c===battle.player?'L':'R';
- const E=battle.eruption; if(E&&c.hp>0){ if(E.owner.hp<=0){battle.eruption=null;log('🌋 火山噴發的熔岩冷卻了。');} else { const ownerSide=battle.team.includes(E.owner)?'L':'R'; if(c===E.owner){const h=Math.floor(c.maxHp*(0.05+Math.random()*0.03));c.hp=Math.min(c.maxHp,c.hp+h);showHeal(side,h);log(`🌋 ${c.name} 吸收熔岩，恢復 ${h} HP。`);} else if(side!==ownerSide){const d=Math.max(1,Math.floor(c.maxHp*0.10));c.hp=Math.max(0,c.hp-d);showDamage(side,d,'#ff6a3a');log(`🌋 ${c.name} 被熔岩灼燒，損失 ${d} HP！`);} } }
- if(c.status.regen>0&&c.hp>0){const heal=Math.floor(c.maxHp*c.status.regenRatio); c.hp=Math.min(c.maxHp,c.hp+heal); showHeal(side,heal); log(`💚 ${c.name} 回復 ${heal} HP。`); c.status.regen--;}
+ const E=battle.eruption; if(E&&c.hp>0){ if(E.owner.hp<=0){battle.eruption=null;log('🌋 火山噴發的熔岩冷卻了。');} else { const ownerSide=battle.team.includes(E.owner)?'L':'R'; if(c===E.owner&&healOk(c)){const h=Math.floor(c.maxHp*(0.05+Math.random()*0.03));c.hp=Math.min(c.maxHp,c.hp+h);showHeal(side,h);log(`🌋 ${c.name} 吸收熔岩，恢復 ${h} HP。`);} else if(side!==ownerSide){const d=Math.max(1,Math.floor(c.maxHp*0.10));c.hp=Math.max(0,c.hp-d);showDamage(side,d,'#ff6a3a');log(`🌋 ${c.name} 被熔岩灼燒，損失 ${d} HP！`);} } }
+ if(c.status.regen>0&&c.hp>0&&healOk(c)){const heal=Math.floor(c.maxHp*c.status.regenRatio); c.hp=Math.min(c.maxHp,c.hp+heal); showHeal(side,heal); log(`💚 ${c.name} 回復 ${heal} HP。`); c.status.regen--;}
  const remainingDots=[];
  c.status.dots.forEach(dot=>{if(c.hp<=0)return; let ratio=dot.ratio; if(dot.sequence){const [a,b]=dot.sequence[dot.index]||[0,0]; ratio=rand(a,b); dot.index++;} const dmg=Math.max(1,Math.floor(c.maxHp*ratio)); c.hp=Math.max(0,c.hp-dmg); showDamage(side,dmg,'#ffd34d'); log(`☠️ ${c.name} 受到${dot.label} ${dmg} 點傷害！`); dot.turns--; if(dot.turns>0) remainingDots.push(dot);});
  c.status.dots=remainingDots;
  [['freeze',GAME_SETTINGS.freezeDot??0.02],['burn',GAME_SETTINGS.burnDot??0.04]].forEach(([k,r])=>{if(c.status[k]>0&&c.hp>0){const d=Math.max(1,Math.floor(c.maxHp*r));c.hp=Math.max(0,c.hp-d);showDamage(side,d);log(`${ABN[k].icon} ${c.name} 受到${ABN[k].name}傷害 ${d}。`);c.status[k]--}});
  if(c.status.armorBreak>0)c.status.armorBreak--;
+ if(c.status.healBlock>0)c.status.healBlock--;
+ if(c.status.defDownTurns>0){c.status.defDownTurns--;if(c.status.defDownTurns<=0&&c.status.defDownTemp){c.buffs.def=clamp(c.buffs.def+c.status.defDownTemp,-6,6);log(`🧲 ${c.name} 的防禦恢復了。`);c.status.defDownTemp=0}}
  if(c.status.hitDouble>0)c.status.hitDouble--;
  if(c.status.spdMulTurns>0){c.status.spdMulTurns--;if(c.status.spdMulTurns<=0)c.status.spdMul=1}
- if(c.status.fullRestoreTurns>0&&c.hp>0){const heal=Math.max(0,c.maxHp-c.hp); c.hp=c.maxHp; if(heal>0)showHeal(side,heal); log(`✨ ${c.name} 恢復至滿血狀態！`); c.status.fullRestoreTurns--;}
+ if(c.status.fullRestoreTurns>0&&c.hp>0&&healOk(c)){const heal=Math.max(0,c.maxHp-c.hp); c.hp=c.maxHp; if(heal>0)showHeal(side,heal); log(`✨ ${c.name} 恢復至滿血狀態！`); c.status.fullRestoreTurns--;}
  if(!c.status.immunePermanent && c.status.immune>0)c.status.immune--;
  if(c.status.priority>0)c.status.priority--;
  if(c.status.damageMultTurns>0){c.status.damageMultTurns--; if(c.status.damageMultTurns<=0)c.status.damageMultValue=1}

@@ -1,5 +1,5 @@
 /* 懸賞處：懸賞召喚、懸賞任務、道具商店、海軍本部（販賣角色） */
-const CHAR_RARITY = { akainu: 'SSR', marine: 'R', mayor: 'R', lucci: 'SR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
+const CHAR_RARITY = { kid: 'SR', law: 'SSR', imu: 'SSR', akainu: 'SSR', marine: 'R', mayor: 'R', lucci: 'SR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
 const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, perLv: 80 } };
 const BOUNTY_POOL = [
   { id: 'win3', text: '擊敗 3 名敵人', stat: 'wins', goal: 3, berry: 1500 },

@@ -203,3 +203,11 @@
   #chapterScreen .topbar{background:linear-gradient(180deg,rgba(10,24,42,.92),rgba(10,24,42,.82));border-bottom:1px solid rgba(243,201,105,.25);box-shadow:0 6px 18px rgba(0,0,0,.25);min-height:72px;box-sizing:border-box}
   #chapterScreen .arc-card{top:72px!important;border-radius:0!important}
 }
+/* 皮膚欄 */
+.sb-h{margin:10px 0 6px;font-size:13.5px;color:#ffd26c;letter-spacing:.1em}
+.sb-skins{display:grid;gap:6px}
+.sb-skin{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;padding:8px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.sb-skin img{width:48px;height:48px;border-radius:10px;object-fit:cover}
+.sb-skin b{display:block;font-size:14px}.sb-skin small{color:var(--muted);font-size:12px}
+.sb-skin.on{border-color:#f3c969;background:rgba(243,201,105,.14)}.sb-skin.lock img{filter:grayscale(1) brightness(.6)}
+.sb-lock{font-size:18px;opacity:.7}.sb-note{margin:6px 0 0;font-size:12px;color:#ffb3a0}
