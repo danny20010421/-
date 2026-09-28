@@ -1,0 +1,122 @@
+/* 限定活動抽獎池：抽角色碎片，集滿 100 片合成限定 SSR（命運水晶動畫） */
+(function () {
+  const P = () => EVENT_POOL;
+  const RCOL = { N: '#6fd08c', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
+  function st() {
+    const d = SAVE.data; d.event = d.event || {}; const E = d.event;
+    if (E.id !== P().id) { Object.assign(E, { id: P().id, shards: {}, pity: 0, newbie: false, day: '', bountyDay: '', tickets: E.tickets || 0 }); }
+    E.shards = E.shards || {}; P().shards.forEach(s => { E.shards[s.char] = E.shards[s.char] || 0; });
+    const today = new Date().toDateString();
+    if (!E.newbie) { E.newbie = true; E.tickets = (E.tickets || 0) + P().newbieFree; E.__msg = `新手福利：活動抽獎券 ×${P().newbieFree}`; }
+    if (E.day !== today) { E.day = today; E.tickets = (E.tickets || 0) + P().dailyFree; E.__msg = (E.__msg ? E.__msg + '・' : '') + `今日免費：活動抽獎券 ×${P().dailyFree}`; }
+    return E;
+  }
+  window.eventState = st;
+  /* 懸賞任務全部領取後 +2 抽 */
+  window.eventBountyCheck = function () { try { const E = st(), today = new Date().toDateString(), list = bounties(); if (E.bountyDay !== today && list.length && list.every(b => b.claimed)) { E.bountyDay = today; E.tickets += P().bountyBonus; SAVE.save(); toast(`完成全部每日懸賞！活動抽獎券 +${P().bountyBonus}`, 'gold'); } } catch (e) { } };
+
+  function rollItem() { const order = ['N', 'R', 'SR', 'SSR'], tot = order.reduce((t, k) => t + RARITY[k].rate, 0); let r = Math.random() * tot, rar = 'N'; for (const k of order) { r -= RARITY[k].rate; if (r < 0) { rar = k; break; } } const pool = Object.keys(ITEMS).filter(k => ITEMS[k].rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)] || 'potion_s', rar }; }
+  function amount() { let r = Math.random(); for (const [n, p] of P().amount) { if ((r -= p) < 0) return n; } return P().amount[0][0]; }
+  function rollOne(E) {
+    const force = E.pity >= P().pity - 1; let r = Math.random(), hit = null;
+    for (const s of P().shards) { if (r < s.rate) { hit = s; break; } r -= s.rate; }
+    if (!hit && force) hit = P().shards[Math.floor(Math.random() * P().shards.length)];
+    if (hit) { E.pity = 0; return { shard: hit.char, n: amount(), pity: force && r >= 0 }; }
+    E.pity++; return rollItem();
+  }
+  function grant(E, res) { res.forEach(x => { if (x.shard) E.shards[x.shard] += x.n; else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
+
+  /* ---------- 畫面 ---------- */
+  function render() {
+    const E = st(), pane = $('evPane'); if (!pane) return;
+    if (E.__msg) { toast(E.__msg, 'gold'); delete E.__msg; SAVE.save(); }
+    const card = s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), pct = Math.min(100, n / P().need * 100);
+      return `<div class="ev-shard" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b>SSR ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}・單抽機率 ${Math.round(s.rate * 1000) / 10}%</small></div>
+        ${own ? '<span class="ev-owned">已擁有</span>' : `<button class="btn-gold sm" data-synth="${s.char}" ${n >= P().need ? '' : 'disabled'}>合成</button>`}</div>`; };
+    const cost1 = E.tickets >= 1 ? '1 張抽獎券' : `${P().tokenCost} 枚寶藏幣`, cost10 = E.tickets >= 10 ? '10 張抽獎券' : `${P().tokenCost * 10} 枚寶藏幣`;
+    pane.innerHTML = `<div class="ev-banner"><img src="${P().banner}" alt="${P().name}"></div>
+      <div class="ev-side">
+        <div class="ev-tickets"><span>🎟️ 活動抽獎券 <b>${E.tickets}</b></span><small>新手免費 ${P().newbieFree} 抽・每天免費 ${P().dailyFree} 抽・每日懸賞全部完成 +${P().bountyBonus} 抽</small></div>
+        ${P().shards.map(card).join('')}
+        <div class="ev-pulls"><button class="btn-gold" id="evPull1">抽 1 次<small>${cost1}</small></button><button class="btn-primary" id="evPull10">抽 10 次<small>${cost10}</small></button></div>
+        <p class="ev-pity">再 <b>${Math.max(1, P().pity - E.pity)}</b> 抽內必定出現角色碎片</p>
+        <details class="ev-rates"><summary>出現機率</summary><table>
+          ${P().shards.map(s => `<tr><td>${CHARACTERS[s.char].name}碎片</td><td>${(s.rate * 100).toFixed(1)}%</td><td>每次 20／30／50 片（60%／30%／10%）</td></tr>`).join('')}
+          <tr><td>各種道具</td><td>${((1 - P().shards.reduce((t, s) => t + s.rate, 0)) * 100).toFixed(1)}%</td><td>稀有度比例同寶藏扭蛋</td></tr>
+          <tr><td>保底</td><td colspan="2">連續 ${P().pity - 1} 抽沒有碎片時，第 ${P().pity} 抽必定出現碎片</td></tr></table></details>
+      </div>`;
+    pane.querySelectorAll('[data-synth]').forEach(b => b.onclick = () => synth(b.dataset.synth));
+    $('evPull1').onclick = () => pull(1); $('evPull10').onclick = () => pull(10);
+  }
+  function synth(id) {
+    const E = st(); if (E.shards[id] < P().need || owned(id)) return;
+    E.shards[id] -= P().need; addCrew(id, GAME_SETTINGS.charLv || 20); SAVE.save(); SFX.play('rare');
+    toast(`合成成功！SSR ${CHARACTERS[id].name} 加入角色背包`, 'gold'); render(); if (typeof renderCrewShards === 'function') renderCrewShards();
+  }
+  window.eventSynth = synth;
+
+  let busy = false;
+  async function pull(n) {
+    if (busy) return; const E = st();
+    if (E.tickets >= n) E.tickets -= n; else if (SAVE.data.tokens >= n * P().tokenCost) SAVE.data.tokens -= n * P().tokenCost; else { toast(`抽獎券不足，也沒有足夠的寶藏幣（需要 ${n * P().tokenCost} 枚）`, 'warn'); return; }
+    busy = true; const res = []; for (let i = 0; i < n; i++) res.push(rollOne(E)); grant(E, res); SAVE.save(); if (typeof coins === 'function') coins();
+    try { await animate(res); } finally { busy = false; render(); }
+  }
+
+  /* ---------- 命運水晶動畫 ---------- */
+  async function animate(res) {
+    const ov = document.createElement('div'); ov.className = 'ev-ov'; ov.innerHTML = `<div class="ev-ov-bg"></div><div class="ev-stage"></div><button class="g-skip ev-skip">跳過 ▸▸</button><div class="ev-flash"></div>`;
+    document.body.appendChild(ov);
+    let skip = false, skipRes; const skipP = new Promise(r => skipRes = r); ov.querySelector('.ev-skip').onclick = () => { skip = true; skipRes(); };
+    const W = ms => skip ? Promise.resolve() : Promise.race([wait(ms), skipP]);
+    const stage = ov.querySelector('.ev-stage'); stage.classList.toggle('ten', res.length > 1);
+    const colorOf = x => x.shard ? P().shards.find(s => s.char === x.shard).color : RCOL[x.rar || ITEMS[x.item].rarity] || '#8fd0ff';
+    res.forEach((x, i) => { const el = document.createElement('div'); el.className = 'ev-crys' + (x.shard ? ' hit ' + x.shard : ''); el.style.setProperty('--c', colorOf(x)); el.style.setProperty('--d', (i * 70) + 'ms');
+      el.innerHTML = `<i class="gem"></i><div class="ev-card">${x.shard ? `<img src="${P().shards.find(s => s.char === x.shard).icon}" alt=""><b>${CHARACTERS[x.shard].name}碎片</b><em>×${x.n}</em>` : `${itemIcon(ITEMS[x.item])}<b>${ITEMS[x.item].name}</b><em class="r-${ITEMS[x.item].rarity}">${ITEMS[x.item].rarity}</em>`}</div>`;
+      stage.appendChild(el); });
+    SFX.play('crank'); requestAnimationFrame(() => ov.classList.add('show'));
+    await W(res.length > 1 ? 1200 : 900);
+    const els = [...stage.children];
+    for (let i = 0; i < els.length; i++) {
+      const el = els[i], x = res[i];
+      if (x.shard && !skip) { const f = ov.querySelector('.ev-flash'); f.style.setProperty('--c', colorOf(x)); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); SFX.play('rare'); particles(ov, x.shard, colorOf(x)); await W(350); }
+      el.classList.add('open'); if (!skip) SFX.play(x.shard ? 'rare' : 'pop'); await W(x.shard ? 700 : 220);
+    }
+    els.forEach(e => e.classList.add('open'));
+    const got = res.filter(x => x.shard);
+    const foot = document.createElement('div'); foot.className = 'ev-foot';
+    foot.innerHTML = `<p>${got.length ? got.map(x => `<b style="color:${colorOf(x)}">${CHARACTERS[x.shard].name}碎片 ×${x.n}</b>`).join('・') : '這次沒有抽到角色碎片'}</p><button class="btn-primary" id="evDone">收下</button>`;
+    ov.appendChild(foot); ov.querySelector('.ev-skip').remove();
+    await new Promise(r => { foot.querySelector('#evDone').onclick = r; });
+    ov.classList.remove('show'); setTimeout(() => ov.remove(), 300);
+  }
+  function particles(ov, kind, col) {
+    for (let i = 0; i < 26; i++) { const p = document.createElement('i'); p.className = 'ev-pt'; p.textContent = kind === 'hancock' ? '❤' : '🦇'; p.style.color = col; ov.appendChild(p);
+      const a = Math.random() * 6.28, d = 160 + Math.random() * 320; p.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(1.3) rotate(${(Math.random() - .5) * 180}deg)`, opacity: 0 }], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).onfinish = () => p.remove(); }
+  }
+
+  /* ---------- 召喚池切換 ---------- */
+  let pool = 'normal';
+  function applyPool() {
+    const on = typeof hubTab === 'undefined' || hubTab === 'summon';
+    document.querySelectorAll('#poolTabs [data-pool]').forEach(b => b.classList.toggle('on', b.dataset.pool === pool));
+    const g = document.querySelector('.g-main.tavern'), e = $('evPane'), t = $('poolTabs');
+    if (t) t.classList.toggle('hidden', !on);
+    if (g) g.classList.toggle('hidden', !on || pool !== 'normal'); if (e) e.classList.toggle('hidden', !on || pool !== 'event');
+    const gs = $('gachaScreen'); if (gs) gs.dataset.pool = on ? pool : '';
+    if (on && pool === 'event') render();
+  }
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#poolTabs [data-pool]').forEach(b => b.onclick = () => { pool = b.dataset.pool; applyPool(); });
+    const sw = window.switchHub; if (sw) window.switchHub = function () { const r = sw.apply(this, arguments); applyPool(); return r; };
+    const og = window.openGacha; if (og) window.openGacha = function () { const r = og.apply(this, arguments); applyPool(); return r; };
+  });
+
+  /* ---------- 角色背包：碎片區 ---------- */
+  window.renderShardPane = function (el) {
+    const E = st();
+    el.innerHTML = `<p class="cx-note">在懸賞處的「限定活動」抽取角色碎片，集滿 ${P().need} 片就能合成限定 SSR 角色。</p><div class="ev-shard-list">${P().shards.map(s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), pct = Math.min(100, n / P().need * 100);
+      return `<div class="ev-shard big" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b>SSR ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}${own ? '・已擁有這位角色' : ''}</small></div>${own ? '<span class="ev-owned">已擁有</span>' : `<button class="btn-gold" data-synth="${s.char}" ${n >= P().need ? '' : 'disabled'}>${n >= P().need ? '點擊合成' : `還差 ${P().need - n} 片`}</button>`}</div>`; }).join('')}</div>`;
+    el.querySelectorAll('[data-synth]').forEach(b => b.onclick = () => { synth(b.dataset.synth); window.renderShardPane(el); });
+  };
+})();

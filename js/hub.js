@@ -48,7 +48,7 @@ function renderBounty() {
     <button class="btn-gold" data-claim="${b.id}" ${done && !b.claimed ? '' : 'disabled'}>${b.claimed ? '已領取' : '領取賞金'}</button></article>`; }).join('');
   $('bountyList').querySelectorAll('[data-claim]').forEach(btn => btn.onclick = () => {
     const x = SAVE.data.bounty.list.find(y => y.id === btn.dataset.claim), def = BOUNTY_POOL.find(b => b.id === x.id); if (x.claimed) return;
-    x.claimed = true; SAVE.save(); addBerry(def.berry); if (def.tokens) addTokens(def.tokens, '懸賞任務'); SFX.play('coin'); toast(`領到賞金 ${def.berry.toLocaleString()} 貝里`, 'gold'); renderBounty();
+    x.claimed = true; SAVE.save(); if (window.eventBountyCheck) setTimeout(eventBountyCheck, 60); addBerry(def.berry); if (def.tokens) addTokens(def.tokens, '懸賞任務'); SFX.play('coin'); toast(`領到賞金 ${def.berry.toLocaleString()} 貝里`, 'gold'); renderBounty();
   });
   $('bountyNote').textContent = `每天更換 4 張懸賞單，今天剩下 ${list.filter(b => !b.claimed).length} 張。`;
 }

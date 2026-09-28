@@ -8,7 +8,7 @@
   ];
   const LANES = [-0.72, 0, 0.72];
   let cv, cx, W, H, dpr, G = null, raf = 0, keysBound = false, WAVE = null;
-  const IMG = {}; ['ship', 'rock', 'coin', 'ball', 'marine_ship', 'vortex'].forEach(k => { const im = new Image(); im.src = `assets/runner/${k}.webp?v=29`; IMG[k] = im; });
+  const IMG = {}; ['ship', 'rock', 'coin', 'ball', 'marine_ship', 'vortex'].forEach(k => { const im = new Image(); im.src = `assets/runner/${k}.webp?v=31`; IMG[k] = im; });
   const ready = k => IMG[k] && IMG[k].complete && IMG[k].naturalWidth;
   /* 預先畫好兩張可平鋪的浪紋，捲動時互相疊加產生真實的海面 */
   function makeWave(seed, crest, alpha) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); let s = seed; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
@@ -49,7 +49,7 @@
     const d = G.dist, lv = Math.min(1, d / 5000);
     while (G.nextObs < d + 60) {
       const z = zoneAt(G.nextObs).i, r = Math.random(); let o;
-      if (z >= 1 && r < .15) o = { k: 'ship', lane: Math.random() < .5 ? -.36 : .36, w: .95 };
+      if (z >= 1 && r < .15) o = { k: 'ship', lane: LANES[(Math.random() * 3) | 0], w: .46 };
       else if (z >= 2 && r < .3) o = { k: 'king', lane: LANES[(Math.random() * 3) | 0], w: .5 };
       else if (r < .45) o = { k: 'whirl', lane: LANES[(Math.random() * 3) | 0], w: .42, soft: true };
       else if (r < .7) o = { k: 'barrel', lane: LANES[(Math.random() * 3) | 0], w: .3 };
@@ -133,7 +133,7 @@
     else if (o.k === 'barrel') { cx.fillStyle = '#8a5a2e'; cx.fillRect(-w * .35, -w * .5, w * .7, w * .6); cx.fillStyle = '#3a3a3a'; cx.fillRect(-w * .37, -w * .38, w * .74, w * .08); cx.fillRect(-w * .37, -w * .12, w * .74, w * .08); cx.fillStyle = '#c8322b'; cx.font = `${w * .3}px sans-serif`; cx.textAlign = 'center'; cx.fillText('☠', 0, -w * .18); }
     else if (o.k === 'whirl' && ready('vortex')) { const s2 = w * 2.6; cx.rotate(-G.t * 1.8); cx.globalAlpha = .92; cx.drawImage(IMG.vortex, -s2 / 2, -s2 / 2, s2, s2); cx.globalAlpha = 1; }
     else if (o.k === 'whirl') { cx.rotate(G.t * 3); cx.strokeStyle = 'rgba(220,245,255,.8)'; cx.lineWidth = 3; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(0, 0, w * (.2 + i * .15), i, i + 4); cx.stroke(); } }
-    else if (o.k === 'ship' && ready('marine_ship')) { const iw = w * 1.15, ih = iw * IMG.marine_ship.naturalHeight / IMG.marine_ship.naturalWidth, bob = Math.sin(G.t * 1.6 + o.at) * 2; cx.fillStyle = 'rgba(255,255,255,.35)'; cx.beginPath(); cx.ellipse(0, ih * .12, iw * .5, ih * .18, 0, 0, 6.29); cx.fill(); cx.drawImage(IMG.marine_ship, -iw / 2, -ih * .78 + bob, iw, ih); }
+    else if (o.k === 'ship' && ready('marine_ship')) { const iw = w * 1.3, ih = iw * IMG.marine_ship.naturalHeight / IMG.marine_ship.naturalWidth, bob = Math.sin(G.t * 1.6 + o.at) * 2; cx.fillStyle = 'rgba(255,255,255,.35)'; cx.beginPath(); cx.ellipse(0, ih * .12, iw * .5, ih * .18, 0, 0, 6.29); cx.fill(); cx.drawImage(IMG.marine_ship, -iw / 2, -ih * .78 + bob, iw, ih); }
     else if (o.k === 'ship') { cx.fillStyle = '#f4f2ea'; cx.fillRect(-w * .45, -w * .55, w * .9, w * .4); cx.fillStyle = '#3f6fa3'; cx.fillRect(-w * .5, -w * .18, w, w * .22); cx.fillStyle = '#1f4f7a'; cx.fillRect(-w * .5, 0, w, w * .06); cx.fillStyle = '#fff'; cx.fillRect(-w * .05, -w * .95, w * .1, w * .45); cx.fillStyle = '#3f6fa3'; cx.font = `bold ${w * .16}px sans-serif`; cx.textAlign = 'center'; cx.fillText('MARINE', 0, -w * .3); }
     else if (o.k === 'king') { const sw = Math.sin(G.t * 3 + o.at) * w * .1; cx.fillStyle = '#3f8a6a'; cx.beginPath(); cx.ellipse(sw, -w * .3, w * .28, w * .45, 0, 0, 6.29); cx.fill(); cx.fillStyle = '#9fd6a0'; cx.beginPath(); cx.ellipse(sw, -w * .25, w * .14, w * .32, 0, 0, 6.29); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(sw - w * .1, -w * .6, w * .06, 0, 6.29); cx.arc(sw + w * .1, -w * .6, w * .06, 0, 6.29); cx.fill(); cx.fillStyle = '#c8322b'; cx.beginPath(); cx.arc(sw - w * .1, -w * .6, w * .03, 0, 6.29); cx.arc(sw + w * .1, -w * .6, w * .03, 0, 6.29); cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.6)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 0, w * .5, w * .12, 0, 0, 6.29); cx.stroke(); }
     cx.restore();

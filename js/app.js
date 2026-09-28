@@ -539,7 +539,7 @@ function updateGachaBtns() {
   $('pull1').querySelector('small').textContent = `${GACHA_COST.single} 枚寶藏幣`; $('pull10').querySelector('small').textContent = `${GACHA_COST.ten} 枚・保底 SR 以上`;
 }
 /* 不會出現在扭蛋與拉霸的角色：NPC 與劇情獎勵角色 */
-const NOT_IN_GACHA = id => { const o = CHAR_OBTAIN[id] || {}; return !!(o.npcOnly || o.reward); };
+const NOT_IN_GACHA = id => { const o = CHAR_OBTAIN[id] || {}; return !!(o.npcOnly || o.reward || o.eventOnly); };
 const unownedChars = () => CHARACTER_ORDER.filter(id => !owned(id) && !NOT_IN_GACHA(id));
 const gachaChars = () => CHARACTER_ORDER.filter(id => !NOT_IN_GACHA(id));
 const DUP_EXP = 6000;
@@ -553,22 +553,26 @@ function rollOne(minR) {
   const pool = Object.entries(ITEMS).filter(([, i]) => i.rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)][0] };
 }
 const rarOf = (x) => x.char ? 'SSR' : ITEMS[x.item].rarity;
+/* 跳過動畫：動畫期間顯示「跳過」按鈕，按下後剩下的等待全部立即結束 */
+let gSkip = null;
+function gachaSkipStart() { let res; const p = new Promise(r => res = r); gSkip = { p, res, on: false }; const b = $('gSkip'); if (b) { b.hidden = false; b.onclick = () => { if (gSkip) { gSkip.on = true; gSkip.res(); } b.hidden = true; }; } return gSkip; }
+function gachaSkipEnd() { const b = $('gSkip'); if (b) b.hidden = true; gSkip = null; }
 async function playMachine(best) {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, W = ms => wait(reduce ? Math.min(ms, 120) : ms);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, S = gachaSkipStart(), W = ms => S.on ? Promise.resolve() : Promise.race([wait(reduce ? Math.min(ms, 120) : ms), S.p]);
   const m = $('machine'); $('mDrop').className = 'm-drop r-' + best;
-  // ① 轉動搖桿 ② 扭蛋翻滾
-  m.classList.remove('drop'); m.classList.add('spin', 'crank'); SFX.play('crank'); const ck = setInterval(() => SFX.play('blip'), 160);
-  await spinCapsules(reduce ? 200 : 1500); clearInterval(ck); SFX.play('crank');
-  // ③ 一顆扭蛋掉進出口並彈跳
-  m.classList.remove('spin', 'crank'); m.classList.add('drop'); SFX.play('pop'); await W(1000); m.classList.remove('drop');
-  // ④ 扭蛋飛到畫面中央，依稀有度搖晃次數不同
-  const op = $('gOpen'), shakes = { N: 1, R: 2, SR: 3, SSR: 3 }[best] || 1;
-  op.className = 'g-open show enter r-' + best; await W(520);
-  for (let k = 0; k < shakes; k++) { op.className = 'g-open show shake r-' + best; SFX.play('pop'); await W(420); op.className = 'g-open show r-' + best + (k === shakes - 1 && ['SR', 'SSR'].includes(best) ? ' glow' : ''); await W(160); }
-  // ⑤ 打開：閃光、光芒、稀有時噴金幣
-  op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop');
-  if (['SR', 'SSR'].includes(best)) coinBurst($('gCoinBurst'), best === 'SSR' ? 70 : 36);
-  await W(best === 'SSR' ? 1000 : 650); op.className = 'g-open';
+  try {
+    m.classList.remove('drop'); m.classList.add('spin', 'crank'); SFX.play('crank'); const ck = setInterval(() => SFX.play('blip'), 160);
+    await Promise.race([spinCapsules(reduce ? 200 : 1500), S.p]); clearInterval(ck); const cv = $('gCv'); if (cv) cv.classList.remove('on');
+    if (!S.on) { SFX.play('crank'); m.classList.remove('spin', 'crank'); m.classList.add('drop'); SFX.play('pop'); await W(1000); }
+    m.classList.remove('spin', 'crank', 'drop');
+    const op = $('gOpen'), shakes = { N: 1, R: 2, SR: 3, SSR: 3 }[best] || 1;
+    if (!S.on) { op.className = 'g-open show enter r-' + best; await W(520);
+      for (let k = 0; k < shakes && !S.on; k++) { op.className = 'g-open show shake r-' + best; SFX.play('pop'); await W(420); op.className = 'g-open show r-' + best + (k === shakes - 1 && ['SR', 'SSR'].includes(best) ? ' glow' : ''); await W(160); }
+      if (!S.on) { op.className = 'g-open show open r-' + best; SFX.play(['SR', 'SSR'].includes(best) ? 'rare' : 'pop');
+        if (['SR', 'SSR'].includes(best)) coinBurst($('gCoinBurst'), best === 'SSR' ? 70 : 36);
+        await W(best === 'SSR' ? 1000 : 650); } }
+    op.className = 'g-open';
+  } finally { gachaSkipEnd(); }
 }
 function showResults(res, title) {
   $('gResTitle').textContent = title;

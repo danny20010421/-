@@ -8,7 +8,7 @@ function layoutBattleHud() {
   const scr = $('battleScreen'); if (!scr || scr.classList.contains('hidden')) return;
   const S = scr.getBoundingClientRect(), bot = ids => Math.max(...ids.map(i => { const e = $(i); if (!e || !e.offsetParent) return 0; const r = e.getBoundingClientRect(); return r.height ? r.bottom : 0; }));
   const tb = $('bTypeBar'); if (tb) tb.style.top = (bot(['bPlateL', 'bPlateR', 'bTimerWrap']) - S.top + 6) + 'px';
-  const vd = $('voidDmg'); if (vd && !vd.hidden) vd.style.top = (bot(['bPlateL', 'bPlateR', 'bTimerWrap', 'bTypeBar']) - S.top + 8) + 'px';
+  const vd = $('voidDmg'); if (vd && !vd.hidden) vd.style.top = (bot(['bPlateR']) - S.top + 10) + 'px';
   const tk = $('bTicker'), cmd = document.querySelector('#battleScreen .b-cmd'); if (tk && cmd) { tk.style.transform = 'translateX(-50%)'; const a = tk.getBoundingClientRect(), c = cmd.getBoundingClientRect(); const over = a.bottom - (c.top - 6); if (over > 0) tk.style.transform = `translate(-50%, ${-over}px)`; }
 }
 window.layoutBattleHud = layoutBattleHud;

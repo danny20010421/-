@@ -80,7 +80,7 @@ function copiedSkillDamage(actor,target,picked){
 const VOID_PCT_KEYS=['fixedLightHits','fixedLightHitsRange','randomPercentHits','chanceHalfHpCut','percentCurrentDmg','currentHpCut','maxHpCut'];
 function computeSkillOutcome(actor,target,skill,blockedEffects){
  if(target.voidImmune&&!skill.__void){const e0=skill.effect||{};if(VOID_PCT_KEYS.some(k=>e0[k])){log(`👑 ${target.name} 不受比例傷害影響！`);return {damage:0,meta:{}}}const r=computeSkillOutcome(actor,target,{...skill,__void:true},blockedEffects);if(r.meta&&(r.meta.execute||r.meta.executeBuff)){log(`👑 ${target.name} 無法被秒殺！`);r.damage=0}return r}
- if(skill.effect&&skill.effect.variants){const v=skill.effect.variants[Math.floor(Math.random()*skill.effect.variants.length)];log(`⚔️ 魔氣變化：${v.name}！`);return computeSkillOutcome(actor,target,{...skill,name:v.name,power:v.power,effect:deepClone(v.effect)},blockedEffects);}
+ if(skill.effect&&skill.effect.variants){const v=skill.effect.variants[Math.floor(Math.random()*skill.effect.variants.length)];actor.__variant=v;log(`⚔️ ${skill.name}：${v.name}！`);if(v.effect&&v.effect.noDamage)return {damage:0,meta:{}};return computeSkillOutcome(actor,target,{...skill,name:v.name,power:v.power,effect:deepClone(v.effect)},blockedEffects);}
  const ef=skill.effect||{}; let damage=0; let meta={}; if(ef.executeChanceRange)ef.executeChance=rand(ef.executeChanceRange[0],ef.executeChanceRange[1]);
  if(actor.status.executeBuffTurns>0 && skill.type==='attack' && chance(actor.status.executeBuffChance||0)){log('⚡ 覺醒之力直接秒殺對手！');return {damage:target.hp,meta:{executeBuff:true}};}
  if(ef.copyOpponentSkillSafe){
@@ -117,12 +117,19 @@ function computeSkillOutcome(actor,target,skill,blockedEffects){
 function calcAttackDamage(actor,target,skill){let power=skill.power||90;let mult=(actor.status.weak>0?1-(GAME_SETTINGS.weakDealt??0.15):1)*atkMul(actor.buffs.atk)*defTake(target.buffs.def)*((actor.dmgMul||1)/(target.dmgMul||1))*typeMult(actor,target)*(1-Math.min(.25,(target.def||0)/6000));if(skill.effect&&skill.effect.critBoost&&chance(skill.effect.critBoost)){mult*=skill.effect.critMult;log('💥 造成爆發傷害！')}if(skill.effect&&skill.effect.forceMultiplier)mult*=skill.effect.forceMultiplier;if(actor.status.damageMultTurns>0)mult*=actor.status.damageMultValue;if(actor.status.damageDealtReductionTurns>0)mult*=Math.max(0,1-actor.status.damageDealtReductionValue);if(actor.status.nextAttackMultTurns>0)mult*=actor.status.nextAttackMultValue;if(actor.status.awaken==='nika'){const team=(typeof battle!=='undefined'&&battle&&battle.team&&battle.team.includes(actor))?battle.team:[];const alive=team.filter(f=>f!==actor&&f.hp>0).length;if(actor.status.allyAliveBoost&&alive>0)mult*=1+actor.status.allyAliveBoost;else if(actor.status.allyBoostPer)mult*=(1+alive*actor.status.allyBoostPer)}if(actor.status.awaken==='nidhogg'&&actor.status.frostBoostTurns>0){const extra=Math.max(1,Math.floor(target.maxHp*0.04));power+=extra;if(target.status.immune<=0&&chance(0.4))target.status.freeze=Math.max(target.status.freeze,1)}const variance=rand(.92,1.08);return Math.max(1,Math.floor(power*mult*variance*(actor.dmgMul||1)))}
 function healOk(c){if(c.status&&c.status.healBlock>0){log(`🩸 ${c.name} 處於禁止回復狀態，無法回復體力！`);return false}return true}
 function applySkillEffects(actor,target,skill,result){
+ if(skill.effect&&skill.effect.variants&&actor.__variant){const v=actor.__variant;actor.__variant=null;return applySkillEffects(actor,target,{...skill,effect:deepClone(v.effect)},result)}
  if(target.voidImmune&&target!==actor&&!skill.__voidFx){const snap={hp:target.hp,buffs:{...target.buffs},st:JSON.parse(JSON.stringify(target.status))};applySkillEffects(actor,target,{...skill,__voidFx:true},result);
   let blocked=false;['atk','def','spd'].forEach(k=>{if(target.buffs[k]<snap.buffs[k]){target.buffs[k]=snap.buffs[k];blocked=true}});
   const bad=['skipAttack','attackFail','healBlock','skillNullify','defDownTemp','defDownTurns','freeze','burn','paralyze','fear','fatigue','petrify','weak','armorBreak','dominated'];bad.forEach(k=>{if((target.status[k]||0)>(snap.st[k]||0)){target.status[k]=snap.st[k]||0;blocked=true}});
   if((target.status.dots||[]).length>(snap.st.dots||[]).length){target.status.dots=snap.st.dots||[];blocked=true}
   if(target.hp<snap.hp){target.hp=snap.hp;blocked=true}
   if(blocked)log(`👑 ${target.name} 不受負面效果影響！`);return}
+ const ef0=skill.effect||{};
+ if(ef0.shieldFromDamage&&result&&result.damage>0){const amt=Math.floor(result.damage*ef0.shieldFromDamage);actor.status.shield=(actor.status.shield||0)+amt;actor.status.tempShield=(actor.status.tempShield||0)+amt;actor.status.tempShieldTurns=1;log(`👤 影子吸收了傷害，${actor.name} 獲得 ${amt} 點護盾（1 回合）！`)}
+ if(ef0.lifestealPost&&result&&result.damage>0&&healOk(actor)){const h=Math.min(actor.maxHp-actor.hp,Math.floor(result.damage*ef0.lifestealPost));if(h>0){actor.hp+=h;showHeal(actor===battle.player?'L':'R',h);log(`💗 ${actor.name} 回復了 ${h} 體力！`)}}
+ if(ef0.gainTargetHp&&target.hp>0){const g=target.hp;actor.maxHp+=g;actor.hp+=g;showHeal(actor===battle.player?'L':'R',g);log(`👤 ${actor.name} 吸入影子，體力增加 ${g}！`)}
+ if(ef0.randomFlatDamage){const[a,b]=ef0.randomFlatDamage,d=a+Math.floor(Math.random()*(b-a+1));target.hp=Math.max(target.voidImmune?1:0,target.hp-d);if(target.voidImmune&&battle.voidDamage!=null)battle.voidDamage+=d;showDamage(target===battle.player?'L':'R',d,'#b57cff');log(`👤 影子的衝擊造成 ${d} 點傷害！`)}
+ if(ef0.growScale){actor.scale=(actor.scale||.9)*ef0.growScale;const el=document.getElementById(actor===battle.player?'bFL':'bFR');if(el)el.style.setProperty('--sc',actor.scale);log(`👤 ${actor.name} 的身形巨大化了！`)}
  const ef=skill.effect||{}; if(ef.damageMultRange)ef.damageMultValue=Math.round(rand(ef.damageMultRange[0],ef.damageMultRange[1])*10)/10;
  if(ef.healBlockTurns){target.status.healBlock=Math.max(target.status.healBlock||0,ef.healBlockTurns);log(`🩸 ${target.name} ${ef.healBlockTurns} 回合內無法回復體力！`)}
  if(ef.randomSelfPPUp){const pool=actor.skills.filter(s=>!s.ultimate&&!s.locked&&s.maxPP>0);if(pool.length){const s=pool[Math.floor(Math.random()*pool.length)];s.pp+=ef.randomSelfPPUp;log(`🧲 「${s.name}」使用次數 +${ef.randomSelfPPUp}！`)}}
@@ -213,6 +220,7 @@ function endTurnStatus(c){
  [['freeze',GAME_SETTINGS.freezeDot??0.02],['burn',GAME_SETTINGS.burnDot??0.04]].forEach(([k,r])=>{if(c.status[k]>0&&c.hp>0){const d=Math.max(1,Math.floor(c.maxHp*r));c.hp=Math.max(0,c.hp-d);showDamage(side,d);log(`${ABN[k].icon} ${c.name} 受到${ABN[k].name}傷害 ${d}。`);c.status[k]--}});
  if(c.status.armorBreak>0)c.status.armorBreak--;
  if(c.status.healBlock>0)c.status.healBlock--;
+ if(c.status.tempShieldTurns>0){c.status.tempShieldTurns--;if(c.status.tempShieldTurns<=0&&c.status.tempShield){c.status.shield=Math.max(0,(c.status.shield||0)-c.status.tempShield);log(`👤 ${c.name} 的影子護盾消散了。`);c.status.tempShield=0}}
  if(c.status.defDownTurns>0){c.status.defDownTurns--;if(c.status.defDownTurns<=0&&c.status.defDownTemp){c.buffs.def=clamp(c.buffs.def+c.status.defDownTemp,-6,6);log(`🧲 ${c.name} 的防禦恢復了。`);c.status.defDownTemp=0}}
  if(c.status.hitDouble>0)c.status.hitDouble--;
  if(c.status.spdMulTurns>0){c.status.spdMulTurns--;if(c.status.spdMulTurns<=0)c.status.spdMul=1}
