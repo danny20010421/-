@@ -328,3 +328,96 @@
 #bSkills .skill.ult.ult-v3:disabled .u3-swirl,#bSkills .skill.ult.ult-v3:disabled .u3-core b{animation:none}
 @media (max-width:860px){.u3-core{inset:11px}.u3-core b{font-size:32px}}
 @media (max-width:860px) and (orientation:portrait){.u3-core{inset:9px}.u3-core b{font-size:27px}}
+
+/* ===== v19：扭蛋翻滾改用原圖旋轉（不再疊假扭蛋） ===== */
+.g-globe{--gx:36.36;--gy:41.05;--gw:20.2}
+.g-tumble{position:absolute;inset:0;border-radius:50%;overflow:hidden;opacity:0;clip-path:circle(42% at 50% 54%);transition:opacity .2s}
+.g-tumble img{position:absolute;max-width:none;width:calc(100% * 100 / var(--gw));height:calc(100% * 100 / (var(--gw) * 2.2917));left:calc(-100% * (var(--gx) - var(--gw) / 2) / var(--gw));top:calc(-100% * (var(--gy) - var(--gw) * 2.2917 / 2) / (var(--gw) * 2.2917))}
+#machine.spin .g-globe{backdrop-filter:none!important;animation:globeShake .09s linear infinite alternate!important}
+#machine.spin .g-globe .m-caps,#machine .g-globe .m-caps{opacity:0!important}
+#machine.spin .g-tumble{opacity:1;animation:tumble .42s cubic-bezier(.45,0,.55,1) infinite alternate;filter:blur(.8px) saturate(1.15)}
+@keyframes tumble{0%{transform:rotate(-38deg) scale(1.04)}100%{transform:rotate(38deg) scale(1.04)}}
+@keyframes globeShake{to{transform:translate(calc(-50% + 1px),calc(-50% - 1px))}}
+@media (max-width:860px){.g-globe{--gw:18.6;--gy:39.6}}
+
+/* ===== v19：開蛋的扭蛋重新設計 ===== */
+.g-open .cap{width:190px!important;height:190px!important;--c:#6fd08c;--c2:#2f8f5a;filter:drop-shadow(0 18px 24px rgba(0,0,0,.5))}
+.g-open.r-R .cap{--c:#5fb8ff;--c2:#1f5fae}.g-open.r-SR .cap{--c:#c58bff;--c2:#6a2fb0}.g-open.r-SSR .cap{--c:#ffd26c;--c2:#c8801a}
+.g-open .cap i.cap-top,.g-open .cap i.cap-bot{position:absolute;left:0;right:0;height:50%!important;box-sizing:border-box;border:4px solid #1a1410;transition:transform .5s cubic-bezier(.2,.9,.3,1.2),opacity .5s}
+.g-open .cap i.cap-top{top:0;border-bottom:0;border-radius:95px 95px 0 0!important;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.85) 0 8%,transparent 22%),radial-gradient(circle at 45% 90%,var(--c) 0%,var(--c2) 95%)!important;box-shadow:inset -12px -4px 20px rgba(0,0,0,.25)!important}
+.g-open .cap i.cap-bot{bottom:0;border-top:0;border-radius:0 0 95px 95px!important;background:radial-gradient(circle at 60% 10%,#ffffff,#f1ead8 45%,#cfc4a8 100%)!important;box-shadow:inset 10px -14px 20px rgba(0,0,0,.18)!important}
+.g-open.r-SSR .cap i.cap-top{background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.9) 0 8%,transparent 22%),conic-gradient(from 200deg at 50% 100%,#ff8a8a,#ffd26c,#9dffb8,#8fd8ff,#c58bff,#ff8a8a)!important;animation:ssrHue 2s linear infinite}
+@keyframes ssrHue{to{filter:hue-rotate(360deg)}}
+.g-open .cap i.cap-band{top:50%!important;left:-2px!important;right:-2px!important;height:14px!important;margin-top:-7px!important;border-radius:7px;background:linear-gradient(180deg,#2a2018,#4a3a2a 50%,#1a1410)!important;opacity:1!important;box-shadow:0 1px 0 rgba(255,255,255,.3) inset;transition:opacity .2s}
+.g-open.open .cap i.cap-top{transform:translateY(-95px) rotate(-22deg)!important}
+.g-open.open .cap i.cap-bot{transform:translateY(70px)!important;opacity:0}
+.g-open.open .cap i.cap-band{opacity:0!important}
+.g-open .cap-light{width:20px!important;height:20px!important}
+.g-open.open .cap-light{animation:capBurst .7s ease-out forwards!important}
+@keyframes capBurst{0%{opacity:1;box-shadow:0 0 0 0 #fff,0 0 0 0 var(--c,#fff)}60%{opacity:1;box-shadow:0 0 60px 60px rgba(255,255,255,.9),0 0 120px 120px color-mix(in srgb,var(--c,#fff) 60%,transparent)}100%{opacity:0;box-shadow:0 0 90px 110px rgba(255,255,255,0),0 0 200px 200px transparent}}
+.g-open.r-N .cap-light{--c:#6fd08c}.g-open.r-R .cap-light{--c:#5fb8ff}.g-open.r-SR .cap-light{--c:#c58bff}.g-open.r-SSR .cap-light{--c:#ffd26c}
+
+/* ===== v19：道具商店對齊 ===== */
+#shopList .bagItem{display:grid!important;grid-template-columns:52px minmax(0,1fr) 108px 84px 52px;align-items:center;column-gap:12px;padding:10px 14px!important}
+#shopList .bagItem>.ico,#shopList .bagItem>svg,#shopList .bagItem>.token-ico{grid-column:1}
+#shopList .bi-name{grid-column:2;min-width:0}
+#shopList .price{grid-column:3;justify-self:end;margin:0!important;white-space:nowrap}
+#shopList .bagItem>button{grid-column:4;justify-self:stretch;min-width:0;padding:8px 0!important;border-radius:10px}
+#shopList .bagItem>b{grid-column:5;justify-self:end;font-family:var(--num);font-size:17px;color:#fff;white-space:nowrap}
+#shopList .token-ico{width:48px;height:48px;border-radius:12px;background:radial-gradient(circle,#3a2a10,#0e1d30 75%);border:1px solid rgba(255,207,90,.55);display:grid;place-items:center}
+@media (max-width:560px){#shopList .bagItem{grid-template-columns:44px minmax(0,1fr) 72px;grid-template-areas:"i n n" "i p btn";row-gap:6px;column-gap:10px}
+  #shopList .bagItem>.ico,#shopList .bagItem>svg,#shopList .bagItem>.token-ico{grid-area:i;width:44px!important;height:44px!important}
+  #shopList .bi-name{grid-area:n}#shopList .price{grid-area:p;justify-self:start}#shopList .bagItem>button{grid-area:btn}
+  #shopList .bagItem>b{grid-area:n;justify-self:end;align-self:start;font-size:14px}}
+
+/* ================= 奧義卡 v4（第五技能：傳說級技能卡） ================= */
+#bSkills .skill.ult.ult-v4{order:0!important;flex:1.25 1 0!important;aspect-ratio:auto!important;position:relative;display:block!important;padding:0!important;text-align:left!important;border:0!important;border-radius:12px!important;overflow:hidden!important;isolation:isolate;cursor:pointer;
+  background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--ec) 38%,transparent),transparent 60%),linear-gradient(150deg,#2e1408 0%,#140806 55%,#1e0c05 100%)!important;
+  box-shadow:0 0 0 2px #f3c969,0 0 0 3px #3a2206,0 0 22px color-mix(in srgb,var(--ec) 55%,transparent),0 8px 20px rgba(0,0,0,.5)!important;animation:u4Glow 2.4s ease-in-out infinite}
+@keyframes u4Glow{50%{box-shadow:0 0 0 2px #fff0b8,0 0 0 3px #3a2206,0 0 34px color-mix(in srgb,var(--ec) 85%,transparent),0 8px 20px rgba(0,0,0,.5)}}
+#bSkills .skill.ult.ult-v4::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(100deg,transparent 35%,rgba(255,240,200,.28) 48%,transparent 60%);transform:translateX(-100%);animation:u4Sheen 3.2s ease-in-out infinite;display:block!important}
+@keyframes u4Sheen{55%,100%{transform:translateX(100%)}}
+#bSkills .skill.ult.ult-v4::after{display:none!important}
+.u4-fx{position:absolute;inset:0;z-index:-1;opacity:.55;background:repeating-linear-gradient(120deg,transparent 0 14px,color-mix(in srgb,var(--ec) 40%,transparent) 14px 16px,transparent 16px 34px);background-size:200% 200%;animation:u4Flow 4s linear infinite;-webkit-mask:linear-gradient(90deg,transparent,#000 40%);mask:linear-gradient(90deg,transparent,#000 40%)}
+@keyframes u4Flow{to{background-position:-68px 0}}
+.u4-embers{position:absolute;inset:0;z-index:0;pointer-events:none}
+.u4-embers i{position:absolute;bottom:-6px;width:4px;height:4px;border-radius:50%;background:#ffe08a;box-shadow:0 0 6px #ffcf5a,0 0 10px var(--ec);opacity:0;animation:u4Ember 2.6s linear infinite}
+.u4-embers i:nth-child(1){left:22%}.u4-embers i:nth-child(2){left:38%;animation-delay:-.5s}.u4-embers i:nth-child(3){left:55%;animation-delay:-1.1s}.u4-embers i:nth-child(4){left:70%;animation-delay:-1.7s}.u4-embers i:nth-child(5){left:84%;animation-delay:-.9s;width:3px;height:3px}.u4-embers i:nth-child(6){left:92%;animation-delay:-2.1s}
+@keyframes u4Ember{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-130px) translateX(8px);opacity:0}}
+.u4-frame{position:absolute;inset:5px;z-index:1;pointer-events:none;border:1px solid rgba(243,201,105,.45);border-radius:8px;
+  background:linear-gradient(#f3c969,#f3c969) 0 0/14px 2px,linear-gradient(#f3c969,#f3c969) 0 0/2px 14px,linear-gradient(#f3c969,#f3c969) 100% 0/14px 2px,linear-gradient(#f3c969,#f3c969) 100% 0/2px 14px,linear-gradient(#f3c969,#f3c969) 0 100%/14px 2px,linear-gradient(#f3c969,#f3c969) 0 100%/2px 14px,linear-gradient(#f3c969,#f3c969) 100% 100%/14px 2px,linear-gradient(#f3c969,#f3c969) 100% 100%/2px 14px;background-repeat:no-repeat}
+.u4-seal{position:absolute;left:12px;top:14px;z-index:3;width:30px;padding:6px 0;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.15em;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:15px;color:#fff3e0;background:linear-gradient(180deg,#d8402f,#9a1c14);border-radius:3px;transform:rotate(-3deg);box-shadow:inset 0 0 0 2px rgba(255,220,200,.35),inset 0 0 0 4px #9a1c14,inset 0 0 0 5px rgba(255,220,200,.25),0 3px 8px rgba(0,0,0,.5)}
+.u4-body{position:relative;z-index:3;display:flex;flex-direction:column;gap:4px;height:100%;box-sizing:border-box;padding:12px 14px 12px 54px}
+.u4-top{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.u4-top em{font-style:normal;font-weight:900;color:#ffd26c;letter-spacing:.12em}.u4-pow{color:#ffb3a0;font-weight:700}
+.u4-name{font-family:var(--serif);font-weight:900;font-size:21px;line-height:1.2;background:linear-gradient(180deg,#fffbe8,#ffe08a 50%,#e8a53b);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 #3a1a06) drop-shadow(0 0 8px color-mix(in srgb,var(--ec) 70%,transparent));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u4-desc{font-size:12.5px;line-height:1.5;color:#f0dcc0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.u4-foot{margin-top:auto;display:flex;align-items:center;gap:8px}
+.u4-bar{flex:1;height:8px;border-radius:99px;background:rgba(0,0,0,.45);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(243,201,105,.35)}
+.u4-bar i{display:block;height:100%;background:linear-gradient(90deg,#c8801a,#ffe08a,#fff3c4);box-shadow:0 0 8px #ffcf5a}
+.u4-gems{display:flex;gap:5px}.u4-gems i{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;background:rgba(255,255,255,.12);border:1px solid rgba(255,220,150,.4)}
+.u4-gems i.on{background:radial-gradient(circle at 35% 35%,#fffbe8,#ffcf5a 45%,#c8322b);border-color:#fff3c4;box-shadow:0 0 8px rgba(255,190,80,.9)}
+#bSkills .skill.ult.ult-v4:not(:disabled):hover{transform:translateY(-4px)}
+#bSkills .skill.ult.ult-v4:focus-visible{outline:3px solid #ffd26c;outline-offset:3px}
+#bSkills .skill.ult.ult-v4:disabled{filter:grayscale(.85) brightness(.6);animation:none;cursor:not-allowed}
+#bSkills .skill.ult.ult-v4:disabled::before,#bSkills .skill.ult.ult-v4:disabled .u4-fx,#bSkills .skill.ult.ult-v4:disabled .u4-embers i{animation:none}
+#bSkills .skill.ult.ult-v4:disabled .u4-embers{display:none}
+@media (max-width:860px) and (orientation:portrait){
+  #bSkills .skill.ult.ult-v4{grid-column:span 2!important;min-height:86px}
+  .u4-body{padding:8px 12px 8px 48px;gap:2px}.u4-seal{left:10px;top:10px;width:26px;font-size:13px}
+  .u4-desc{display:none}.u4-name{font-size:17px}.u4-top{font-size:11px}
+}
+
+/* ===== v19：海軍本部背景 ===== */
+#gachaScreen[data-tab=navy]{background:linear-gradient(180deg,rgba(8,20,36,.55) 0%,rgba(8,20,36,.15) 30%,rgba(8,20,36,.55) 75%,rgba(8,20,36,.85) 100%),url('../assets/ui/navy_hq.webp?v=19') center 30%/cover no-repeat,#1a2a3e!important}
+#gachaScreen[data-tab=navy] .hub-inner{padding:18px 20px;border-radius:18px;background:rgba(10,24,42,.72);border:1px solid rgba(160,200,255,.25);backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+#gachaScreen[data-tab=navy] .hub-inner h3{color:#fff;display:flex;align-items:center;gap:10px}
+#gachaScreen[data-tab=navy] .hub-inner h3::before{content:'';width:34px;height:22px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 36'%3E%3Cpath d='M2 22C10 8 20 4 30 16 40 4 50 8 58 22 48 14 40 16 30 28 20 16 12 14 2 22z' fill='%238fc4ff'/%3E%3C/svg%3E") center/contain no-repeat}
+#gachaScreen[data-tab=navy] .hub-pane{padding-top:calc(110px + var(--safeT,0px))}
+/* 印章：改用上下兩個字，不用直寫 */
+.u4-seal{writing-mode:horizontal-tb!important;text-orientation:mixed!important;flex-direction:column!important;height:auto!important;min-height:58px;padding:5px 0!important;gap:2px;line-height:1.1!important}
+.u4-seal b{display:block;font-size:15px;line-height:1.15;color:#fff3e0;font-weight:900;font-family:var(--serif)}
+@media (max-width:860px) and (orientation:portrait){.u4-seal{min-height:50px}.u4-seal b{font-size:13px}}
+/* 海鷗標誌只放在「海軍本部」標題 */
+#gachaScreen[data-tab=navy] .hub-inner h3::before{content:none!important}
+#gachaScreen[data-tab=navy] .hub-inner>h3::before{content:''!important}

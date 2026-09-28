@@ -30,7 +30,7 @@ const COIN_STACK = '<svg class="coin-stack" viewBox="0 0 40 32" aria-hidden="tru
 let hubTab = 'summon';
 function openHub(tab) { if (currentScreen !== 'gachaScreen') openGacha(); switchHub(tab || hubTab); }
 function switchHub(tab) {
-  hubTab = tab;
+  hubTab = tab; const gs = $('gachaScreen'); if (gs) gs.dataset.tab = tab;
   document.querySelectorAll('#hubTabs button').forEach(b => { b.classList.toggle('on', b.dataset.hub === tab); b.setAttribute('aria-selected', String(b.dataset.hub === tab)); });
   document.querySelectorAll('#gachaScreen [data-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== tab));
   if (tab === 'bounty') renderBounty(); if (tab === 'shop') renderShop(); if (tab === 'navy') renderNavy();

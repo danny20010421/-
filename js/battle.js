@@ -106,13 +106,16 @@ function renderSkills() {
     const dis = battle.isBusy || s.pp <= 0 || battle.gameOver || battle.mustSwitch;
     const tags = (s.tags || []).map(t => `<span class="tag ${t[1]}">${t[0]}</span>`).join('');
     const kind = s.ultimate ? '奧義' : s.type === 'attack' ? '攻擊' : '輔助';
-    if (s.ultimate) { const gems = Array.from({ length: s.maxPP }, (_, k) => `<i class="${k < s.pp ? 'on' : ''}"></i>`).join(''), ec = TYPE_COLORS[p.types[0]] || '#ffcf5a';
-      return `<button class="skill ult ult-v3" data-i="${i}" ${dis ? 'disabled' : ''} title="${esc(s.desc)}" style="--ec:${ec}">
-        <span class="u3-aura" aria-hidden="true"></span>
-        <span class="u3-medal" aria-hidden="true"><span class="u3-ring r1"></span><span class="u3-ring r2"></span><span class="u3-core"><i class="u3-swirl"></i><b>${(p.types[0] || '奧')[0]}</b></span><span class="u3-orbit"><i></i><i></i></span></span>
-        <span class="u3-tag">奧義<kbd>${i + 1}</kbd></span>
-        <span class="u3-ribbon"><b>${s.name}</b></span>
-        <span class="u3-gems" aria-label="剩餘 ${s.pp} 次">${gems}</span>
+    if (s.ultimate) { const gems = Array.from({ length: s.maxPP }, (_, k) => `<i class="${k < s.pp ? 'on' : ''}"></i>`).join(''), ec = TYPE_COLORS[p.types[0]] || '#ffcf5a', pctU = Math.min(100, s.pp / Math.max(1, s.maxPP) * 100);
+      return `<button class="skill ult ult-v4" data-i="${i}" ${dis ? 'disabled' : ''} title="${esc(s.desc)}" style="--ec:${ec}">
+        <span class="u4-fx" aria-hidden="true"></span><span class="u4-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="u4-frame" aria-hidden="true"></span>
+        <span class="u4-seal" aria-hidden="true"><b>奧</b><b>義</b></span>
+        <span class="u4-body">
+          <span class="u4-top"><em>${i + 1}・奧義</em>${s.power ? `<span class="u4-pow">威力 ${s.power}</span>` : ''}</span>
+          <span class="u4-name">${s.name}</span>
+          <span class="u4-desc">${s.desc}</span>
+          <span class="u4-foot"><span class="u4-bar"><i style="width:${pctU}%"></i></span><span class="u4-gems" aria-label="剩餘 ${s.pp} 次">${gems}</span></span>
+        </span>
       </button>`; }
     return `<button class="skill ${s.ultimate ? 'ult' : s.type}" data-i="${i}" ${dis ? 'disabled' : ''} title="${esc(s.desc)}">
       <span class="sk-top"><kbd>${i + 1}</kbd><span class="sk-kind">${kind}</span><span class="sk-pow">${s.power ? '威力 ' + s.power : ''}</span></span>
