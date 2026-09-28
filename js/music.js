@@ -1,6 +1,6 @@
 /* 背景音樂：登入頁、勇者之塔、關卡挑戰、戰鬥只播放玩家提供的 MP3（不使用內建合成音樂）。
    同一時間只有一首；換畫面時先淡出再淡入，這些畫面也會關掉環境音與合成短音效，避免聲音重疊。 */
-const MUSIC_TRACKS = { title: 'assets/music/title.mp3?v=34', tower: 'assets/music/tower.mp3?v=34', stage: 'assets/music/stage.mp3?v=34', battle: 'assets/music/battle.mp3?v=34' };
+const MUSIC_TRACKS = { title: 'assets/music/title.mp3?v=37', tower: 'assets/music/tower.mp3?v=37', stage: 'assets/music/stage.mp3?v=37', battle: 'assets/music/battle.mp3?v=37' };
 const MUSIC_BY_SCREEN = { loginScreen: 'title', towerScreen: 'tower', chapterScreen: 'stage', worldScreen: 'stage', battleScreen: 'battle' };
 (function () {
   const A_ = () => (typeof AUDIO !== 'undefined' ? AUDIO : null);

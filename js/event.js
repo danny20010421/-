@@ -3,6 +3,9 @@
   const POOLS = () => (typeof EVENT_POOLS !== 'undefined' ? EVENT_POOLS : [EVENT_POOL]);
   let curId = POOLS()[0].id;
   const P = () => POOLS().find(p => p.id === curId) || POOLS()[0];
+  /* 抽獎水晶：碎片＝彩虹水晶、道具＝銀色水晶（先出現水晶，打開後才顯示獎品） */
+  const CRYS_IMG = { shard: 'assets/ui/crystal_shard.webp?v=37', item: 'assets/ui/crystal_item.webp?v=37' };
+  [CRYS_IMG.shard, CRYS_IMG.item].forEach(src => { const im = new Image(); im.src = src; });
   const RCOL = { N: '#6fd08c', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
   /* 每個活動池各自記錄抽獎券、碎片與保底（舊存檔的 SAVE.data.event 會自動轉移） */
   function st(pool) {
@@ -76,7 +79,7 @@
     const stage = ov.querySelector('.ev-stage'); stage.classList.toggle('ten', res.length > 1);
     const colorOf = x => x.shard ? P().shards.find(s => s.char === x.shard).color : RCOL[x.rar || ITEMS[x.item].rarity] || '#8fd0ff';
     res.forEach((x, i) => { const el = document.createElement('div'); el.className = 'ev-crys' + (x.shard ? ' hit ' + x.shard : ''); el.style.setProperty('--c', colorOf(x)); el.style.setProperty('--d', (i * 70) + 'ms');
-      el.innerHTML = `<i class="gem"></i><div class="ev-card">${x.shard ? `<img src="${P().shards.find(s => s.char === x.shard).icon}" alt=""><b>${CHARACTERS[x.shard].name}碎片</b><em>×${x.n}</em>` : `${itemIcon(ITEMS[x.item])}<b>${ITEMS[x.item].name}</b><em class="r-${ITEMS[x.item].rarity}">${ITEMS[x.item].rarity}</em>`}</div>`;
+      el.innerHTML = `<img class="gem ev-gem-img" src="${x.shard ? CRYS_IMG.shard : CRYS_IMG.item}" alt="" draggable="false"><div class="ev-card">${x.shard ? `<img src="${P().shards.find(s => s.char === x.shard).icon}" alt=""><b>${CHARACTERS[x.shard].name}碎片</b><em>×${x.n}</em>` : `${itemIcon(ITEMS[x.item])}<b>${ITEMS[x.item].name}</b><em class="r-${ITEMS[x.item].rarity}">${ITEMS[x.item].rarity}</em>`}</div>`;
       stage.appendChild(el); });
     SFX.play('crank'); requestAnimationFrame(() => ov.classList.add('show'));
     await W(res.length > 1 ? 1200 : 900);
@@ -89,7 +92,8 @@
     els.forEach(e => e.classList.add('open'));
     const got = res.filter(x => x.shard);
     const foot = document.createElement('div'); foot.className = 'ev-foot';
-    foot.innerHTML = `<p>${got.length ? got.map(x => `<b style="color:${colorOf(x)}">${CHARACTERS[x.shard].name}碎片 ×${x.n}</b>`).join('・') : '這次沒有抽到角色碎片'}</p><button class="btn-primary" id="evDone">收下</button>`;
+    const sum = {}; got.forEach(x => { sum[x.shard] = (sum[x.shard] || 0) + x.n; });
+    foot.innerHTML = `<p>${got.length ? Object.keys(sum).map(k => `<b style="color:${colorOf({ shard: k })}">${CHARACTERS[k].name}碎片 ×${sum[k]}</b>`).join('・') : '這次沒有抽到角色碎片'}</p><button class="btn-primary" id="evDone">收下</button>`;
     ov.appendChild(foot); ov.querySelector('.ev-skip').remove();
     await new Promise(r => { foot.querySelector('#evDone').onclick = r; });
     ov.classList.remove('show'); setTimeout(() => ov.remove(), 300);
