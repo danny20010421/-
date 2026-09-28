@@ -1,19 +1,23 @@
 /* 限定活動抽獎池：抽角色碎片，集滿 100 片合成限定 SSR（命運水晶動畫） */
 (function () {
-  const P = () => EVENT_POOL;
+  const POOLS = () => (typeof EVENT_POOLS !== 'undefined' ? EVENT_POOLS : [EVENT_POOL]);
+  let curId = POOLS()[0].id;
+  const P = () => POOLS().find(p => p.id === curId) || POOLS()[0];
   const RCOL = { N: '#6fd08c', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
-  function st() {
-    const d = SAVE.data; d.event = d.event || {}; const E = d.event;
-    if (E.id !== P().id) { Object.assign(E, { id: P().id, shards: {}, pity: 0, newbie: false, day: '', bountyDay: '', tickets: E.tickets || 0 }); }
-    E.shards = E.shards || {}; P().shards.forEach(s => { E.shards[s.char] = E.shards[s.char] || 0; });
+  /* 每個活動池各自記錄抽獎券、碎片與保底（舊存檔的 SAVE.data.event 會自動轉移） */
+  function st(pool) {
+    const Pp = pool || P(), d = SAVE.data; d.events = d.events || {};
+    if (d.event && d.event.id && !d.events[d.event.id]) { d.events[d.event.id] = d.event; delete d.event; }
+    const E = d.events[Pp.id] = d.events[Pp.id] || { id: Pp.id, shards: {}, pity: 0, newbie: false, day: '', bountyDay: '', tickets: 0 };
+    E.shards = E.shards || {}; Pp.shards.forEach(s => { E.shards[s.char] = E.shards[s.char] || 0; });
     const today = new Date().toDateString();
-    if (!E.newbie) { E.newbie = true; E.tickets = (E.tickets || 0) + P().newbieFree; E.__msg = `新手福利：活動抽獎券 ×${P().newbieFree}`; }
-    if (E.day !== today) { E.day = today; E.tickets = (E.tickets || 0) + P().dailyFree; E.__msg = (E.__msg ? E.__msg + '・' : '') + `今日免費：活動抽獎券 ×${P().dailyFree}`; }
+    if (!E.newbie) { E.newbie = true; E.tickets = (E.tickets || 0) + Pp.newbieFree; E.__msg = `新手福利：活動抽獎券 ×${Pp.newbieFree}`; }
+    if (E.day !== today) { E.day = today; E.tickets = (E.tickets || 0) + Pp.dailyFree; E.__msg = (E.__msg ? E.__msg + '・' : '') + `今日免費：活動抽獎券 ×${Pp.dailyFree}`; }
     return E;
   }
   window.eventState = st;
   /* 懸賞任務全部領取後 +2 抽 */
-  window.eventBountyCheck = function () { try { const E = st(), today = new Date().toDateString(), list = bounties(); if (E.bountyDay !== today && list.length && list.every(b => b.claimed)) { E.bountyDay = today; E.tickets += P().bountyBonus; SAVE.save(); toast(`完成全部每日懸賞！活動抽獎券 +${P().bountyBonus}`, 'gold'); } } catch (e) { } };
+  window.eventBountyCheck = function () { try { const today = new Date().toDateString(), list = bounties(); if (!list.length || !list.every(b => b.claimed)) return; let n = 0; POOLS().forEach(pl => { const E = st(pl); if (E.bountyDay !== today) { E.bountyDay = today; E.tickets += pl.bountyBonus; n = pl.bountyBonus; } }); if (n) { SAVE.save(); toast(`完成全部每日懸賞！活動抽獎券 +${n}`, 'gold'); } } catch (e) { } };
 
   function rollItem() { const order = ['N', 'R', 'SR', 'SSR'], tot = order.reduce((t, k) => t + RARITY[k].rate, 0); let r = Math.random() * tot, rar = 'N'; for (const k of order) { r -= RARITY[k].rate; if (r < 0) { rar = k; break; } } const pool = Object.keys(ITEMS).filter(k => ITEMS[k].rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)] || 'potion_s', rar }; }
   function amount() { let r = Math.random(); for (const [n, p] of P().amount) { if ((r -= p) < 0) return n; } return P().amount[0][0]; }
@@ -95,28 +99,40 @@
       const a = Math.random() * 6.28, d = 160 + Math.random() * 320; p.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(1.3) rotate(${(Math.random() - .5) * 180}deg)`, opacity: 0 }], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).onfinish = () => p.remove(); }
   }
 
-  /* ---------- 召喚池切換 ---------- */
+  /* ---------- 召喚池切換（可左右滑動，之後新增活動會自動多一個標籤） ---------- */
   let pool = 'normal';
+  function buildTabs() {
+    const t = $('poolTabs'); if (!t) return;
+    t.innerHTML = `<button data-pool="normal" role="tab">寶藏扭蛋</button>` + POOLS().map(pl => `<button data-pool="ev:${pl.id}" role="tab"><img src="${pl.shards[0].icon}" alt="">${pl.tab || pl.name}<i class="pool-hot">HOT</i></button>`).join('');
+    t.querySelectorAll('[data-pool]').forEach(b => b.onclick = () => { pool = b.dataset.pool; if (pool.startsWith('ev:')) curId = pool.slice(3); applyPool(); t.scrollTo({ left: Math.max(0, b.offsetLeft - (t.clientWidth - b.offsetWidth) / 2), behavior: 'smooth' }); const gs = $('gachaScreen'); if (gs) gs.scrollLeft = 0; });
+  }
   function applyPool() {
-    const on = typeof hubTab === 'undefined' || hubTab === 'summon';
-    document.querySelectorAll('#poolTabs [data-pool]').forEach(b => b.classList.toggle('on', b.dataset.pool === pool));
+    const on = typeof hubTab === 'undefined' || hubTab === 'summon', ev = pool.startsWith('ev:');
+    document.querySelectorAll('#poolTabs [data-pool]').forEach(b => { b.classList.toggle('on', b.dataset.pool === pool); b.setAttribute('aria-selected', b.dataset.pool === pool); });
     const g = document.querySelector('.g-main.tavern'), e = $('evPane'), t = $('poolTabs');
     if (t) t.classList.toggle('hidden', !on);
-    if (g) g.classList.toggle('hidden', !on || pool !== 'normal'); if (e) e.classList.toggle('hidden', !on || pool !== 'event');
-    const gs = $('gachaScreen'); if (gs) gs.dataset.pool = on ? pool : '';
-    if (on && pool === 'event') render();
+    if (g) g.classList.toggle('hidden', !on || ev); if (e) e.classList.toggle('hidden', !on || !ev);
+    const gs = $('gachaScreen'); if (gs) { gs.dataset.pool = on ? (ev ? 'event' : 'normal') : ''; if (t && on) gs.style.setProperty('--poolTop', Math.round(t.getBoundingClientRect().bottom + 10) + 'px'); }
+    if (on && ev) { render(); if (e) e.scrollTop = 0; }
   }
+  window.addEventListener('resize', () => { if ($('gachaScreen') && !$('gachaScreen').classList.contains('hidden')) applyPool(); });
   window.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('#poolTabs [data-pool]').forEach(b => b.onclick = () => { pool = b.dataset.pool; applyPool(); });
+    buildTabs();
     const sw = window.switchHub; if (sw) window.switchHub = function () { const r = sw.apply(this, arguments); applyPool(); return r; };
-    const og = window.openGacha; if (og) window.openGacha = function () { const r = og.apply(this, arguments); applyPool(); return r; };
+    const og = window.openGacha; if (og) window.openGacha = function () { const r = og.apply(this, arguments); requestAnimationFrame(applyPool); return r; };
   });
 
   /* ---------- 角色背包：碎片區 ---------- */
   window.renderShardPane = function (el) {
-    const E = st();
-    el.innerHTML = `<p class="cx-note">在懸賞處的「限定活動」抽取角色碎片，集滿 ${P().need} 片就能合成限定 SSR 角色。</p><div class="ev-shard-list">${P().shards.map(s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), pct = Math.min(100, n / P().need * 100);
-      return `<div class="ev-shard big" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b>SSR ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}${own ? '・已擁有這位角色' : ''}</small></div>${own ? '<span class="ev-owned">已擁有</span>' : `<button class="btn-gold" data-synth="${s.char}" ${n >= P().need ? '' : 'disabled'}>${n >= P().need ? '點擊合成' : `還差 ${P().need - n} 片`}</button>`}</div>`; }).join('')}</div>`;
-    el.querySelectorAll('[data-synth]').forEach(b => b.onclick = () => { synth(b.dataset.synth); window.renderShardPane(el); });
+    el.innerHTML = `<p class="sd-note">在懸賞處的「限定活動」抽取角色碎片，集滿就能在這裡合成限定角色。</p>` + POOLS().map(pl => { const E = st(pl);
+      return `<section class="sd-group"><h4>${pl.name}</h4>${pl.shards.map(s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), ok = n >= pl.need && !own, pct = Math.min(100, n / pl.need * 100);
+        return `<article class="sd-card ${ok ? 'ready' : ''} ${own ? 'own' : ''}" style="--c:${s.color}">
+          <img class="sd-icon" src="${s.icon}" alt="">
+          <div class="sd-head"><span class="sd-rar">SSR</span><b>${c.name}</b><small>${c.title}</small></div>
+          <div class="sd-prog"><div class="sd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${pl.need}" aria-valuenow="${Math.min(n, pl.need)}"><i style="width:${pct}%"></i></div><span><b>${n}</b> / ${pl.need}</span></div>
+          ${own ? '<span class="sd-state">✓ 已擁有</span>' : `<button class="sd-btn ${ok ? 'btn-gold' : ''}" data-synth="${s.char}" ${ok ? '' : 'disabled'}>${ok ? '合成角色' : `還差 ${pl.need - n} 片`}</button>`}
+        </article>`; }).join('')}</section>`; }).join('');
+    el.querySelectorAll('[data-synth]').forEach(b => b.onclick = () => { const pl = POOLS().find(x => x.shards.some(s => s.char === b.dataset.synth)); if (pl) { curId = pl.id; synth(b.dataset.synth); } window.renderShardPane(el); });
   };
+
 })();

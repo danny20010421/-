@@ -8,7 +8,7 @@
   ];
   const LANES = [-0.72, 0, 0.72];
   let cv, cx, W, H, dpr, G = null, raf = 0, keysBound = false, WAVE = null;
-  const IMG = {}; ['ship', 'rock', 'coin', 'ball', 'marine_ship', 'vortex'].forEach(k => { const im = new Image(); im.src = `assets/runner/${k}.webp?v=31`; IMG[k] = im; });
+  const IMG = {}; ['ship', 'rock', 'coin', 'ball', 'marine_ship', 'vortex', 'seamonster', 'arrow_up'].forEach(k => { const im = new Image(); im.src = `assets/runner/${k}.webp?v=35`; IMG[k] = im; });
   const ready = k => IMG[k] && IMG[k].complete && IMG[k].naturalWidth;
   /* 預先畫好兩張可平鋪的浪紋，捲動時互相疊加產生真實的海面 */
   function makeWave(seed, crest, alpha) { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); let s = seed; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
@@ -49,9 +49,10 @@
     const d = G.dist, lv = Math.min(1, d / 5000);
     while (G.nextObs < d + 60) {
       const z = zoneAt(G.nextObs).i, r = Math.random(); let o;
-      if (z >= 1 && r < .15) o = { k: 'ship', lane: LANES[(Math.random() * 3) | 0], w: .46 };
+      const far = G.nextObs >= 2000;
+      if (z >= 1 && r < (far ? .06 : .15)) o = { k: 'ship', lane: LANES[(Math.random() * 3) | 0], w: .46 };
       else if (z >= 2 && r < .3) o = { k: 'king', lane: LANES[(Math.random() * 3) | 0], w: .5 };
-      else if (r < .45) o = { k: 'whirl', lane: LANES[(Math.random() * 3) | 0], w: .42, soft: true };
+      else if (r < .45) { o = { k: 'whirl', lane: LANES[(Math.random() * 3) | 0], w: .42, soft: true }; if (far && Math.random() < .5) o.drift = { base: o.lane, amp: .45 + Math.random() * .2, sp: 1 + Math.random() * .8, ph: Math.random() * 6.28 }; }
       else if (r < .7) o = { k: 'barrel', lane: LANES[(Math.random() * 3) | 0], w: .3 };
       else o = { k: 'rock', lane: LANES[(Math.random() * 3) | 0], w: .4 };
       o.at = G.nextObs; G.objs.push(o);
@@ -59,22 +60,45 @@
       G.nextObs += Math.max(8, 26 - d / 180) * (.8 + Math.random() * .5);
     }
     while (G.nextCoin < d + 60) { const lane = LANES[(Math.random() * 3) | 0], n = 5 + ((Math.random() * 4) | 0); for (let i = 0; i < n; i++) G.objs.push({ k: 'coin', lane, w: .15, at: G.nextCoin + i * 4.6 }); G.nextCoin += n * 4.6 + 12 + Math.random() * 14; }
+    /* 箭頭道具：隨機出現，吃到後飛越 300 公尺 */
+    if (G.nextArrow == null) G.nextArrow = 350 + Math.random() * 300;
+    while (G.nextArrow < d + 60) { G.objs.push({ k: 'arrow', lane: LANES[(Math.random() * 3) | 0], w: .3, at: G.nextArrow }); G.nextArrow += 450 + Math.random() * 450; }
+    /* 落地安全區：前後 25 公尺內不會有陷阱 */
+    if (G.safe) { const [a, b] = G.safe; G.objs = G.objs.filter(o => !(o.at >= a && o.at <= b && !['coin', 'arrow'].includes(o.k))); if (d > b) G.safe = null; }
     while (G.nextDeco < d + 70) { G.decos.push({ at: G.nextDeco, side: Math.random() < .5 ? -1 : 1, s: .7 + Math.random() * .6, off: Math.random() }); G.nextDeco += 4 + Math.random() * 6; }
     G.objs = G.objs.filter(o => o.at > d - 12 && !o.gone); G.decos = G.decos.filter(o => o.at > d - 14);
   }
 
+  function hurt(n, msg) {
+    if (G.over) return; G.hearts = Math.max(0, G.hearts - n); G.flash = 1; G.shake = n >= 1 ? 1 : .5; SFX.play(n >= 1 ? 'explode' : 'punch'); if (navigator.vibrate) navigator.vibrate(n >= 1 ? [60, 40, 90] : 50);
+    for (let i = 0; i < (n >= 1 ? 26 : 12); i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * 220; G.fx.push({ x: laneX(G.x), y: boatY(), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6 + Math.random() * .5, c: n >= 1 ? (Math.random() < .5 ? '#ffb347' : '#fff3c4') : '#7fe0a0' }); }
+    if (msg) toast(msg, 'warn'); if (G.hearts <= 0) end();
+  }
+  function warn(t) { const el = $('rnWarn'); if (!el) return; el.textContent = t; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+  function milestone(t) { const el = $('rnMile'); if (!el) return; el.textContent = t; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   function update(dt) {
     G.t += dt; if (!G.started || G.over) return;
     const cap = 24 + Math.min(12, G.dist / 450);
     G.v = Math.max(0, Math.min(cap, G.v * (1 - .5 * dt) - .6 * dt));
-    G.dist += G.v * dt; G.x = lerp(G.x, G.tx, Math.min(1, dt * 5)); G.tx *= (1 - .15 * dt);
+    if (G.fly) { G.fly.t += dt; const k = Math.min(1, G.fly.t / G.fly.dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; G.dist = G.fly.from + (G.fly.to - G.fly.from) * e; if (k >= 1) { G.fly = null; G.inv = Math.max(G.inv, .8); SFX.play('water'); G.shake = .4; } }
+    else G.dist += G.v * dt;
+    G.x = lerp(G.x, G.tx, Math.min(1, dt * 5)); G.tx *= (1 - .15 * dt);
+    [[2500, 'm2500'], [5000, 'm5000']].forEach(([m, key]) => { if (!G[key] && G.dist >= m) { G[key] = true; G.coins *= 2; SFX.play('rare'); milestone(`突破 ${m} 公尺！目前錢幣 ×2`); } });
     G.oarL = Math.max(0, G.oarL - dt * 3); G.oarR = Math.max(0, G.oarR - dt * 3); G.inv = Math.max(0, G.inv - dt); G.flash = Math.max(0, G.flash - dt * 2);
     spawn();
-    for (const o of G.objs) { if (o.gone) continue; const dz = o.at - G.dist; if (dz < 1.2 && dz > -1.2 && Math.abs(o.lane - G.x) < (o.w + .34) / 2) {
+    for (const o of G.objs) {
+      if (o.drift) o.lane = Math.max(-.9, Math.min(.9, o.drift.base + Math.sin(G.t * o.drift.sp + o.drift.ph) * o.drift.amp));
+      if (o.k === 'shell') o.at -= o.vel * dt;
+      if (o.k === 'ship' && !o.fired && G.dist >= 1200 && !G.fly) { const dz = o.at - G.dist; if (dz < 35 && dz > 18) { o.fired = true; G.objs.push({ k: 'shell', lane: Math.max(-.9, Math.min(.9, G.x)), w: .22, at: o.at - 1.5, vel: 16 }); SFX.play('punch'); warn('⚠ 軍艦開砲了！快左右閃開！'); } }
+    }
+    if (!G.fly) for (const o of G.objs) { if (o.gone) continue; const dz = o.at - G.dist; if (dz < 1.2 && dz > -1.2 && Math.abs(o.lane - G.x) < (o.w + .34) / 2) {
       if (o.k === 'coin') { o.gone = true; G.coins++; SFX.play('coin'); }
+    else if (o.k === 'arrow') { o.gone = true; const to = G.dist + 300; G.fly = { from: G.dist, to, t: 0, dur: 2.2 }; G.safe = [to - 5, to + 25]; G.objs = G.objs.filter(x => !(x.at >= to - 5 && x.at <= to + 25 && !['coin', 'arrow'].includes(x.k))); SFX.play('rare'); milestone('箭頭加速！飛越 300 公尺！'); }
+      else if (o.k === 'shell') { if (G.inv <= 0) { o.gone = true; G.inv = 1.4; hurt(1, '被軍艦的砲彈擊中了！'); } }
+    else if (o.k === 'king') { if (G.inv <= 0) { G.inv = 1.4; G.v *= .5; hurt(.5, '被海怪咬了一口！扣半顆心'); } }
       else if (o.soft) { if (!o.hitOnce) { o.hitOnce = true; G.v *= .45; SFX.play('water'); toast('被漩渦捲住了，速度下降！'); } }
       else if (G.inv <= 0) { G.inv = 1.6; G.v *= .4; o.gone = o.k !== 'ship'; const side = Math.random() < .5 ? -1 : 1; G.shots.push({ t: 0, sx: side < 0 ? -40 : W + 40, sy: boatY() - H * .45 }); SFX.play('punch'); toast('撞上了！敵人的砲彈飛過來了！', 'warn'); } } }
-    for (const s of G.shots) { s.t += dt; if (s.t >= .6 && !s.hit) { s.hit = true; G.hearts--; G.flash = 1; G.shake = 1; SFX.play('explode'); if (navigator.vibrate) navigator.vibrate([60, 40, 90]); for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * 220; G.fx.push({ x: laneX(G.x), y: boatY(), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6 + Math.random() * .5, c: Math.random() < .5 ? '#ffb347' : '#fff3c4' }); } if (G.hearts <= 0) end(); } }
+    for (const s of G.shots) { s.t += dt; if (s.t >= .6 && !s.hit) { s.hit = true; hurt(1); } }
     G.shots = G.shots.filter(s => s.t < .9); G.shake = Math.max(0, G.shake - dt * 3);
     G.fx.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 200 * dt; p.life -= dt; }); G.fx = G.fx.filter(p => p.life > 0);
     const sp = G.v * PPM() * dt; G.foam.forEach(f => { f.y += sp; f.x += f.vx * dt; f.life -= dt; }); G.foam = G.foam.filter(f => f.life > 0 && f.y < H + 20);
@@ -82,7 +106,7 @@
     G.caps.forEach(c => { c.y += sp * .92; c.life -= dt; }); G.caps = G.caps.filter(c => c.life > 0 && c.y < H + 20); if (Math.random() < dt * 6) G.caps.push({ x: Math.random() * W, y: Math.random() * H * .8, life: 1.5 + Math.random() * 1.5, w: 10 + Math.random() * 26 });
     $('rnDist').textContent = Math.floor(G.dist) + ' m'; $('rnCoins').textContent = G.coins;
     $('rnBar').style.width = Math.min(100, G.v / cap * 100) + '%';
-    $('rnHearts').innerHTML = [0, 1, 2].map(i => `<i class="${i < G.hearts ? 'on' : ''}">♥</i>`).join('');
+    $('rnHearts').innerHTML = [0, 1, 2].map(i => `<i class="${G.hearts >= i + 1 ? 'on' : G.hearts >= i + .5 ? 'half' : ''}">♥</i>`).join('');
   }
 
   /* ---------- 繪製 ---------- */
@@ -130,16 +154,24 @@
     if (o.k === 'coin') { const r = w * .55, sq = Math.cos(G.t * 4 + o.at * .7); cx.fillStyle = 'rgba(0,0,0,.22)'; cx.beginPath(); cx.ellipse(0, r * .9, r * .7, r * .2, 0, 0, 6.29); cx.fill(); cx.scale(Math.max(.08, Math.abs(sq)), 1); if (ready('coin')) { if (sq < 0) cx.filter = 'brightness(.8)'; cx.drawImage(IMG.coin, -r, -r, r * 2, r * 2); cx.filter = 'none'; } else { cx.fillStyle = '#ffd26c'; cx.beginPath(); cx.arc(0, 0, r, 0, 6.29); cx.fill(); } }
     else if (o.k === 'rock' && ready('rock')) { const s2 = w * 1.9, bob = Math.sin(G.t * 2 + o.at) * 1.5; cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = 3; cx.beginPath(); cx.ellipse(0, s2 * .12, s2 * .42, s2 * .16, 0, 0, 6.29); cx.stroke(); cx.drawImage(IMG.rock, -s2 / 2, -s2 * .62 + bob, s2, s2 * IMG.rock.naturalHeight / IMG.rock.naturalWidth); }
     else if (o.k === 'rock') { cx.fillStyle = 'rgba(0,0,0,.2)'; cx.beginPath(); cx.ellipse(0, w * .15, w * .55, w * .2, 0, 0, 6.29); cx.fill(); cx.fillStyle = '#6b6457'; cx.beginPath(); cx.moveTo(-w * .5, 0); cx.lineTo(-w * .3, -w * .5); cx.lineTo(w * .1, -w * .65); cx.lineTo(w * .5, -w * .2); cx.lineTo(w * .45, 0); cx.fill(); cx.fillStyle = '#8a8272'; cx.beginPath(); cx.moveTo(-w * .3, -w * .5); cx.lineTo(w * .1, -w * .65); cx.lineTo(0, -w * .3); cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.6)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 0, w * .6, w * .15, 0, 0, 6.29); cx.stroke(); }
+    else if (o.k === 'shell') { const sz = w * 2.2; cx.fillStyle = 'rgba(0,0,0,.25)'; cx.beginPath(); cx.ellipse(0, sz * .5, sz * .45, sz * .15, 0, 0, 6.29); cx.fill(); cx.strokeStyle = 'rgba(255,200,120,.55)'; cx.lineWidth = sz * .35; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(0, -sz * 1.6); cx.lineTo(0, -sz * .3); cx.stroke(); cx.rotate(G.t * 10); if (ready('ball')) cx.drawImage(IMG.ball, -sz / 2, -sz / 2, sz, sz); else { cx.fillStyle = '#6a1a2a'; cx.beginPath(); cx.arc(0, 0, sz / 2, 0, 6.29); cx.fill(); } }
+    else if (o.k === 'arrow' && ready('arrow_up')) { const s2 = w * 2.4, bob = Math.sin(G.t * 4 + o.at) * s2 * .08, g = cx.createRadialGradient(0, bob, 0, 0, bob, s2 * .8); g.addColorStop(0, 'rgba(255,220,100,.55)'); g.addColorStop(1, 'rgba(255,220,100,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(0, bob, s2 * .8, 0, 6.29); cx.fill(); const ih = s2 * IMG.arrow_up.naturalHeight / IMG.arrow_up.naturalWidth; cx.drawImage(IMG.arrow_up, -s2 / 2, -ih / 2 + bob, s2, ih); }
+    else if (o.k === 'arrow') { const s2 = w * 2.2, bob = Math.sin(G.t * 4 + o.at) * s2 * .08; cx.translate(0, bob); const g = cx.createRadialGradient(0, 0, 0, 0, 0, s2); g.addColorStop(0, 'rgba(255,230,120,.8)'); g.addColorStop(1, 'rgba(255,230,120,0)'); cx.fillStyle = g; cx.beginPath(); cx.arc(0, 0, s2, 0, 6.29); cx.fill();
+      cx.fillStyle = '#ffd24a'; cx.strokeStyle = '#8a5a0a'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(0, -s2 * .7); cx.lineTo(s2 * .5, -s2 * .1); cx.lineTo(s2 * .2, -s2 * .1); cx.lineTo(s2 * .2, s2 * .6); cx.lineTo(-s2 * .2, s2 * .6); cx.lineTo(-s2 * .2, -s2 * .1); cx.lineTo(-s2 * .5, -s2 * .1); cx.closePath(); cx.fill(); cx.stroke(); }
     else if (o.k === 'barrel') { cx.fillStyle = '#8a5a2e'; cx.fillRect(-w * .35, -w * .5, w * .7, w * .6); cx.fillStyle = '#3a3a3a'; cx.fillRect(-w * .37, -w * .38, w * .74, w * .08); cx.fillRect(-w * .37, -w * .12, w * .74, w * .08); cx.fillStyle = '#c8322b'; cx.font = `${w * .3}px sans-serif`; cx.textAlign = 'center'; cx.fillText('☠', 0, -w * .18); }
     else if (o.k === 'whirl' && ready('vortex')) { const s2 = w * 2.6; cx.rotate(-G.t * 1.8); cx.globalAlpha = .92; cx.drawImage(IMG.vortex, -s2 / 2, -s2 / 2, s2, s2); cx.globalAlpha = 1; }
     else if (o.k === 'whirl') { cx.rotate(G.t * 3); cx.strokeStyle = 'rgba(220,245,255,.8)'; cx.lineWidth = 3; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(0, 0, w * (.2 + i * .15), i, i + 4); cx.stroke(); } }
     else if (o.k === 'ship' && ready('marine_ship')) { const iw = w * 1.3, ih = iw * IMG.marine_ship.naturalHeight / IMG.marine_ship.naturalWidth, bob = Math.sin(G.t * 1.6 + o.at) * 2; cx.fillStyle = 'rgba(255,255,255,.35)'; cx.beginPath(); cx.ellipse(0, ih * .12, iw * .5, ih * .18, 0, 0, 6.29); cx.fill(); cx.drawImage(IMG.marine_ship, -iw / 2, -ih * .78 + bob, iw, ih); }
     else if (o.k === 'ship') { cx.fillStyle = '#f4f2ea'; cx.fillRect(-w * .45, -w * .55, w * .9, w * .4); cx.fillStyle = '#3f6fa3'; cx.fillRect(-w * .5, -w * .18, w, w * .22); cx.fillStyle = '#1f4f7a'; cx.fillRect(-w * .5, 0, w, w * .06); cx.fillStyle = '#fff'; cx.fillRect(-w * .05, -w * .95, w * .1, w * .45); cx.fillStyle = '#3f6fa3'; cx.font = `bold ${w * .16}px sans-serif`; cx.textAlign = 'center'; cx.fillText('MARINE', 0, -w * .3); }
+    else if (o.k === 'king' && ready('seamonster')) { const iw = w * 1.6, ih = iw * IMG.seamonster.naturalHeight / IMG.seamonster.naturalWidth, sw = Math.sin(G.t * 2.2 + o.at) * iw * .05; cx.strokeStyle = 'rgba(255,255,255,.5)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 0, iw * .45, iw * .14, 0, 0, 6.29); cx.stroke(); cx.drawImage(IMG.seamonster, -iw / 2 + sw, -ih * .82, iw, ih); }
     else if (o.k === 'king') { const sw = Math.sin(G.t * 3 + o.at) * w * .1; cx.fillStyle = '#3f8a6a'; cx.beginPath(); cx.ellipse(sw, -w * .3, w * .28, w * .45, 0, 0, 6.29); cx.fill(); cx.fillStyle = '#9fd6a0'; cx.beginPath(); cx.ellipse(sw, -w * .25, w * .14, w * .32, 0, 0, 6.29); cx.fill(); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(sw - w * .1, -w * .6, w * .06, 0, 6.29); cx.arc(sw + w * .1, -w * .6, w * .06, 0, 6.29); cx.fill(); cx.fillStyle = '#c8322b'; cx.beginPath(); cx.arc(sw - w * .1, -w * .6, w * .03, 0, 6.29); cx.arc(sw + w * .1, -w * .6, w * .03, 0, 6.29); cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.6)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 0, w * .5, w * .12, 0, 0, 6.29); cx.stroke(); }
     cx.restore();
   }
   function boat(x, y, w, tilt) {
-    cx.save(); cx.translate(x, y); cx.rotate(tilt * .45);
+    const fk = G.fly ? Math.min(1, G.fly.t / G.fly.dur) : 0, lift = G.fly ? Math.sin(fk * Math.PI) : 0;
+    if (lift > 0) { cx.fillStyle = `rgba(0,20,40,${.35 - lift * .2})`; cx.beginPath(); cx.ellipse(x, y + 10, w * (.4 - lift * .15), w * (.6 - lift * .2), 0, 0, 6.29); cx.fill();
+      cx.strokeStyle = 'rgba(255,255,255,.6)'; cx.lineWidth = 2; for (let i = 0; i < 8; i++) { const lx = x + (Math.random() - .5) * w * 2.4, ly = y - Math.random() * w * 2; cx.beginPath(); cx.moveTo(lx, ly); cx.lineTo(lx, ly + 30 + Math.random() * 40); cx.stroke(); } }
+    cx.save(); cx.translate(x, y - lift * w * .9); cx.scale(1 + lift * .6, 1 + lift * .6); cx.rotate(tilt * .45);
     if (G.inv > 0 && Math.floor(G.t * 12) % 2) cx.globalAlpha = .55;
     const h = ready('ship') ? w * IMG.ship.naturalHeight / IMG.ship.naturalWidth : w * 1.4;
     const oar = (side, k) => { cx.save(); cx.translate(side * w * .34, h * .12); cx.rotate(side * (.35 - k * 1.1)); cx.fillStyle = '#6b4a2f'; cx.fillRect(-2, 0, 4, w * .6); cx.fillStyle = '#8a5a2e'; cx.fillRect(-6, w * .5, 12, w * .18); cx.restore(); };
@@ -157,6 +189,7 @@
     const r = SAVE.data.runner || {};
     panel(`<div class="rn-card"><h2>奪寶大冒險</h2>
       <p class="rn-lead">左右槳<b>交替</b>划船就會加速，節奏越穩連擊越高。<br>划左槳船會往左、划右槳往右，閃開礁石與軍艦，沿途搶金幣！</p>
+      <ul class="rn-rules"><li>➤ 箭頭道具：船會飛越 300 公尺，落地點前後 25 公尺內沒有陷阱</li><li>🐉 海怪：撞到扣半顆心</li><li>💣 1200 公尺後：海軍軍艦會開砲，自己閃開</li><li>🌀 2000 公尺後：軍艦變少，但漩渦可能左右移動</li><li>🏆 到達 2500、5000 公尺：當下的錢幣各翻倍一次，可以繼續航行</li></ul>
       <div class="rn-keys"><span><kbd>←</kbd><kbd>A</kbd> 左槳</span><span><kbd>→</kbd><kbd>D</kbd> 右槳</span><span>手機：點左右大按鈕</span></div>
       <p class="rn-best">最遠紀錄：<b>${r.best || 0} m</b>　累計航行：${Math.floor(r.total || 0)} m</p>
       <div class="rn-btns"><button class="btn-primary big" id="rnGo">開始航行</button><button class="btn-ghost" id="rnQuit">返回</button></div></div>`);
@@ -176,7 +209,7 @@
       <div class="rn-btns"><button class="btn-primary big" id="rnGo">再航行一次</button><button class="btn-ghost" id="rnQuit">返回</button></div></div>`), 700);
     setTimeout(() => { $('rnGo').onclick = () => { $('rnPanel').classList.remove('show'); newGame(); G.started = true; G.last = performance.now() / 1000; }; $('rnQuit').onclick = () => openModes(); }, 720);
   }
-  window.__rnDebug = () => G; /* 測試用 */
+  window.__rnDebug = () => G; window.__rnStep = (dt, n) => { for (let i = 0; i < (n || 1); i++) update(dt); }; /* 測試用 */
   window.openRunner = function () {
     cv = $('rnCv'); cx = cv.getContext('2d'); showScreen('runnerScreen'); resize(); newGame(); startPanel();
     if (!raf) raf = requestAnimationFrame(loop);

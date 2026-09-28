@@ -169,7 +169,9 @@ const AUDIO = (() => {
       if (song.once && step >= song.total) { const after = song.after; song = null; stopTimer(); if (after) setTimeout(() => playSong(after), 600); return; }
     }
   }
+  /* 內建合成配樂已停用：背景音樂一律使用 assets/music/ 的音樂檔（見 js/music.js），這裡只負責停止 */
   function playSong(name, after) {
+    stopTimer(); song = null; songName = null; pending = null; return;
     if (!ctx || ctx.state !== 'running') { pending = { name }; songName = name; return; }
     if (songName === name && song && !song.once) return;
     stopTimer(); songName = name;
@@ -256,7 +258,7 @@ const AUDIO = (() => {
   return {
     playSong, stopSong, ambient, unlock,
     sfx(name) { if (!ctx || ctx.state !== 'running' || pref.muted || !FX[name]) return; try { FX[name](); } catch (e) { } },
-    jingle(name, after) { if (!ctx || ctx.state !== 'running') return; stopTimer(); songName = name; const base = getSong(name); song = { ...base, after, byStep: {} }; base.events.forEach(e => (song.byStep[e.s] = song.byStep[e.s] || []).push(e)); musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setValueAtTime(pref.muted ? 0 : pref.music * .5, ctx.currentTime); step = 0; nextTime = ctx.currentTime + .05; startTimer(); tick(); },
+    jingle(name, after) { return; if (!ctx || ctx.state !== 'running') return; stopTimer(); songName = name; const base = getSong(name); song = { ...base, after, byStep: {} }; base.events.forEach(e => (song.byStep[e.s] = song.byStep[e.s] || []).push(e)); musicBus.gain.cancelScheduledValues(ctx.currentTime); musicBus.gain.setValueAtTime(pref.muted ? 0 : pref.music * .5, ctx.currentTime); step = 0; nextTime = ctx.currentTime + .05; startTimer(); tick(); },
     suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); },
     resume() { if (ctx && ctx.state === 'suspended') ctx.resume(); },
     get pref() { return pref; },
