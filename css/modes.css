@@ -318,3 +318,51 @@
 .ev-ov{display:flex!important;flex-direction:column;align-items:center;justify-content:center}
 .pool-tabs button{white-space:nowrap}
 @media (max-width:860px){.pool-tabs button{padding:7px 14px;font-size:14px}.pool-hot{font-size:9px;padding:1px 5px}#gachaScreen .g-main.tavern,#gachaScreen .ev-main{padding-top:calc(176px + var(--safeT,0px))!important}}
+/* 奪寶大冒險：半顆心、砲彈警告、里程碑 */
+.rn-hearts i.half{color:transparent;background:linear-gradient(90deg,#ff4a5a 50%,rgba(255,255,255,.25) 50%);-webkit-background-clip:text;background-clip:text;text-shadow:none}
+.rn-warn{position:absolute;left:50%;top:calc(104px + var(--safeT,0px));z-index:4;transform:translateX(-50%);padding:8px 18px;border-radius:99px;background:rgba(200,30,30,.88);color:#fff;font-weight:900;white-space:nowrap;opacity:0;pointer-events:none;box-shadow:0 0 20px rgba(255,60,60,.6)}
+.rn-warn.show{animation:rnWarn 1.8s ease-out}
+@keyframes rnWarn{0%,100%{opacity:0}10%,80%{opacity:1}20%,40%,60%{transform:translateX(-50%) scale(1.06)}30%,50%{transform:translateX(-50%) scale(1)}}
+.rn-mile{position:absolute;left:50%;top:38%;z-index:4;transform:translate(-50%,-50%);font-family:var(--serif);font-size:clamp(22px,4.5vw,40px);font-weight:900;color:#ffe08a;text-shadow:0 3px 0 #7a4a0a,0 0 24px rgba(255,210,108,.9);white-space:nowrap;opacity:0;pointer-events:none}
+.rn-mile.show{animation:rnMile 2.2s ease-out}
+@keyframes rnMile{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%)}}
+.rn-rules{margin:8px 0;padding:0;list-style:none;text-align:left;font-size:13px;color:#dbe9ff;line-height:1.8}
+
+/* ===== v34：召喚池切換列（可左右滑動）＋獨立捲動區 ===== */
+.pool-tabs{left:12px!important;right:12px!important;transform:none!important;max-width:none;width:auto;justify-content:safe center;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-radius:16px!important;margin:0 auto}
+.pool-tabs::-webkit-scrollbar{display:none}
+.pool-tabs button{flex:0 0 auto;scroll-snap-align:center;display:inline-flex;align-items:center;gap:6px}
+.pool-tabs button img{width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 4px rgba(255,255,255,.4))}
+@media (min-width:861px){.pool-tabs{left:50%!important;right:auto!important;transform:translateX(-50%)!important;max-width:min(900px,calc(100vw - 40px))}}
+#gachaScreen .g-main.tavern{padding-top:var(--poolTop,128px)!important}
+#gachaScreen .ev-main{position:absolute!important;left:0;right:0;top:var(--poolTop,128px)!important;bottom:0;padding-top:4px!important;padding-bottom:calc(24px + var(--safeB,0px))!important;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start}
+#gachaScreen .ev-main.hidden{display:none!important}
+
+/* ===== v34：角色背包・碎片區（各種裝置皆適用） ===== */
+.sd-note{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.6}
+.sd-group{margin-bottom:16px}.sd-group h4{margin:0 0 8px;font-size:14px;color:#ffd26c;letter-spacing:.08em}
+.sd-card{display:grid;grid-template-columns:72px minmax(0,1fr) auto;grid-template-areas:"icon head btn" "icon prog btn";column-gap:14px;row-gap:6px;align-items:center;padding:12px 14px;margin-bottom:10px;border-radius:16px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 16%,transparent),rgba(255,255,255,.03));border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.sd-card.ready{box-shadow:0 0 0 2px var(--c),0 0 22px color-mix(in srgb,var(--c) 45%,transparent)}
+.sd-icon{grid-area:icon;width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 0 8px var(--c))}
+.sd-head{grid-area:head;display:flex;align-items:baseline;gap:8px;min-width:0}
+.sd-head b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sd-head small{flex-shrink:0;padding:1px 8px;border-radius:99px;background:color-mix(in srgb,var(--c) 28%,transparent);color:#fff;font-size:11.5px;white-space:nowrap}
+.sd-rar{flex-shrink:0;padding:1px 7px;border-radius:6px;background:linear-gradient(180deg,#ffe08a,#c9973a);color:#3a2206;font-size:11px;font-weight:900}
+.sd-prog{grid-area:prog;display:flex;align-items:center;gap:10px;min-width:0}
+.sd-bar{flex:1;height:10px;border-radius:99px;background:rgba(0,0,0,.45);overflow:hidden;min-width:60px}.sd-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),#fff);box-shadow:0 0 8px var(--c)}
+.sd-prog span{flex-shrink:0;font-size:13px;color:#cfd9e3;white-space:nowrap}.sd-prog span b{font-family:var(--num);font-size:16px;color:#fff}
+.sd-btn{grid-area:btn;min-width:120px;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#cfd9e3;font-weight:800;white-space:nowrap;cursor:pointer}
+.sd-btn:disabled{cursor:default;opacity:.85}
+.sd-state{grid-area:btn;font-weight:800;color:#9dffb8;white-space:nowrap}
+@media (max-width:560px){
+  .sd-card{grid-template-columns:56px minmax(0,1fr);grid-template-areas:"icon head" "prog prog" "btn btn";padding:12px}
+  .sd-icon{width:56px;height:56px}.sd-head{flex-wrap:wrap;row-gap:2px}.sd-head b{font-size:16px}
+  .sd-btn{width:100%;min-width:0}.sd-state{text-align:center}
+}
+#gachaScreen{overflow-x:hidden;overflow-x:clip}
+@media (max-width:860px){#gachaScreen .ev-main{display:flex!important;flex-direction:column;gap:14px}#gachaScreen .ev-main>*{flex-shrink:0}}
+#gachaScreen .ev-main{grid-auto-rows:max-content}
+.ev-sh-info{min-width:0}
+.ev-sh-info b{display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;min-width:0}
+.ev-sh-info b small{flex-shrink:0;margin-left:0!important;padding:0 7px;border-radius:99px;background:color-mix(in srgb,var(--c) 25%,transparent);color:#fff!important}
+@media (max-width:420px){.ev-shard{grid-template-columns:48px minmax(0,1fr) auto;gap:8px;padding:8px}.ev-shard img{width:48px;height:48px}.ev-sh-info b{font-size:14px}}
