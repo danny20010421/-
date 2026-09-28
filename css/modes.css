@@ -366,3 +366,18 @@
 .ev-sh-info b{display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;min-width:0}
 .ev-sh-info b small{flex-shrink:0;margin-left:0!important;padding:0 7px;border-radius:99px;background:color-mix(in srgb,var(--c) 25%,transparent);color:#fff!important}
 @media (max-width:420px){.ev-shard{grid-template-columns:48px minmax(0,1fr) auto;gap:8px;padding:8px}.ev-shard img{width:48px;height:48px}.ev-sh-info b{font-size:14px}}
+
+/* ===== v37 手機版寶藏扭蛋：捲動容器從召喚池標籤下方開始、到畫面底部結束（修正底部內容被裁掉、上方大片空白） ===== */
+@media (max-width:860px){
+  #gachaScreen .g-main.tavern{position:absolute!important;left:0!important;right:0!important;top:var(--poolTop,168px)!important;bottom:0!important;height:auto!important;min-height:0!important;max-height:none!important;padding:0 0 calc(20px + var(--safeB,0px))!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  #gachaScreen .g-main.tavern .g-scene-wrap{margin-top:0!important;height:44vh;height:44dvh}
+  #gachaScreen .g-main.tavern .g-hit{touch-action:pan-y}
+  #gachaScreen .tavern .g-panel{margin-bottom:calc(16px + var(--safeB,0px))!important}
+}
+
+/* ===== v37 限定活動抽獎：先出現水晶（碎片＝彩虹水晶、道具＝銀色水晶），打開後才顯示獎品 ===== */
+.ev-crys .gem.ev-gem-img{inset:-4% -8%!important;width:116%;height:108%;object-fit:contain;clip-path:none!important;background:none!important;box-shadow:none!important;animation:crysFloat 1.8s ease-in-out infinite!important;filter:drop-shadow(0 0 10px rgba(220,230,255,.55));pointer-events:none;user-select:none}
+.ev-crys.hit .gem.ev-gem-img{filter:drop-shadow(0 0 14px rgba(255,200,255,.8)) drop-shadow(0 0 26px rgba(255,220,120,.55));animation:crysFloat 1.2s ease-in-out infinite,crysRainbow 1.6s linear infinite!important}
+.ev-crys.open .gem.ev-gem-img{animation:gemBreak .38s forwards!important}
+@keyframes crysFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6%) scale(1.04)}}
+@keyframes crysRainbow{0%,100%{filter:drop-shadow(0 0 14px rgba(255,160,230,.85)) drop-shadow(0 0 26px rgba(255,220,120,.55))}50%{filter:drop-shadow(0 0 18px rgba(140,220,255,.9)) drop-shadow(0 0 30px rgba(190,140,255,.6)) brightness(1.15)}}
