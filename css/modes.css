@@ -259,3 +259,62 @@
 .tw-top{margin:0 0 12px;padding:10px 14px;border-radius:12px;background:rgba(255,210,108,.14);color:#ffe08a;font-weight:700}
 .tw-rew small{color:var(--muted);font-weight:400}
 @media (max-width:860px){.tw-floors{max-height:52vh}}
+/* 虛空王座：累積傷害移到右上（伊姆體力欄下方），不擋中間的招式名稱與回合提示 */
+#battleScreen .void-dmg{left:auto!important;right:clamp(12px,2vw,28px)!important;transform:none!important;text-align:right;align-items:flex-end}
+@media (max-width:860px){#battleScreen .void-dmg{right:8px!important;padding:4px 10px!important}#battleScreen .void-dmg b{font-size:20px!important}}
+
+/* ===== 召喚池切換、跳過按鈕 ===== */
+.pool-tabs{position:absolute;left:50%;top:calc(76px + var(--safeT,0px));transform:translateX(-50%);z-index:7;display:flex;gap:4px;padding:4px;border-radius:99px;background:rgba(10,20,34,.75);border:1px solid rgba(243,201,105,.35);backdrop-filter:blur(8px)}
+.pool-tabs.hidden{display:none}
+.pool-tabs button{position:relative;border:0;border-radius:99px;padding:8px 18px;background:none;color:#e0e8f0;font-weight:800;cursor:pointer}
+.pool-tabs button.on{background:linear-gradient(180deg,#ffe9a8,#c9973a);color:#3a2206}
+.pool-hot{font-style:normal;margin-left:6px;padding:1px 6px;border-radius:99px;background:#e0402f;color:#fff;font-size:10px;animation:dotPulse 1.4s infinite}
+.g-skip{position:fixed;right:clamp(12px,3vw,32px);top:calc(84px + var(--safeT,0px));z-index:260;padding:8px 18px;border-radius:99px;border:1px solid rgba(255,255,255,.5);background:rgba(8,18,32,.7);color:#fff;font-weight:800;letter-spacing:.1em;cursor:pointer;backdrop-filter:blur(6px)}
+.g-skip[hidden]{display:none}.g-skip:hover{background:rgba(8,18,32,.9)}
+#gachaScreen .g-main.tavern,#gachaScreen .ev-main{padding-top:calc(128px + var(--safeT,0px))!important}
+/* ===== 限定活動池 ===== */
+#gachaScreen[data-pool=event]{background:radial-gradient(60% 50% at 25% 40%,rgba(160,80,255,.35),transparent 70%),radial-gradient(60% 50% at 80% 40%,rgba(255,80,160,.3),transparent 70%),linear-gradient(180deg,#1a0c2a,#12081e)!important}
+.ev-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.9fr);gap:20px;align-items:start;max-width:1280px;margin:0 auto;padding-left:clamp(12px,3vw,40px);padding-right:clamp(12px,3vw,40px);padding-bottom:24px;box-sizing:border-box}
+.ev-main.hidden{display:none}
+.ev-banner{border-radius:18px;overflow:hidden;box-shadow:0 0 0 2px rgba(255,210,108,.55),0 20px 50px rgba(0,0,0,.5)}.ev-banner img{display:block;width:100%;height:auto}
+.ev-side{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:18px;background:rgba(14,8,26,.78);border:1px solid rgba(200,140,255,.3);backdrop-filter:blur(10px)}
+.ev-tickets{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:rgba(255,210,108,.12)}.ev-tickets span{font-weight:800}.ev-tickets b{font-family:var(--num);font-size:22px;color:#ffd26c}.ev-tickets small{color:var(--muted);font-size:12px}
+.ev-shard{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.ev-shard img{width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 0 8px var(--c))}
+.ev-sh-info b{display:block}.ev-sh-info b small{margin-left:6px;color:var(--c);font-size:12px}.ev-sh-info>small{color:var(--muted);font-size:12px}
+.ev-bar{height:9px;border-radius:99px;background:rgba(0,0,0,.45);overflow:hidden;margin:4px 0}.ev-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),#fff);box-shadow:0 0 8px var(--c)}
+.ev-owned{font-size:12px;font-weight:800;color:#9dffb8}
+.ev-pulls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ev-pulls button{min-height:64px;flex-direction:column;font-size:18px}.ev-pulls small{font-size:12px;font-weight:600;opacity:.85}
+.ev-pity{margin:0;text-align:center;color:#e0c8ff;font-size:13px}.ev-pity b{color:#ffd26c}
+.ev-rates summary{cursor:pointer;color:#ffd26c;font-weight:800}.ev-rates table{width:100%;font-size:12.5px;border-collapse:collapse;margin-top:6px}.ev-rates td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.08)}
+.ev-shard-list{display:grid;gap:10px}.ev-shard.big{grid-template-columns:80px 1fr auto;padding:12px}.ev-shard.big img{width:80px;height:80px}
+@media (max-width:860px){.ev-main{grid-template-columns:1fr}.pool-tabs{top:calc(112px + var(--safeT,0px))}#gachaScreen .g-main.tavern,#gachaScreen .ev-main{padding-top:calc(160px + var(--safeT,0px))!important}}
+/* 命運水晶動畫 */
+.ev-ov{position:fixed;inset:0;z-index:250;display:grid;place-items:center;opacity:0;transition:opacity .3s}
+.ev-ov.show{opacity:1}
+.ev-ov-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(90,40,140,.55),rgba(6,4,14,.94) 70%)}
+.ev-stage{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(8px,1.5vw,16px);max-width:min(1000px,96vw);padding:20px}
+.ev-crys{position:relative;width:clamp(96px,14vw,150px);aspect-ratio:3/4;perspective:700px;animation:crysIn .6s cubic-bezier(.2,1.3,.4,1) both;animation-delay:var(--d)}
+.ev-stage.ten .ev-crys{width:clamp(64px,9.5vw,120px)}
+@keyframes crysIn{from{opacity:0;transform:translateY(-60vh) rotate(-20deg)}}
+.ev-crys .gem{position:absolute;inset:6% 14%;clip-path:polygon(50% 0,100% 30%,82% 100%,18% 100%,0 30%);background:linear-gradient(135deg,#fff 0%,var(--c) 30%,color-mix(in srgb,var(--c) 50%,#000) 100%);box-shadow:0 0 24px var(--c);animation:gemSpin 1.6s ease-in-out infinite;filter:drop-shadow(0 0 12px var(--c))}
+.ev-crys.hit .gem{animation:gemSpin .8s ease-in-out infinite,gemGlow .5s ease-in-out infinite alternate}
+@keyframes gemSpin{50%{transform:rotateY(180deg) scale(1.06)}}
+@keyframes gemGlow{to{filter:drop-shadow(0 0 26px var(--c)) brightness(1.3)}}
+.ev-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:14px;background:linear-gradient(180deg,#1c2a44,#0e1828);border:2px solid var(--c);box-shadow:0 0 18px color-mix(in srgb,var(--c) 60%,transparent);opacity:0;transform:scale(.6) rotateY(90deg);transition:opacity .3s,transform .4s cubic-bezier(.2,1.3,.4,1);text-align:center}
+.ev-card img{width:70%;height:auto;filter:drop-shadow(0 0 10px var(--c))}.ev-card .ico2{width:58%;height:auto}
+.ev-card b{font-size:clamp(11px,1.2vw,14px);line-height:1.2}.ev-card em{font-style:normal;font-family:var(--num);font-size:clamp(14px,1.6vw,20px);color:var(--c)}
+.ev-crys.open .gem{animation:gemBreak .35s forwards}
+@keyframes gemBreak{to{opacity:0;transform:scale(1.6);filter:blur(4px) brightness(2)}}
+.ev-crys.open .ev-card{opacity:1;transform:none}
+.ev-crys.hit.open .ev-card{animation:hitPulse 1.2s ease-in-out infinite}
+@keyframes hitPulse{50%{box-shadow:0 0 36px var(--c),0 0 0 3px var(--c)}}
+.ev-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,var(--c),transparent 65%);opacity:0}
+.ev-flash.on{animation:evFlash .6s ease-out}
+@keyframes evFlash{20%{opacity:.85}100%{opacity:0}}
+.ev-pt{position:absolute;left:50%;top:45%;font-style:normal;font-size:26px;pointer-events:none;text-shadow:0 0 10px currentColor}
+.ev-foot{position:relative;z-index:2;margin-top:16px;text-align:center;animation:crysIn .4s both}.ev-foot p{font-size:16px;margin:0 0 10px}
+.ev-skip{position:absolute}
+.ev-ov{display:flex!important;flex-direction:column;align-items:center;justify-content:center}
+.pool-tabs button{white-space:nowrap}
+@media (max-width:860px){.pool-tabs button{padding:7px 14px;font-size:14px}.pool-hot{font-size:9px;padding:1px 5px}#gachaScreen .g-main.tavern,#gachaScreen .ev-main{padding-top:calc(176px + var(--safeT,0px))!important}}
