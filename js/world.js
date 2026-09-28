@@ -38,6 +38,11 @@
       this.enemies.forEach(e => this.r.texture(CHARACTERS[e.id].image));
       this.bossUnlocked = !!st.bossUnlocked; this.target = st.target || null; this.beacon = st.beacon || null; this._reached = false;
       if (this.beacon) { this.beacon.y = this.scene.H(this.beacon.x, this.beacon.z); if (!this.beaconMesh) this.beaconMesh = SCENES.beaconMesh(this.r); }
+      if (!this.coneMesh) { this.coneMesh = SCENES.coneMesh(this.r); this.moundMesh = SCENES.moundMesh(this.r); }
+      this.escort = st.escort || null; this._escDone = false; this.canDig = !!st.canDig; this.digMarks = st.digMarks || [];
+      this.guards = (st.guards || []).map(g => ({ ...g, x: g.path[0][0], z: g.path[0][1], seg: 0, face: 0 }));
+      this.guards.forEach(g => { if (!this.npcMeshes[g.look]) this.npcMeshes[g.look] = SCENES.npcMesh(this.r, g.look); });
+      if (st.escortPos && this.npcs) { const n = this.npcs.find(n => n.id === st.escortPos.id); if (n) { n.x = st.escortPos.x; n.z = st.escortPos.z; } }
       if (this.labelEls) { this.labels.innerHTML = ''; this.labelEls.clear(); }
     }
     start() { if (this.running) return; this.running = true; this.last = performance.now(); const loop = (t) => { if (!this.running) return; this._raf = requestAnimationFrame(loop); this.frame(t); }; this._raf = requestAnimationFrame(loop); }
@@ -78,7 +83,7 @@
       for (const e of this.enemies) { if (e.boss && !this.bossUnlocked) continue; const d = Math.hypot(e.x - this.p.x, e.z - this.p.z); if (d < FIGHT_R && d < bd) { bd = d; best = e; } }
       return best;
     }
-    interact() { const n = this.nearest(); if (!n) return; if (n.kind === 'npc') n.face = Math.atan2(this.p.x - n.x, this.p.z - n.z); this.cb.onInteract(n); }
+    interact() { const n = this.nearest(); if (!n) { if (this.canDig && this.cb.onDig) this.cb.onDig(this.p.x, this.p.z); return; } if (n.kind === 'npc') n.face = Math.atan2(this.p.x - n.x, this.p.z - n.z); this.cb.onInteract(n); }
     goTo(obj) { this.p.target = [obj.x, obj.z + 3]; this._goObj = obj; }
 
     /* ---------- 更新 ---------- */
@@ -98,22 +103,37 @@
       const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
       if (ix || iz) { const l = Math.min(1, Math.hypot(ix, iz)) / (Math.hypot(ix, iz) || 1); mx = (fx * iz + rx * ix) * l; mz = (fz * iz + rz * ix) * l; }
       else if (p.target) { const dx = p.target[0] - p.x, dz = p.target[1] - p.z, d = Math.hypot(dx, dz); if (d < .8) { p.target = null; if (this._goObj) { const o = this._goObj; this._goObj = null; if (Math.hypot(o.x - p.x, o.z - p.z) < FIGHT_R + 1) this.interact(); } } else { mx = dx / d; mz = dz / d; } }
-      const sp = Math.hypot(mx, mz); p.moving = sp > .05;
+      // 加速度緩衝：起步與停下更順
+      const acc = Math.min(1, dt * (mx || mz ? 10 : 14)); p.vx = (p.vx || 0) + (mx - (p.vx || 0)) * acc; p.vz = (p.vz || 0) + (mz - (p.vz || 0)) * acc;
+      const sp = Math.hypot(p.vx, p.vz); p.moving = sp > .06;
       if (p.moving) {
-        let nx = p.x + mx * SPEED * dt, nz = p.z + mz * SPEED * dt;
+        let nx = p.x + p.vx * SPEED * dt, nz = p.z + p.vz * SPEED * dt;
         [nx, nz] = this._collide(nx, nz);
         if (this.scene.H(nx, nz) > .35) { p.x = nx; p.z = nz; } else if (this.scene.H(nx, p.z) > .35) p.x = nx; else if (this.scene.H(p.x, nz) > .35) p.z = nz; else p.target = null;
         const side = mx * rx + mz * rz; if (Math.abs(side) > .2) p.flip = side < 0;
-        p.t += dt * 9;
+        p.t += dt * 9 * Math.min(1, sp * 1.2);
         // 行進時鏡頭緩慢跟到背後
         if (!(ix || iz) && p.target) { const want = Math.atan2(-mx, -mz); let d = want - this.cam.tYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); this.cam.tYaw += d * dt * .6; }
       }
       p.y += (this.scene.H(p.x, p.z) - p.y) * Math.min(1, dt * 14);
+      // 轉身翻面：寬度縮放模擬翻牌
+      p.face = (p.face == null ? 1 : p.face) + ((p.flip ? -1 : 1) - (p.face == null ? 1 : p.face)) * Math.min(1, dt * 12);
       // 撿道具
       for (const it of this.items) { if (!it.taken && Math.hypot(it.x - p.x, it.z - p.z) < PICK_R) { it.taken = true; this.cb.onPickup(it); } }
       // 提示
       const n = this.nearest(); if (n !== this._near) { this._near = n; this.cb.onNear(n); }
       if (this._marker) this._marker.t += dt;
+      const S0 = this.scene;
+      // 野外敵人：在原地附近閒晃，玩家靠近時停下來面向玩家
+      for (const e of this.enemies) { if (e.boss) continue; if (!e.home) { e.home = [e.x, e.z]; e.wt = Math.random() * 2; }
+        const dp = Math.hypot(p.x - e.x, p.z - e.z); if (dp < 9) { e.flip = p.x < e.x; continue; }
+        e.wt -= dt; if (e.wt <= 0 || !e.goal) { const a = Math.random() * 6.283, r = 1.5 + Math.random() * 4.5; e.goal = [e.home[0] + Math.cos(a) * r, e.home[1] + Math.sin(a) * r]; e.wt = 2.5 + Math.random() * 3; }
+        const gx = e.goal[0] - e.x, gz = e.goal[1] - e.z, gd = Math.hypot(gx, gz); if (gd > .2) { const sp = Math.min(gd, 2.4 * dt); e.x += gx / gd * sp; e.z += gz / gd * sp; e.y = S0.H(e.x, e.z); e.flip = gx < 0; } }
+      if (this.escort) { const n = this.npcs.find(n => n.id === this.escort.id); if (n) { const dx = p.x - n.x, dz = p.z - n.z, d = Math.hypot(dx, dz); n.walking = d > 3.4; if (n.walking) { const sp = Math.min(d - 3.2, SPEED * .95 * dt); n.x += dx / d * sp; n.z += dz / d * sp; n.face = Math.atan2(dx, dz); }
+        if (!this._escDone && Math.hypot(n.x - this.escort.to[0], n.z - this.escort.to[1]) < (this.escort.r || 6)) { this._escDone = true; this.cb.onEscortDone && this.cb.onEscortDone(); } } }
+      if (this._spotCd > 0) this._spotCd -= dt;
+      for (const g of this.guards) { const tg = g.path[(g.seg + 1) % g.path.length], gx = tg[0] - g.x, gz = tg[1] - g.z, gd = Math.hypot(gx, gz), sp = (g.speed || 5) * dt; if (gd <= sp) g.seg = (g.seg + 1) % g.path.length; else { g.x += gx / gd * sp; g.z += gz / gd * sp; const want = Math.atan2(gx, gz); g.face += Math.atan2(Math.sin(want - g.face), Math.cos(want - g.face)) * Math.min(1, dt * 6); }
+        const px = p.x - g.x, pz = p.z - g.z, pd = Math.hypot(px, pz); if (pd < (g.view || 9)) { const a = Math.atan2(px, pz) - g.face; if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < .7 || pd < 2.2) { if (!(this._spotCd > 0)) { this._spotCd = 1.5; this.cb.onSpotted && this.cb.onSpotted(g); } } } }
       if (this.beacon && !this._reached && Math.hypot(this.beacon.x - p.x, this.beacon.z - p.z) < this.beacon.r) { this._reached = true; this.cb.onReach && this.cb.onReach(); }
     }
     _collide(x, z) {
@@ -146,7 +166,7 @@
       if (S.bird && this.chapter.id !== 'fishman') for (let i = 0; i < 7; i++) { const a = t * (.25 + i * .03) + i * 1.3, R = 30 + i * 9; r.draw(S.bird, M.mul(M.trs(Math.cos(a) * R, 24 + i * 2 + Math.sin(t * 2 + i) * 1.5, Math.sin(a) * R, -a, 1.3), M.rz(Math.sin(t * 9 + i) * .35)), { noCull: true, tint: this.chapter.id === 'dark' ? [.3, .25, .35, 1] : [1, 1, 1, 1] }); }
       if (S.fishMesh) S.dyn.fish.forEach(([x, y, z, ph, c], i) => { const a = t * .4 + ph; r.draw(S.fishMesh, M.trs(x + Math.cos(a) * 12, y + Math.sin(t + ph) * .8, z + Math.sin(a) * 12, -a - Math.PI / 2, 1.4), { tint: E3.hex(c).concat(1) }); });
       if (S.petal) for (let i = 0; i < 40; i++) { const ph = i * 7.13, fx = p.x + ((i * 37) % 60) - 30 + Math.sin(t * .7 + ph) * 3, fz = p.z + ((i * 53) % 60) - 30, fy = S.H(fx, fz) + 12 - ((t * 1.6 + ph) % 12); r.draw(S.petal, M.mul(M.trs(fx, fy, fz, t + ph, 1), M.rx(t * 2 + ph)), { noCull: true }); }
-      for (const n of this.npcs) { const sc = SCENES.lookScale(n.look); const lookAt = Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * 2 + n.x)) * .05, n.z, n.face, sc), { mat: 2 }); }
+      for (const n of this.npcs) { const sc = SCENES.lookScale(n.look); const lookAt = !n.walking && Math.hypot(n.x - p.x, n.z - p.z) < 9 ? Math.atan2(p.x - n.x, p.z - n.z) : n.face; n.face += Math.atan2(Math.sin(lookAt - n.face), Math.cos(lookAt - n.face)) * Math.min(1, dt * 5); r.draw(this.npcMeshes[n.look], M.trs(n.x, S.H(n.x, n.z) + Math.abs(Math.sin(t * (n.walking ? 9 : 2) + n.x)) * (n.walking ? .25 : .05), n.z, n.face, sc), { mat: 2 }); }
       for (const it of this.items) if (!it.taken) r.draw(this.itemMeshes[it.icon], M.trs(it.x, it.y + 1.4 + Math.sin(t * 2.4 + it.x) * .35, it.z, t * 1.5, 1.2));
       r.draw(S.water, M.trs(p.x - (p.x % 11.8), 0, p.z - (p.z % 11.8), 0, 1), { wave: true, alpha: S.waterAlpha < 1 ? false : false, tint: [1, 1, 1, 1] });
       // 影子
@@ -155,12 +175,14 @@
       // 角色廣告板（由遠到近）
       const list = [];
       const pc = CHARACTERS[this.playerId];
-      list.push({ url: pc.image, x: p.x, y: p.y + (p.moving ? Math.abs(Math.sin(p.t)) * .35 : Math.sin(t * 2.2) * .08), z: p.z, h: 5.6, flip: p.flip, d: 0 });
-      for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: [1, 1, 1, 1] }); }
+      const bob = p.moving ? Math.pow(Math.abs(Math.sin(p.t)), 1.6) * .32 : Math.sin(t * 2.2) * .07, squash = p.moving ? 1 - Math.abs(Math.cos(p.t)) * .04 : 1 + Math.sin(t * 2.2) * .012;
+      list.push({ url: pc.image, x: p.x, y: p.y + bob, z: p.z, h: 5.6 * squash, wk: Math.max(.08, Math.abs(p.face == null ? 1 : p.face)) / squash, flip: (p.face == null ? 1 : p.face) < 0, d: 0 });
+      for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: e.flip !== undefined ? !e.flip : true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: [1, 1, 1, 1] }); }
       list.forEach(o => { if (!o.d) o.d = Math.hypot(o.x - eye[0], o.z - eye[2]); }); list.sort((a, b) => b.d - a.d);
-      for (const o of list) { const rec = r.texture(o.url); const asp = rec.ready ? rec.w / rec.h : .75; r.sprite(o.url, o.x, o.y, o.z, o.h * asp, o.h, { flip: o.flip, tint: o.tint }); }
+      for (const o of list) { const rec = r.texture(o.url); const asp = rec.ready ? rec.w / rec.h : .75; r.sprite(o.url, o.x, o.y, o.z, o.h * asp * (o.wk || 1), o.h, { flip: o.flip, tint: o.tint }); }
+      for (const g of this.guards) { const gy = S.H(g.x, g.z); r.draw(this.npcMeshes[g.look], M.trs(g.x, gy + Math.abs(Math.sin(t * 6 + g.x)) * .08, g.z, g.face, 1), { mat: 2 }); r.draw(this.coneMesh, M.trs3(g.x, gy + .05, g.z, g.face, g.view || 9, 1, g.view || 9), { alpha: true, noCull: true, tint: [1, .35, .25, .3 + Math.sin(t * 4) * .06] }); }
+      for (const m of this.digMarks) r.draw(this.moundMesh, M.trs(m[0], S.H(m[0], m[1]), m[1], 0, 1), { mat: 1 });
       if (this.beacon) r.draw(this.beaconMesh, M.trs3(this.beacon.x, this.beacon.y - 1, this.beacon.z, t, 1 + Math.sin(t * 3) * .08, 1, 1 + Math.sin(t * 3) * .08), { alpha: true, noCull: true, tint: [1, .9, .5, .28 + Math.sin(t * 4) * .06] });
-      if (this.beacon) { const by = S.H(this.beacon.x, this.beacon.z); r.draw(this.beaconMesh, M.trs3(this.beacon.x, by - .5, this.beacon.z, t, 1 + Math.sin(t * 3) * .08, 1, 1 + Math.sin(t * 3) * .08), { alpha: true, noCull: true, tint: [1, .95, .7, .28] }); }
       // BOSS 屏障
       const boss = this.enemies.find(e => e.boss);
       if (boss && !this.bossUnlocked) r.draw(this.barrier, M.trs3(boss.x, boss.y - 1, boss.z, t * .3, 1, 1 + Math.sin(t * 2) * .03, 1), { alpha: true, noCull: true, tint: [.6, .85, 1, .22 + Math.sin(t * 3) * .05] });
@@ -177,6 +199,7 @@
       };
       const tgt = this.target;
       for (const n of this.npcs) { const h = SCENES.lookScale(n.look) * 3.6 + .4; const q = tgt && tgt.type === 'npc' && tgt.ids.includes(n.id); put('n' + n.id + (q ? 'q' : ''), n.x, S0(this, n) + h, n.z, (q ? '<b class="qmark">!</b>' : '') + `<span>${n.name}</span>`, 'npc' + (q ? ' qtarget' : ''), () => this.goTo(n)); }
+      if (typeof crewLv === 'function' && CHARACTERS[this.playerId]) { const lv = crewLv(this.playerId), tr = TIERS[tierOf(lv)]; put('me', this.p.x, this.p.y + .05, this.p.z, `<span class="me-tag"><b>${CHARACTERS[this.playerId].name}</b><small style="--c:${tr.color}">LV ${lv}・${tr.name}</small></span>`, 'me'); }
       for (const e of this.enemies) { const lock = e.boss && !this.bossUnlocked; const h = e.boss ? 8.6 : 6.4; put('e' + e.id + (lock ? 'l' : ''), e.x, e.y + h, e.z, `${e.boss ? '<i class="crown"></i>' : ''}<em class="lv">LV ${e.lv || ''}</em><span>${CHARACTERS[e.id].name}</span>${lock ? '<em>屏障中</em>' : ''}`, 'foe' + (e.boss ? ' boss' : '') + (lock ? ' locked' : ''), lock ? null : () => this.goTo(e)); }
       for (const it of this.items) if (!it.taken) put('i' + it.idx, it.x, it.y + 3.2, it.z, `<span>${it.label}</span>`, 'item');
       if (this.beacon) put('bc', this.beacon.x, this.beacon.y + 9, this.beacon.z, `<b class="qmark">▼</b><span>${this.beacon.label}</span>`, 'npc qtarget beacon', () => { this.p.target = [this.beacon.x, this.beacon.z]; });
@@ -198,6 +221,7 @@
       for (const it of this.items) if (!it.taken) dot(it.x, it.z, 3, '#7fe3ff');
       for (const n of this.npcs) { const q = tg && tg.type === 'npc' && tg.ids.includes(n.id); dot(n.x, n.z, 3, q ? '#ffd26c' : '#f4ead2', q ? '#fff' : null); }
       if (this.beacon) dot(this.beacon.x, this.beacon.z, 5, '#ffd26c', '#fff');
+      for (const g of this.guards) dot(g.x, g.z, 3.5, '#ff4a3a', '#fff');
       for (const e of this.enemies) dot(e.x, e.z, e.boss ? 5 : 3.2, e.boss ? (this.bossUnlocked ? '#ff5a4a' : '#8f9bb0') : '#e8553b', e.boss ? '#ffd26c' : null);
       const px = (this.p.x + 100) * sc, pz = (this.p.z + 100) * sc, a = -this.cam.yaw;
       ctx.translate(px, pz); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 5); ctx.lineTo(0, 2.5); ctx.lineTo(-5, 5); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#0a1f33'; ctx.lineWidth = 1.5; ctx.stroke();

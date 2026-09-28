@@ -23,7 +23,7 @@ function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.g
 /* ---------- 共用 UI ---------- */
 let toastT = null;
 function toast(msg, kind) { const el = $('toast'); el.textContent = msg; el.className = 'toast show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200); }
-function openModal(id) { $(id).classList.add('show'); }
+function openModal(id) { const _m = document.getElementById(id); if (_m) _m.querySelectorAll('.modal-card,.cx-detail,.cx-grid').forEach(e => e.scrollTop = 0); $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfOk').textContent = ok || '確定'; $('cfOk').onclick = () => { closeModal('confirmModal'); fn(); }; openModal('confirmModal'); }
 const SCREENS = ['loginScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
@@ -38,7 +38,18 @@ function showScreen(id) {
 }
 function syncSound() { const off = AUDIO.pref.muted; document.querySelectorAll('[data-snd]').forEach(b => { b.classList.toggle('off', off); b.setAttribute('aria-pressed', String(!off)); }); $('soundBtn').textContent = '音樂：' + (off ? '關' : '開'); }
 function toggleSound() { AUDIO.setPref({ muted: !AUDIO.pref.muted }); AUDIO.unlock(); syncSound(); }
-function coins() { ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); }
+/* 紅點提醒：有可以領的東西時，在對應按鈕上顯示 */
+function updateDots() {
+  try {
+    const d = SAVE.data, hub = (!d.freeDraw && Object.keys(d.roster).length > 0) || (typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
+    const tr = typeof TREASURE !== 'undefined' && (TREASURE.pieces.some(p => d.chapters[p.chapter].cleared && !((d.treasure || {}).found || []).includes(p.chapter)) || (((d.treasure || {}).found || []).length >= TREASURE.pieces.length && !(d.treasure || {}).done));
+    const crew = ['exp_s', 'exp_m', 'exp_l'].some(k => d.inventory[k] > 0) || (d.training || []).some(t => Date.now() >= t.end);
+    const set = (sel, on) => document.querySelectorAll(sel).forEach(el => el.classList.toggle('has-dot', !!on));
+    set('#gachaBtnMap,#gachaBtnWorld,[data-dock=hub]', hub); set('#treasureBtnMap', tr); set('#trainBtnMap', (d.training || []).some(t => Date.now() >= t.end)); set('[data-dock=crew],#swapChar', crew); set('#hubTabs [data-hub=bounty]', typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
+    set('.m-menu', hub || tr);
+  } catch (e) { }
+}
+function coins() { updateDots(); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); }
 function addBerry(n) { if (!n) return; SAVE.data.berry = (SAVE.data.berry || 0) + n; SAVE.save(); coins(); document.querySelectorAll('.coin.berry').forEach(el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }); }
 /* 陣容：最多 GAME_SETTINGS.lineupMax 人，第一位是先鋒（也是在島上行走的角色） */
 function syncLeader() { const L = SAVE.data.lineup; if (L.length) SAVE.data.player = L[0]; SAVE.save(); }
@@ -62,8 +73,10 @@ function itemIcon(it) { return `<svg class="ico" viewBox="0 0 64 64" style="--c:
 const NEWS_KEY = 'op_rpg_news_v2';
 function loadNews() { try { const n = JSON.parse(localStorage.getItem(NEWS_KEY) || 'null'); if (Array.isArray(n) && n.length) return n; } catch (e) { } return DEFAULT_NEWS.slice(); }
 let newsFilter = '全部';
+const NEWS_OPEN_KEY = 'op_news_open';
+function setNewsOpen(open) { const b = document.querySelector('.news-board'); if (open && b.classList.contains('collapsed')) setTimeout(renderNewsBoard, 0); b.classList.toggle('collapsed', !open); $('newsToggle').setAttribute('aria-expanded', String(open)); localStorage.setItem(NEWS_OPEN_KEY, open ? '1' : '0'); }
 function renderNewsBoard() {
-  const news = loadNews(); const tags = ['全部', ...new Set(news.map(n => n.tag))];
+  const news = loadNews(); $('newsCount').textContent = news.length ? `${news.length} 則` : ''; const tags = ['全部', ...new Set(news.map(n => n.tag))];
   $('newsTabs').innerHTML = tags.map(t => `<button class="${t === newsFilter ? 'on' : ''}" data-t="${esc(t)}">${esc(t)}</button>`).join('');
   $('newsTabs').querySelectorAll('button').forEach(b => b.onclick = () => { newsFilter = b.dataset.t; renderNewsBoard(); });
   const list = news.filter(n => newsFilter === '全部' || n.tag === newsFilter).slice(0, 4);
@@ -191,7 +204,7 @@ function loginInfo() { const d = SAVE.data, cl = CHAPTERS.filter(c => d.chapters
 function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openChart(); }
 
 /* ---------- 篇章海圖 ---------- */
-const NODE_POS_WIDE = [[8, 74], [20, 40], [32, 72], [44, 34], [56, 68], [68, 30], [80, 64], [92, 32]], NODE_POS_TALL = [[24, 95], [72, 82], [28, 68], [72, 54], [28, 40], [72, 27], [28, 14], [72, 2]];
+const NODE_POS_WIDE = [[8, 74], [20, 40], [32, 72], [44, 34], [56, 68], [68, 30], [80, 64], [92, 32]], NODE_POS_TALL = [[28, 94], [72, 81.5], [28, 69], [72, 56.5], [28, 44], [72, 31.5], [28, 19], [72, 6.5]];
 let NODE_POS = NODE_POS_WIDE;
 let selChapter = null;
 function chapterUnlocked(i) { if (i === 0 || GAME_SETTINGS.unlockAll) return true; const pc = CHAPTERS[i - 1], ps = SAVE.data.chapters[pc.id]; return ps.cleared || (!pc.boss && ps.step >= pc.steps.length - 1); }
@@ -199,7 +212,7 @@ function openChart(focus) {
   coins(); const d = SAVE.data, pc = CHARACTERS[d.player];
   NODE_POS = innerWidth < 860 ? NODE_POS_TALL : NODE_POS_WIDE;
   const plv = crewLv(d.player);
-  $('captainChip').innerHTML = `<img src="${pc.avatar}" alt=""><div><b>${pc.name}<em>LV ${plv}</em></b><small>${TIERS[tierOf(plv)].name}</small></div><button class="btn-ghost sm" id="swapChar">船員</button>`;
+  $('captainChip').innerHTML = `<img src="${pc.avatar}" alt=""><div><b><span class="cn">${pc.name}</span><em>LV ${plv}</em></b><small>${TIERS[tierOf(plv)].name}</small></div><button class="btn-ghost sm" id="swapChar">船員</button>`;
   $('swapChar').onclick = openCrew;
   const path = NODE_POS.map(([x, y], i) => `${i ? 'L' : 'M'}${x * 10} ${y * 6}`).join(' ');
   const doneIdx = CHAPTERS.findIndex(c => !d.chapters[c.id].cleared);
@@ -209,6 +222,7 @@ function openChart(focus) {
   $('chartNodes').querySelectorAll('.node').forEach(b => b.onclick = () => selectChapter(b.dataset.id));
   const def = focus || (selChapter && CHAPTERS.find(c => c.id === selChapter) ? selChapter : (CHAPTERS[doneIdx < 0 ? 0 : doneIdx] || CHAPTERS[0]).id);
   selectChapter(def); showScreen('chapterScreen');
+  if (innerWidth <= 860) setTimeout(() => { const n = document.querySelector('#chartNodes .node.on'), ch = document.querySelector('#chapterScreen .chart'); if (n && ch) ch.scrollTop = Math.max(0, n.offsetTop - ch.clientHeight / 2); }, 30);
 }
 function selectChapter(id) {
   selChapter = id; const i = CHAPTERS.findIndex(c => c.id === id), c = CHAPTERS[i], st = SAVE.data.chapters[id], un = chapterUnlocked(i), diff = CHAPTER_DIFFICULTY[id], boss = CHARACTERS[c.boss];
@@ -235,64 +249,101 @@ let WORLD = null, CH = null, TIMED = null, CHAIN = null;
 const ENEMY_SPOTS = [[-32, -24], [30, -30], [-8, -18], [-46, 22], [44, 18]];
 function chState() { return SAVE.data.chapters[CH.id]; }
 function curStep() { const st = chState(); return st.cleared && st.step >= CH.steps.length ? null : CH.steps[Math.min(st.step, CH.steps.length - 1)]; }
+/* 敵人等級：開啟等級同步時，陣容太強會讓敵人跟著變強 */
+function enemyLvFor(boss) { const base = (ENEMY_LEVEL[CH.id] || 1) + (boss ? BOSS_LEVEL_BONUS : 0); if (!GAME_SETTINGS.levelSync) return base; const top = Math.max(1, ...SAVE.data.lineup.map(crewLv)); return Math.min(MAX_LV, Math.max(base, top - (boss ? 0 : (GAME_SETTINGS.syncGap || 6)))); }
+let RACE = null, ESC = false;
+function treasurePiece() { return (typeof TREASURE !== 'undefined') ? TREASURE.pieces.find(p => p.chapter === CH.id) : null; }
+function treasureFound() { SAVE.data.treasure = SAVE.data.treasure || { found: [], done: false }; return SAVE.data.treasure.found; }
+function huntActive() { const tp = treasurePiece(), st = chState(); return !!(tp && st.cleared && st.step >= CH.steps.length && !treasureFound().includes(tp.chapter)); }
+function digKey() { const s = curStep(); if (s && s.type === 'dig') return CH.id + ':step' + chState().step; if (huntActive()) return CH.id + ':treasure'; return null; }
+function digInfo() { const s = curStep(); if (s && s.type === 'dig') return { center: s.area, radius: s.radius || 20 }; const tp = treasurePiece(); return tp ? { center: tp.center, radius: tp.radius || 22 } : null; }
+/* 藏寶點：第一次需要時才決定，避開建築與海面 */
+function digSpot() {
+  const key = digKey(); if (!key || !WORLD || WORLD.chapter !== CH) return null; SAVE.data.digs = SAVE.data.digs || {};
+  if (!SAVE.data.digs[key]) { const inf = digInfo(); let x = inf.center[0], z = inf.center[1];
+    for (let g = 0; g < 80; g++) { const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * inf.radius, tx = inf.center[0] + Math.cos(a) * d, tz = inf.center[1] + Math.sin(a) * d; if (WORLD.scene.H(tx, tz) < 1 || WORLD.scene.obstacles.some(o => Math.hypot(tx - o[0], tz - o[1]) < o[2] + 2.5)) continue; x = tx; z = tz; break; }
+    SAVE.data.digs[key] = { x, z, marks: [] }; SAVE.save(); }
+  return SAVE.data.digs[key];
+}
+function heatOf(d) { return d < 8 ? ['滾燙', 100, '#ff4a3a'] : d < 15 ? ['很熱', 78, '#ff8a3a'] : d < 25 ? ['溫熱', 55, '#ffd26c'] : d < 40 ? ['微涼', 32, '#8fd8ff'] : ['冰冷', 12, '#6f8fb0']; }
 function worldState() {
   const st = chState(), step = curStep(), pid = SAVE.data.player;
   st.talked = st.talked || [];
   if (!st.roster || st.roster.some(id => STARTERS.includes(id) || CH.npcs.some(n => n.id === id) || id === CH.boss || (CH.exclude || []).includes(id))) { const pool = CHARACTER_ORDER.filter(id => id !== CH.boss && id !== pid && !STARTERS.includes(id) && !CH.npcs.some(n => n.id === id) && !(CH.exclude || []).includes(id)); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[pool[i], pool[j]] = [pool[j], pool[i]]; } st.roster = pool.slice(0, 3); SAVE.save(); }
   if (step && step.type === 'gauntlet' && st.roster.filter(id => !st.defeated.includes(id)).length < step.count) { st.defeated = []; SAVE.save(); }
-  const elv = ENEMY_LEVEL[CH.id] || 1;
-  const enemies = st.roster.map((id, i) => ({ id, x: ENEMY_SPOTS[i][0], z: ENEMY_SPOTS[i][1], boss: false, lv: elv })).filter(e => !st.defeated.includes(e.id));
-  if (step && CH.boss) enemies.push({ id: CH.boss, x: CH.bossPos[0], z: CH.bossPos[1], boss: true, lv: elv + BOSS_LEVEL_BONUS });
+  const enemies = st.roster.map((id, i) => ({ id, x: ENEMY_SPOTS[i][0], z: ENEMY_SPOTS[i][1], boss: false, lv: enemyLvFor(false) })).filter(e => !st.defeated.includes(e.id));
+  if (step && CH.boss && step.type !== 'stealth') enemies.push({ id: CH.boss, x: CH.bossPos[0], z: CH.bossPos[1], boss: true, lv: enemyLvFor(true) });
   const items = step && (step.type === 'collect' || step.type === 'timedCollect') ? step.spots.map((p, i) => ({ idx: i, x: p[0], z: p[1], icon: step.icon, label: step.item })).filter(it => !st.collected.includes(it.idx)) : [];
   const bossUnlocked = st.cleared || CH.steps.slice(0, st.step).some(s => s.unlockBoss);
-  let target = null, beacon = null;
+  let target = null, beacon = null, guards = [], escort = null;
   if (step) {
     if ((step.type === 'talk' || step.type === 'choice') && step.npc) target = { type: 'npc', ids: [step.npc] };
     if (step.type === 'talkAll') target = { type: 'npc', ids: step.npcs.filter(id => !st.talked.includes(id)) };
     if (step.type === 'boss') target = { type: 'boss' };
     if (step.type === 'goto') { beacon = { x: step.pos[0], z: step.pos[1], r: step.r || 7, label: step.label }; target = { type: 'goto' }; }
+    if (step.type === 'race') { const i = RACE ? RACE.idx : 0, pt = step.points[Math.min(i, step.points.length - 1)]; beacon = { x: pt[0], z: pt[1], r: 5, label: `檢查點 ${i + 1}/${step.points.length}` }; target = { type: 'goto' }; }
+    if (step.type === 'stealth') { beacon = { x: step.goal[0], z: step.goal[1], r: step.r || 6, label: step.label }; guards = step.guards; target = { type: 'goto' }; }
+    if (step.type === 'escort') { if (ESC) { escort = { id: step.npc, to: step.to, r: step.r || 7 }; beacon = { x: step.to[0], z: step.to[1], r: 0, label: step.label }; } else target = { type: 'npc', ids: [step.npc] }; }
   }
+  const key = digKey(), dg = key && SAVE.data.digs && SAVE.data.digs[key];
   const clear = [...ENEMY_SPOTS.map(p => [p[0], p[1], 7]), ...CH.npcs.map(n => [n.pos[0], n.pos[1], 5])];
-  CH.steps.forEach(s => { (s.spots || []).forEach(p => clear.push([p[0], p[1], 5])); if (s.pos) clear.push([s.pos[0], s.pos[1], 9]); });
-  return { enemies, items, bossUnlocked, target, beacon, clear };
+  CH.steps.forEach(s => { (s.spots || []).forEach(p => clear.push([p[0], p[1], 5])); (s.points || []).forEach(p => clear.push([p[0], p[1], 6])); [s.pos, s.goal, s.to, s.start].forEach(p => { if (p) clear.push([p[0], p[1], 8]); }); (s.guards || []).forEach(g => g.path.forEach(p => clear.push([p[0], p[1], 4]))); });
+  return { enemies, items, bossUnlocked, target, beacon, clear, guards, escort, canDig: !!key, digMarks: dg ? dg.marks : [] };
 }
 function enterChapter(id) {
-  CH = CHAPTERS.find(c => c.id === id); TIMED = null; CHAIN = null; $('loading').classList.add('show');
+  CH = CHAPTERS.find(c => c.id === id); TIMED = null; CHAIN = null; RACE = null; ESC = false; $('loading').classList.add('show');
   setTimeout(() => {
     try {
-      if (!WORLD) WORLD = new World({ canvas: $('worldCanvas'), labels: $('worldLabels'), minimap: $('minimap'), callbacks: { onInteract, onPickup, onNear, onReach } });
+      if (!WORLD) WORLD = new World({ canvas: $('worldCanvas'), labels: $('worldLabels'), minimap: $('minimap'), callbacks: { onInteract, onPickup, onNear, onReach, onSpotted, onEscortDone, onDig } });
       WORLD.load(CH, SAVE.data.player, worldState());
     } catch (err) { $('loading').classList.remove('show'); console.error(err); toast('這台裝置無法開啟 3D 場景（WebGL 不可用）', 'warn'); return; }
     $('wChapter').textContent = CH.name; $('wChapterSub').textContent = CH.subtitle; coins();
-    stepStarted(); renderQuest(); onNear(null); hideDialog(); $('clearOverlay').classList.remove('show');
+    stepStarted(); refreshWorld(); onNear(null); hideDialog(); $('clearOverlay').classList.remove('show');
     showScreen('worldScreen'); $('loading').classList.remove('show');
     const st = chState();
     if (st.step === 0 && !st.cleared) setTimeout(() => say([...(CH.prologue || [[null, `${CH.name}・${CH.subtitle}`], [null, CH.blurb]]), [null, '頭上有「!」的人有事找你，任務欄會告訴你下一步。']], autoStep), 500);
+    else if (huntActive()) { const tp = treasurePiece(); setTimeout(() => say([[null, `主線「${TREASURE.title}」`], [null, `這座島上藏著「${tp.name}」。${tp.hint}`], [null, '跟著探測器的溫度走，在最熱的地方按「挖掘」。']]), 500); }
     else autoStep();
     $('wHelp').classList.remove('fade'); setTimeout(() => $('wHelp').classList.add('fade'), 6000);
   }, 40);
 }
-function refreshWorld() { WORLD.setState(worldState()); renderQuest(); }
-/* 某些任務一開始就要啟動：限時收集的計時、無 NPC 的選擇題 */
-function stepStarted() { const s = curStep(); TIMED = s && s.type === 'timedCollect' ? { left: s.seconds } : null; }
+function refreshWorld() { WORLD.setState(worldState()); renderQuest(); onNear(WORLD._near || null); }
+/* 某些任務一開始就要啟動：計時、無 NPC 的選擇題 */
+function stepStarted() { const s = curStep(); TIMED = s && s.type === 'timedCollect' ? { left: s.seconds } : null; RACE = s && s.type === 'race' ? { idx: 0, left: s.seconds } : null; ESC = false; }
 function autoStep() { const s = curStep(); if (s && s.type === 'choice' && !s.npc) setTimeout(() => { if (!dialogOpen) runChoice(s); }, 500); }
 setInterval(() => {
-  if (!TIMED || currentScreen !== 'worldScreen' || !WORLD || WORLD.paused || dialogOpen) return;
-  TIMED.left -= .25; const el = document.querySelector('.q-timer'); if (el) { el.textContent = Math.max(0, Math.ceil(TIMED.left)) + ' 秒'; el.classList.toggle('hurry', TIMED.left < 15); }
-  if (TIMED.left <= 0) { const st = chState(), s = curStep(); st.collected = []; SAVE.save(); TIMED.left = s.seconds; refreshWorld(); SFX.play('sand'); toast('沙暴把袋子全都埋回去了！重新找一次', 'warn'); }
+  if (currentScreen !== 'worldScreen' || !WORLD || !CH) return;
+  // 寶藏探測器
+  const det = document.querySelector('.detector'); if (det && WORLD.canDig) { const d = digSpot(); if (d) { const h = heatOf(Math.hypot(WORLD.p.x - d.x, WORLD.p.z - d.z)); det.querySelector('i').style.width = h[1] + '%'; det.querySelector('i').style.background = h[2]; det.querySelector('b').textContent = h[0]; } }
+  if (WORLD.paused || dialogOpen) return;
+  const el = document.querySelector('.q-timer');
+  if (TIMED) { TIMED.left -= .25; if (el) { el.textContent = Math.max(0, Math.ceil(TIMED.left)) + ' 秒'; el.classList.toggle('hurry', TIMED.left < 15); }
+    if (TIMED.left <= 0) { const st = chState(), s = curStep(); st.collected = []; SAVE.save(); TIMED.left = s.seconds; refreshWorld(); SFX.play('sand'); toast('沙暴把袋子全都埋回去了！重新找一次', 'warn'); } }
+  if (RACE) { RACE.left -= .25; if (el) { el.textContent = Math.max(0, Math.ceil(RACE.left)) + ' 秒'; el.classList.toggle('hurry', RACE.left < 10); }
+    if (RACE.left <= 0) { const s = curStep(); RACE = { idx: 0, left: s.seconds }; refreshWorld(); SFX.play('miss'); toast('時間到了！從第一個檢查點重新開始', 'warn'); } }
 }, 250);
+/* 任務欄：點標題可收合成一行（參考賽爾號右上角的任務提示） */
+function bindQuestMini() { const q = $('questBox'), h = q.querySelector('h3'); q.classList.toggle('mini', localStorage.getItem('op_q_mini') === '1'); if (h && !h.dataset.b) { h.dataset.b = 1; h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0'); h.title = '點一下收合／展開'; h.onclick = () => { const m = !q.classList.contains('mini'); q.classList.toggle('mini', m); localStorage.setItem('op_q_mini', m ? '1' : '0'); }; } }
 function renderQuest() {
   const st = chState(), total = CH.steps.length, s = curStep();
-  if (!s) { $('questBox').innerHTML = `<h3>${CH.name}</h3><p class="q-done">篇章已完成。可以和居民聊天，或回海圖前往下一座島。</p>`; return; }
+  const detector = '<div class="detector"><span>探測器</span><div class="bar"><i></i></div><b>—</b></div>';
+  if (!s) {
+    if (huntActive()) { const tp = treasurePiece(); $('questBox').innerHTML = `<h3><span><em class="q-kind k-main">主線</em>${TREASURE.title}</span>${tp.name}</h3><p>${tp.hint}</p>${detector}<small class="q-hint">走到探測器最熱的地方，按「挖掘」。</small>`; }
+    else $('questBox').innerHTML = `<h3>${CH.name}</h3><p class="q-done">篇章已完成。${treasurePiece() && treasureFound().includes(CH.id) ? '這座島的歷史本文也已經找到了。' : ''}可以和居民聊天，或回海圖前往下一座島。</p>`;
+    return;
+  }
   let prog = '';
   if (s.type === 'collect' || s.type === 'timedCollect') prog = `<span class="q-count">${st.collected.length}/${s.count}</span>`;
   if (s.type === 'defeat') prog = `<span class="q-count">${Math.min(st.defeated.length, s.count)}/${s.count}</span>`;
   if (s.type === 'talkAll') prog = `<span class="q-count">${s.npcs.filter(id => st.talked.includes(id)).length}/${s.npcs.length}</span>`;
   if (s.type === 'gauntlet') prog = `<span class="q-count">${CHAIN ? CHAIN.wins.length : 0}/${s.count}</span>`;
-  const timer = s.type === 'timedCollect' ? `<b class="q-timer">${Math.ceil(TIMED ? TIMED.left : s.seconds)} 秒</b>` : '';
-  const kind = { talk: '對話', talkAll: '打聽', goto: '前往', collect: '收集', timedCollect: '限時', defeat: '擊敗', gauntlet: '連戰', choice: '抉擇', boss: 'BOSS' }[s.type];
-  $('questBox').innerHTML = `<h3><span><em class="q-kind k-${s.type}">${kind}</em>任務 ${st.step + 1}/${total}</span>${s.title}</h3><p>${s.desc} ${prog}</p>${timer}${s.reward ? `<small class="q-rew"><i class="coin-ico"></i>×${s.reward}</small>` : ''}`;
+  if (s.type === 'race') prog = `<span class="q-count">${RACE ? RACE.idx : 0}/${s.points.length}</span>`;
+  if (s.type === 'escort') prog = `<span class="q-count">${ESC ? '護送中' : '尚未開始'}</span>`;
+  const timer = s.type === 'timedCollect' ? `<b class="q-timer">${Math.ceil(TIMED ? TIMED.left : s.seconds)} 秒</b>` : s.type === 'race' ? `<b class="q-timer">${Math.ceil(RACE ? RACE.left : s.seconds)} 秒</b>` : '';
+  const kind = { talk: '對話', talkAll: '打聽', goto: '前往', collect: '收集', timedCollect: '限時', defeat: '擊敗', gauntlet: '連戰', choice: '抉擇', boss: 'BOSS', race: '限時', stealth: '潛入', escort: '護送', dig: '探測' }[s.type];
+  $('questBox').innerHTML = `<h3><span><em class="q-kind k-${s.type}">${kind}</em>任務 ${st.step + 1}/${total}</span>${s.title}</h3><p>${s.desc} ${prog}</p>${timer}${s.type === 'dig' ? detector : ''}${s.reward ? `<small class="q-rew"><i class="coin-ico"></i>×${s.reward}</small>` : ''}`;
   const q = $('questBox'); q.classList.remove('flash'); void q.offsetWidth; q.classList.add('flash');
+  bindQuestMini();
 }
 function completeStep() {
   const st = chState(), idx = st.step, s = CH.steps[idx];
@@ -306,10 +357,33 @@ function completeStep() {
 }
 function onNear(n) {
   const b = $('actBtn');
-  if (!n) { b.classList.remove('show'); return; }
+  if (!n) { if (WORLD && WORLD.canDig) { b.innerHTML = '<small>E</small>挖掘'; b.classList.remove('fight'); b.classList.add('show', 'dig'); } else b.classList.remove('show', 'dig'); return; }
+  b.classList.remove('dig');
   b.innerHTML = n.kind === 'npc' ? `<small>E</small>對話・${esc(n.name)}` : `<small>E</small>${n.boss ? '挑戰 BOSS' : '挑戰'}・${esc(CHARACTERS[n.id].name)}`;
   b.classList.toggle('fight', n.kind !== 'npc'); b.classList.add('show');
 }
+function onSpotted() {
+  const s = curStep(); if (!s || s.type !== 'stealth' || dialogOpen) return;
+  SFX.play('miss'); WORLD.r.flash = .35; setTimeout(() => { if (WORLD) WORLD.r.flash = 0; }, 180);
+  WORLD.p.x = s.start[0]; WORLD.p.z = s.start[1]; WORLD.p.target = null;
+  toast('被巡邏的人發現了！被趕回起點，重新潛入', 'warn');
+}
+function onEscortDone() { const s = curStep(); if (!s || s.type !== 'escort') return; ESC = false; say(s.lines || [], completeStep); }
+function onDig(x, z) {
+  const key = digKey(), d = digSpot(); if (!key || !d || dialogOpen) return;
+  const dist = Math.hypot(x - d.x, z - d.z); track('digs');
+  if (dist < 4.5) {
+    SFX.play('rare'); delete SAVE.data.digs[key]; SAVE.save();
+    const s = curStep();
+    if (s && s.type === 'dig') { say(s.lines || [[null, `挖到了${s.item || '寶物'}！`]], completeStep); return; }
+    const tp = treasurePiece(); treasureFound().push(tp.chapter); SAVE.save(); addTokens(3, '歷史本文'); addBerry(3000);
+    say([...tp.lines, [null, `主線進度：${treasureFound().length}/${TREASURE.pieces.length}${treasureFound().length >= TREASURE.pieces.length ? '。所有歷史本文都找到了！打開海圖上的「寶藏日誌」，前往最終之島。' : '。其他島嶼上還有剩下的歷史本文。'}`]], () => { refreshWorld(); });
+    return;
+  }
+  d.marks.push([x, z]); if (d.marks.length > 30) d.marks.shift(); SAVE.save(); WORLD.digMarks = d.marks;
+  SFX.play('sand'); toast(`什麼都沒有……探測器顯示「${heatOf(dist)[0]}」`);
+}
+
 function onPickup(it) {
   const st = chState(), s = curStep(); if (!s || (s.type !== 'collect' && s.type !== 'timedCollect')) return;
   if (!st.collected.includes(it.idx)) { st.collected.push(it.idx); track('pickups'); } SAVE.save();
@@ -318,9 +392,10 @@ function onPickup(it) {
   else renderQuest();
 }
 function onReach() {
-  const s = curStep(); if (!s || s.type !== 'goto' || dialogOpen) return;
-  WORLD.setState({ ...worldState(), beacon: null }); SFX.play('quest');
-  if (s.lines && s.lines.length) say(s.lines, completeStep); else completeStep();
+  const s = curStep(); if (!s || dialogOpen) return;
+  if (s.type === 'goto') { WORLD.setState({ ...worldState(), beacon: null }); SFX.play('quest'); if (s.lines && s.lines.length) say(s.lines, completeStep); else completeStep(); return; }
+  if (s.type === 'race' && RACE) { RACE.idx++; SFX.play('pickup'); if (RACE.idx >= s.points.length) { RACE = null; WORLD.setState({ ...worldState(), beacon: null }); say(s.lines || [[null, '全部檢查點都通過了！']], completeStep); } else { toast(`通過檢查點 ${RACE.idx}/${s.points.length}`); refreshWorld(); } return; }
+  if (s.type === 'stealth') { WORLD.setState({ ...worldState(), beacon: null, guards: [] }); SFX.play('quest'); say(s.lines || [[null, '成功潛入了！']], completeStep); return; }
 }
 function runChoice(s) {
   let qi = 0; const who = s.npc || null;
@@ -331,6 +406,7 @@ function onInteract(n) {
   if (dialogOpen) return;
   const st = chState(), s = curStep();
   if (n.kind === 'npc') {
+    if (s && s.type === 'escort' && s.npc === n.id && !ESC) { say(s.startLines || [], () => { ESC = true; refreshWorld(); toast(`護送開始：帶${n.name}到「${s.label}」`, 'gold'); }); return; }
     if (s && s.type === 'talk' && s.npc === n.id) { say(s.lines, completeStep); return; }
     if (s && s.type === 'choice' && s.npc === n.id) { runChoice(s); return; }
     if (s && s.type === 'talkAll' && s.npcs.includes(n.id) && !st.talked.includes(n.id)) {
@@ -351,7 +427,7 @@ function beginFight(n, carryHp) {
   WORLD.paused = true;
   const s = curStep(); if (s && s.type === 'gauntlet' && !n.boss && !CHAIN) CHAIN = { wins: [] };
   startBattle({
-    playerId: SAVE.data.player, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id), hp: carryHp ? carryHp[id] : undefined })), enemyId: n.id, chapterId: CH.id, isBoss: n.boss, enemyLv: ENEMY_LEVEL[CH.id] + (n.boss ? BOSS_LEVEL_BONUS : 0),
+    playerId: SAVE.data.player, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id), hp: carryHp ? carryHp[id] : undefined })), enemyId: n.id, chapterId: CH.id, isBoss: n.boss, enemyLv: enemyLvFor(n.boss),
     onEnd: (r) => onBattleEnd(r, n),
     onLeave: () => { showScreen('worldScreen'); if (pendingClear) AUDIO.stopSong(); WORLD.paused = false; refreshWorld(); coins(); if (pendingClear) { const pc = pendingClear; pendingClear = null; setTimeout(() => showClear(pc), 350); } }
   });
@@ -360,7 +436,7 @@ let pendingClear = null;
 function onBattleEnd(r) {
   const st = chState(), s = curStep(), msgs = [];
   if (r.win) { track('wins'); if (r.isBoss) track('bossWins'); }
-  if (r.win) { const elv = ENEMY_LEVEL[CH.id] + (r.isBoss ? BOSS_LEVEL_BONUS : 0), amt = Math.round((30 + elv * 6) * (r.isBoss ? 3 : 1)), lead = SAVE.data.lineup[0] || SAVE.data.player; const ex = gainExp(lead, amt); SAVE.data.lineup.filter(id => id !== lead).forEach(id => gainExp(id, Math.round(amt * (1 - GAME_SETTINGS.shareExp)), true)); if (ex) msgs.push(expText(ex) + (SAVE.data.lineup.length > 1 ? '（陣容全員）' : '')); const bry = Math.round((40 + elv * 8) * (r.isBoss ? 4 : 1)); addBerry(bry); msgs.push(`貝里 +${bry.toLocaleString()}`); }
+  if (r.win) { const elv = enemyLvFor(r.isBoss), amt = Math.round((30 + elv * 6) * (r.isBoss ? 3 : 1)), lead = SAVE.data.lineup[0] || SAVE.data.player; const ex = gainExp(lead, amt); SAVE.data.lineup.filter(id => id !== lead).forEach(id => gainExp(id, Math.round(amt * (1 - GAME_SETTINGS.shareExp)), true)); if (ex) msgs.push(expText(ex) + (SAVE.data.lineup.length > 1 ? '（陣容全員）' : '')); const bry = Math.round((40 + elv * 8) * (r.isBoss ? 4 : 1)); addBerry(bry); msgs.push(`貝里 +${bry.toLocaleString()}`); }
   if (s && s.type === 'gauntlet' && !r.isBoss && CHAIN) {
     if (!r.win) { CHAIN = null; renderQuest(); return { message: '連戰中斷了。整理好狀態，再從第一場開始。' }; }
     CHAIN.wins.push(r.enemyId);
@@ -399,16 +475,18 @@ function faceFor(who) {
   const n = CH.npcs.find(x => x.id === who); return { name: n ? n.name : who, html: `<span class="dlg-emblem npc-${n ? n.look : ''}">${(n ? n.name.replace(/^.*\s/, '') : '?').slice(0, 1)}</span>`, role: n && n.role };
 }
 function say(lines, done, choices) { dlgQueue = lines.slice(); dlgDone = done || null; dlgChoices = choices || null; dialogOpen = true; if (WORLD) WORLD.paused = true; $('dialog').classList.add('show'); nextLine(); }
+/* 「」裡的關鍵字標色（賽爾號式重點提示） */
+function dlgHL(t) { return esc(t).replace(/「([^」]{1,14})」/g, '「<em class="kw">$1</em>」'); }
 function nextLine() {
-  if (typing) { clearInterval(typing.h); $('dlgText').textContent = typing.full; typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); return; }
+  if (typing) { clearInterval(typing.h); $('dlgText').innerHTML = dlgHL(typing.full); typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); return; }
   if (!dlgQueue.length) { if (dlgChoices) return; hideDialog(); const f = dlgDone; dlgDone = null; f && f(); return; }
   const [who, text] = dlgQueue.shift(), f = faceFor(who);
   $('dlgFace').innerHTML = f.html; $('dlgFace').classList.toggle('foe', !!f.foe);
   $('dlgName').innerHTML = esc(f.name) + (f.role ? `<small>${esc(f.role)}</small>` : '');
   $('dlgChoices').innerHTML = ''; $('dlgNext').style.visibility = 'visible';
   const el = $('dlgText'); el.textContent = ''; let i = 0; const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) { el.textContent = text; if (!dlgQueue.length && dlgChoices) showChoices(); return; }
-  typing = { full: text, h: setInterval(() => { i += 1; el.textContent = text.slice(0, i); if (i % 3 === 0) SFX.play('blip'); if (i >= text.length) { clearInterval(typing.h); typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); } }, 26) };
+  if (reduce) { el.innerHTML = dlgHL(text); if (!dlgQueue.length && dlgChoices) showChoices(); return; }
+  typing = { full: text, h: setInterval(() => { i += 1; el.textContent = text.slice(0, i); if (i % 3 === 0) SFX.play('blip'); if (i >= text.length) { clearInterval(typing.h); el.innerHTML = dlgHL(text); typing = null; if (!dlgQueue.length && dlgChoices) showChoices(); } }, 26) };
 }
 function showChoices() {
   $('dlgNext').style.visibility = 'hidden';
@@ -562,6 +640,22 @@ pullFree = openSlot;
 /* ---------- 商店 ---------- */
 window.addEventListener('DOMContentLoaded', () => { $('slotSpin').onclick = spinSlot; $('slotLever').onclick = spinSlot; });
 window.addEventListener('DOMContentLoaded', boot);
+/* 公告板：可展開／收合（手機預設收合） */
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(NEWS_OPEN_KEY); setNewsOpen(saved ? saved === '1' : innerWidth > 860);
+  $('newsToggle').onclick = () => setNewsOpen(document.querySelector('.news-board').classList.contains('collapsed'));
+  // 手機選單：把頂部列的文字按鈕收進「選單」
+  document.querySelectorAll('.topbar-right').forEach(tr => {
+    const btns = [...tr.querySelectorAll('.btn-ghost,.btn-gold')]; if (btns.length < 2) return;
+    const m = document.createElement('button'); m.className = 'icon-btn m-menu'; m.setAttribute('aria-label', '選單'); m.textContent = '☰'; tr.appendChild(m);
+    m.onclick = () => { const snd = tr.querySelector('[data-snd]'); $('menuGrid').innerHTML = btns.map((b, i) => `<button class="${b.classList.contains('btn-gold') ? 'btn-gold' : 'btn-ghost'}" data-i="${i}">${b.textContent}</button>`).join('') + (snd ? `<button class="btn-ghost" data-snd-m>音樂：${AUDIO.pref.muted ? '關' : '開'}</button>` : '');
+      $('menuGrid').querySelectorAll('[data-i]').forEach(x => x.onclick = () => { closeSheet(); btns[+x.dataset.i].click(); });
+      const sm = $('menuGrid').querySelector('[data-snd-m]'); if (sm) sm.onclick = () => { toggleSound(); sm.textContent = '音樂：' + (AUDIO.pref.muted ? '關' : '開'); };
+      $('menuSheet').classList.add('show'); };
+  });
+  $('menuClose').onclick = closeSheet; $('menuSheet').onclick = e => { if (e.target.id === 'menuSheet') closeSheet(); };
+});
+function closeSheet() { $('menuSheet').classList.remove('show'); }
 /* 切到背景時暫停 3D 與音樂，回來再繼續 */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (WORLD && WORLD.running) { WORLD._wasRunning = true; WORLD.stop(); } AUDIO.suspend && AUDIO.suspend(); }

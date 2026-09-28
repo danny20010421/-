@@ -57,6 +57,8 @@ function renderAdmin(tab) {
       ${field('首殺 BOSS 加入機率', 'bossJoinFirst', S.bossJoinFirst, 'number', 'step="0.05" min="0" max="1"')}
       ${field('重複擊敗 BOSS 加入機率', 'bossJoinRepeat', S.bossJoinRepeat, 'number', 'step="0.05" min="0" max="1"')}
       ${field('BOSS 加入時的等級', 'bossJoinLv', S.bossJoinLv, 'number', 'min="1" max="100"')}
+      ${field('屬性克制倍率（1 = 關閉）', 'typeUp', S.typeUp, 'number', 'step="0.05" min="1" max="3"')}
+      ${field('屬性微弱倍率（1 = 關閉）', 'typeDown', S.typeDown, 'number', 'step="0.05" min="0.1" max="1"')}
       <label class="af check"><input name="unlockAll" type="checkbox" ${S.unlockAll ? 'checked' : ''}><span>全部篇章直接開放（不需依序解鎖）</span></label>
     </div>`;
   } else if (tab === 'chars') {
@@ -111,7 +113,7 @@ function collectAdmin() {
   const P = $('adminPane'), tab = document.querySelector('#adminNav .on').dataset.tab, v = (n, root) => (root || P).querySelector(`[name="${n}"]`);
   try {
     if (tab === 'general') {
-      ADM.settings = Object.assign(ADM.settings || {}, {}); ['turnSeconds', 'bossRevives', 'itemsPerBattle', 'startTokens', 'clearBonus', 'shareExp', 'atkStep', 'defStep', 'spdStep', 'freezeDot', 'freezeSlow', 'burnDot', 'weakDealt', 'armorBreak', 'bossJoinFirst', 'bossJoinRepeat', 'bossJoinLv'].forEach(k => ADM.settings[k] = num(v(k).value, GAME_SETTINGS[k]));
+      ADM.settings = Object.assign(ADM.settings || {}, {}); ['turnSeconds', 'bossRevives', 'itemsPerBattle', 'startTokens', 'clearBonus', 'shareExp', 'atkStep', 'defStep', 'spdStep', 'freezeDot', 'freezeSlow', 'burnDot', 'weakDealt', 'armorBreak', 'bossJoinFirst', 'bossJoinRepeat', 'bossJoinLv', 'typeUp', 'typeDown'].forEach(k => ADM.settings[k] = num(v(k).value, GAME_SETTINGS[k]));
       ADM.settings.unlockAll = v('unlockAll').checked;
     } else if (tab === 'chars') {
       ADM.characters = ADM.characters || {}; const o = { name: v('name').value.trim(), title: v('title').value.trim(), maxHp: num(v('maxHp').value), baseSpeed: num(v('baseSpeed').value), scale: num(v('scale').value), desc: v('desc').value, skills: [] };

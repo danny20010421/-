@@ -24,7 +24,7 @@ function startBattle(opts) {
   // 入場動畫
   ['L', 'R'].forEach(s => { const el = $('bF' + s); el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); });
   log(`對戰開始：${p.name} 對上 ${e.name}`);
-  if (isBoss) log(`BOSS 戰：敵方全能力額外 +${battle.difficulty.bossStages}，倒下後會復活 ${GAME_SETTINGS.bossRevives} 次。`);
+  if (isBoss) log(`BOSS 戰：敵方全能力額外 +${battle.difficulty.bossStages}，倒下後會復活 ${(battle.opts.revives ?? battle.difficulty.revives ?? GAME_SETTINGS.bossRevives)} 次。`);
   battle.isBusy = true; renderSkills();
   banner(isBoss ? 'BOSS 戰' : '對戰開始', isBoss ? 'boss' : '');
   setTimeout(() => { if (battle && !battle.gameOver) beginTurn(); }, 1100);
@@ -225,7 +225,7 @@ async function executeAction(side, idx) {
 }
 function checkBattleEnd() {
   const b = battle;
-  if (b.enemy.hp <= 0 && b.isBoss && b.bossRevivesUsed < GAME_SETTINGS.bossRevives) {
+  if (b.enemy.hp <= 0 && b.isBoss && b.bossRevivesUsed < (battle.opts.revives ?? battle.difficulty.revives ?? GAME_SETTINGS.bossRevives)) {
     b.bossRevivesUsed++; b.enemy.hp = b.enemy.maxHp; const st = b.enemy.status; st.freeze = 0; st.petrify = 0; st.skipAttack = 0; st.attackFail = 0; st.dots = []; st.skillNullify = 0;
     log(`${b.enemy.name} 再次站了起來，體力全滿`); banner('BOSS 復活', 'boss'); spawnSupport('R', false); renderHUD(true); return false;
   }
@@ -265,7 +265,7 @@ function log(t, who) {
   const list = $('bLogList'); list.prepend(li); while (list.children.length > 40) list.lastChild.remove();
   const tk = $('bTicker'); tk.textContent = t; tk.classList.remove('pop'); void tk.offsetWidth; tk.classList.add('pop');
 }
-function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function wait(ms) { return new Promise(r => setTimeout(r, ms / (window.BSPEED || 1))); }
 function showFx(text) { floatText(null, text, 'status'); }
 function banner(text, kind) { const el = $('bBanner'); el.textContent = text; el.className = 'b-banner ' + (kind || ''); void el.offsetWidth; el.classList.add('show'); }
 function fighterPoint(side) {

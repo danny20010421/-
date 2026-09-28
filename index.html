@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
 <div id="app">
@@ -35,9 +36,10 @@
     </div>
   </div>
   <aside class="news-board" aria-label="最新公告">
-    <header><h2>船上告示</h2><div class="news-tabs" id="newsTabs"></div></header>
+    <header><button class="news-toggle" id="newsToggle" aria-expanded="true" aria-controls="newsBody"><h2>船上告示</h2><span class="nt-count" id="newsCount"></span><i class="nt-arrow" aria-hidden="true">▾</i></button></header>
+    <div class="news-body" id="newsBody"><div class="news-tabs" id="newsTabs"></div>
     <ol class="news-list" id="newsBoard"></ol>
-    <button class="news-more" id="newsMoreBtn">查看全部與管理公告</button>
+    <button class="news-more" id="newsMoreBtn">查看全部與管理公告</button></div>
   </aside>
   <div class="login-foot">
     <span id="loginSaveInfo"></span>
@@ -53,6 +55,8 @@
       <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
       <div class="coin berry" title="貝里：打贏敵人、完成任務獲得，可在商店使用"><i class="berry-ico">B</i><b class="berryVal">0</b></div><div class="coin" title="寶藏幣：完成劇情任務獲得"><i class="coin-ico"></i><b id="coinTop">0</b></div>
       <button class="btn-ghost" id="bagBtnMap">背包</button>
+      <button class="btn-ghost" id="trainBtnMap">訓練營</button>
+      <button class="btn-ghost tr-btn" id="treasureBtnMap">寶藏日誌</button>
       <button class="btn-ghost" id="navyBtnMap">海軍本部</button>
       <button class="btn-gold" id="gachaBtnMap">懸賞處</button>
     </div>
@@ -84,7 +88,18 @@
   <div class="w-help" id="wHelp">WASD 移動・拖曳旋轉視角・點地面前往・E 互動</div>
   <div class="joy" id="joy"><i></i></div>
   <button class="act-btn" id="actBtn"></button>
+  <div class="act-bubbles" id="actBubbles" aria-live="polite"></div>
+  <div class="arrival" id="arrival" aria-hidden="true"></div>
+  <button class="denden" id="denden" aria-label="電話蟲：任務提示（H）" title="電話蟲：任務提示（H）"></button>
+  <nav class="w-dock" id="wDock" aria-label="功能列">
+    <button data-dock="crew"><i>⚓</i><span>角色</span></button>
+    <button data-dock="bag"><i>🎒</i><span>背包</span></button>
+    <button data-dock="hub"><i>📜</i><span>懸賞處</span></button>
+    <button data-dock="navy"><i>⚖</i><span>海軍本部</span></button>
+    <button data-dock="chart"><i>🗺</i><span>海圖</span></button>
+  </nav>
   <div class="dialog" id="dialog">
+    <div class="dlg-bust" id="dlgBust"></div>
     <div class="dlg-face" id="dlgFace"></div>
     <div class="dlg-body">
       <div class="dlg-name" id="dlgName"></div>
@@ -104,6 +119,10 @@
 
 <!-- ================= 對戰 ================= -->
 <section class="screen hidden" id="battleScreen">
+  <div class="b-trans" id="bTrans" aria-hidden="true"></div>
+  <div class="b-typebar" id="bTypeBar"></div>
+  <div class="b-yourturn" id="bYourTurn" aria-hidden="true"><span>你的回合</span></div>
+  <div class="b-victory" id="bVictory"></div>
   <div class="b-bg" id="bBg"></div>
   <div class="b-vignette"></div>
   <header class="b-top">
@@ -149,7 +168,7 @@
     <div class="cmd-side">
       <button class="cmd-btn" id="bItemBtn"><span>道具</span><small id="bItemCount">3/3</small></button>
       <button class="cmd-btn" id="bLogBtn"><span>紀錄</span><small>L</small></button>
-      <button class="cmd-btn flee" id="bFleeBtn"><span>撤退</span></button>
+      <button class="cmd-btn" id="bAutoBtn" aria-pressed="false" title="自動戰鬥">自動</button><button class="cmd-btn" id="bSpdBtn" title="戰鬥速度">×1</button><button class="cmd-btn flee" id="bFleeBtn"><span>撤退</span></button>
       <button class="cmd-btn snd" data-snd aria-label="音樂開關"><span>♪</span></button>
     </div>
   </footer>
@@ -235,8 +254,33 @@
     <div class="lineup-bar hidden" id="lineupBar"></div>
     <div class="crew-body"><div class="char-grid" id="charGrid"></div>
     <div class="char-detail" id="charDetail"></div></div>
+    <nav class="cx-tabs" id="crewTabs" role="tablist" aria-label="角色背包"></nav>
+    <div class="cx-pane" id="cxPane_crew"><p class="cx-note" id="cxMineNote"></p><div id="cxLineupSlot"></div><div class="cx-body"><div class="char-grid cx-grid" id="cxGrid"></div><div class="cx-detail" id="cxDetail"></div></div></div>
+    <div class="cx-pane hidden" id="cxPane_codex"><p class="cx-note" id="cxCodexNote"></p><div class="cx-body"><div class="char-grid cx-grid" id="cxCodexGrid"></div><div class="cx-detail" id="cxCodexDetail"></div></div></div>
+    <div class="cx-pane hidden" id="cxPane_train"><p class="cx-note" id="cxTrainNote"></p><div class="tc-planinfo" id="cxPlans"></div><div class="tc-slots" id="cxSlots"></div><div class="tc-picker hidden" id="cxPicker"></div></div>
     <footer><button class="btn-primary big" id="charConfirm">揚帆出航</button></footer>
   </div>
+</div>
+
+<div class="modal" id="treasureModal" role="dialog" aria-modal="true" aria-labelledby="trTitle">
+  <div class="modal-card">
+    <header><h2 id="trTitle">寶藏日誌・拉夫德魯之路</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
+    <p class="modal-note" id="trIntro"></p>
+    <div class="tr-prog" id="trProg"></div>
+    <ol class="tr-list" id="trList"></ol>
+    <div class="tr-final" id="trFinal"></div>
+  </div>
+</div>
+<div class="modal" id="storyModal" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+  <div class="modal-card story-card">
+    <h2 id="storyTitle"></h2>
+    <div class="story-text" id="storyText"></div>
+    <footer><button class="btn-gold big" id="storyBtn">繼續</button></footer>
+  </div>
+</div>
+
+<div class="sheet" id="menuSheet" role="dialog" aria-modal="true" aria-label="選單">
+  <div class="sheet-card"><div class="sheet-grip" aria-hidden="true"></div><div class="sheet-grid" id="menuGrid"></div><button class="btn-ghost sheet-close" id="menuClose">關閉</button></div>
 </div>
 
 <!-- 公告 -->
@@ -319,5 +363,8 @@
 <script src="js/admin.js"></script>
 <script src="js/app.js"></script>
 <script src="js/hub.js"></script>
+<script src="js/seer.js"></script>
+<script src="js/treasure.js"></script>
+<script src="js/crew.js"></script>
 </body>
 </html>

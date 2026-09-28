@@ -68,7 +68,7 @@ function renderNavy() {
   const id = navyPick, c = CHARACTERS[id]; if (!id) { $('navyDetail').innerHTML = ''; return; }
   const targets = ids.filter(x => x !== id && crewLv(x) < MAX_LV); if (!targets.includes(navyTarget)) navyTarget = targets[0] || null;
   const onlyOne = ids.length <= 1, lastInLineup = inLineup(id) && SAVE.data.lineup.length <= 1;
-  const reason = onlyOne ? '這是你唯一的船員，不能販賣。' : lastInLineup ? '陣容至少要留一位船員。請先把其他船員加入陣容。' : '';
+  const reason = onlyOne ? '這是你唯一的船員，不能販賣。' : (window.isTraining && isTraining(id)) ? '這位船員正在訓練營，訓練結束或中止後才能販賣。' : lastInLineup ? '陣容至少要留一位船員。請先把其他船員加入陣容。' : '';
   $('navyDetail').innerHTML = `<img src="${c.avatar}" alt=""><div class="nv-main">
     <h3>${c.name}<small>LV ${crewLv(id)}・稀有度 ${CHAR_RARITY[id] || 'R'}</small></h3>
     <p class="nv-warn">販賣後船員會離開船隊，<b>無法反悔</b>。之後只能再從懸賞召喚或擊敗 BOSS 取得。</p>

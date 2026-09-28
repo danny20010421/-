@@ -13,7 +13,7 @@ const FXE = (() => {
   }
   function add(e) { ensure(); e.t = 0; e.life = e.life || .6; list.push(e); if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); } return e; }
   function loop(now) {
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const dt = Math.min(.05, (now - last) / 1000) * (window.BSPEED || 1); last = now;
     cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
     list = list.filter(e => { e.t += dt; const k = Math.min(1, e.t / e.life); cx.save(); cx.globalCompositeOperation = e.add ? 'lighter' : 'source-over'; try { e.draw(cx, k, dt, e.t); } catch (err) { } cx.restore(); return e.t < e.life; });
     if (list.length) raf = requestAnimationFrame(loop); else { raf = 0; cx.clearRect(0, 0, W, H); }
@@ -195,4 +195,4 @@ function hitFX(side, theme, big) {
   FXE.P.speedLines(p.x, p.y, { life: big ? .42 : .26, a: big ? .8 : .5, n: big ? 60 : 40 });
   FXE.P.ring(p.x, p.y, { r1: big ? 230 : 150, color: col, life: .35 });
 }
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms) => new Promise(r => setTimeout(r, ms / (window.BSPEED || 1)));

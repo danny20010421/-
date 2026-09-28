@@ -62,6 +62,8 @@
       b.box(x, y + 12.4 * s, z, .1 * s, 1.2 * s, 2 * s, '#1c1c22', ry);
     },
     torch(b, x, y, z) { b.cyl(x, y - .2, z, .18, .14, 2.2, 5, '#4a3222'); b.sphere(x, y + 2.3, z, .38, 6, '#ffb347'); },
+    barrel(b, x, y, z, s) { s = s || 1; b.cyl(x, y - .1, z, .55 * s, .5 * s, 1.2 * s, 8, '#8a5a32', '#a8743f'); b.cyl(x, y + .25 * s, z, .57 * s, .57 * s, .08, 8, '#3a3a3a'); b.cyl(x, y + .8 * s, z, .56 * s, .56 * s, .08, 8, '#3a3a3a'); },
+    crate(b, x, y, z, s, ry) { s = s || 1; b.box(x, y - .1, z, 1.1 * s, 1.1 * s, 1.1 * s, '#9a7045', ry); b.box(x, y + .35 * s, z, 1.14 * s, .12, 1.14 * s, '#6b4a2f', ry); },
     arena(b, x, y, z, R, stone, n) {
       for (let i = 0; i < (n || 10); i++) { const a = i / (n || 10) * Math.PI * 2; b.box(x + Math.cos(a) * R, y - .3, z + Math.sin(a) * R, 1.2, 2.6 + (i % 2) * 1.2, 1.2, stone, a); }
       b.cyl(x, y - .55, z, R - 1.5, R - 1.5, .6, 18, shade(stone, .85), shade(stone, 1.05));
@@ -101,6 +103,11 @@
     brogy: { skin: '#d49a6a', hair: '#e8b33b', hs: 'long', beard: '#e8b33b', top: '#5a4028', bottom: '#3a2a1a', hat: 'horned', hatC: '#c9973a', sc: 2.25 },
     robinNpc: { skin: '#e8c0a0', hair: '#1b1b22', hs: 'long', top: '#f4f2ea', bottom: '#6a3a8a', hat: 'cowboy', hatC: '#6a3a8a', cape: '#f4f2ea' },
     shirahoshiNpc: { skin: '#f7dcc6', hair: '#ff9ac2', hs: 'long', top: '#ffd26c', tail: '#ff8fb8', hat: 'crown', hatC: '#e8c170', sc: 2.3 },
+    koby: { skin: '#f3d6bf', hair: '#ff9ac2', hs: 'short', top: '#f4f2ea', bottom: '#3f6fa3', belt: '#8a6240', sc: .95 },
+    bbPirate: { skin: '#c99a73', hair: '#1b1b1b', hs: 'short', top: '#3a2a3a', bottom: '#2b2b2b', hat: 'bandana', hatC: '#1b1b1b', belt: '#8a6240', sword: true },
+    guardFish: { skin: '#4a8aa8', hair: '#1b1b1b', hs: 'spiky', top: '#2b3e59', bottom: '#1f2e44', belt: '#c8322b', sword: true },
+    baroque: { skin: '#e0b08a', hair: '#3a2a1a', hs: 'short', top: '#1b1b22', bottom: '#1b1b22', glasses: 'sun', hat: 'cap', hatC: '#1b1b22' },
+    cp9guard: { skin: '#e0b08a', hair: '#1b1b1b', hs: 'short', top: '#f4f2ea', bottom: '#3a4a6a', hat: 'cap', hatC: '#f4f2ea', sword: true },
     garp: { skin: '#e0b08a', hair: '#e8e4dc', hs: 'short', beard: '#e8e4dc', top: '#f4f2ea', bottom: '#3f6fa3', cape: '#f4f2ea', belt: '#3a3a3a', sc: 1.2, bigArms: true },
     helmeppo: { skin: '#f0c9a4', hair: '#f2d36b', hs: 'short', top: '#f4f2ea', bottom: '#2b3e59', glasses: 'sun', belt: '#8a6240' },
     yamatoNpc: { skin: '#f3d6bf', hair: '#f4f7ff', hs: 'pony', top: '#f4f2ea', bottom: '#c8322b', legs: 'kimono', hat: 'horned', hatC: '#f4f7ff', obi: '#6a3a8a', sc: 1.12 },
@@ -186,6 +193,8 @@
     return renderer.mesh(b);
   }
 
+  function coneMesh(renderer) { const b = new Builder(); const N = 10, A = .7; for (let i = 0; i < N; i++) { const a0 = -A + i / N * 2 * A, a1 = -A + (i + 1) / N * 2 * A; b.tri([0, .15, 0], [Math.sin(a1), .15, Math.cos(a1)], [Math.sin(a0), .15, Math.cos(a0)], '#ff4a3a'); } return renderer.mesh(b); }
+  function moundMesh(renderer) { const b = new Builder(); b.sphere(0, 0, 0, 1.1, 7, '#5a3d27', .35); b.cyl(0, -.1, 0, .6, .5, .2, 7, '#2a1f18'); return renderer.mesh(b); }
   function beaconMesh(renderer) { const b = new Builder(); b.cyl(0, 0, 0, 2.2, 1.6, 26, 12, '#ffe7a0', '#ffe7a0'); return renderer.mesh(b); }
   function barrierMesh(renderer, col) { const b = new Builder(); b.cyl(0, 0, 0, 13, 13, 9, 28, col, col); return renderer.mesh(b); }
 
@@ -246,19 +255,31 @@
       D.clouds = []; for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, d = 90 + r() * 70; D.clouds.push([Math.cos(a) * d, -2 + r() * 14, Math.sin(a) * d, 4 + r() * 6, r() * 6]); }
     },
     dark(b, H, r, O, D) {
-      const col = (x, y, z) => { const n = hash(x, z); if (y < .9) return mix('#3a3346', '#453b52', n); return mix('#4a4458', '#5a5268', n * .8); };
+      // 蜂巢島：黑鬍子海賊團的海賊島（暮色、骷髏山、海賊城鎮、港口）
+      const col = (x, y, z) => { const n = hash(x, z); if (y < .9) return mix('#3a3230', '#4a3e38', n); if (y > 3.6) return mix('#7a5a40', '#8a6a4a', n); return mix('#6b4a32', '#7d583c', n * .9); };
       b.terrain(200, 70, H, col);
-      // 燈塔
-      const lx = -30, lz = 34, ly = H(lx, lz); b.cyl(lx, ly - .4, lz, 3, 2, 16, 10, '#d8d2c8'); b.cyl(lx, ly + 7, lz, 3.05, 2.6, 2, 10, '#9a2a22'); b.cyl(lx, ly + 15.6, lz, 2.4, 2.4, 2.4, 8, '#2a2a33'); b.cyl(lx, ly + 18, lz, 2.8, 0, 2, 8, '#9a2a22'); O.push([lx, lz, 3.5]);
-      D.lighthouse = [lx, ly + 16.8, lz];
-      // 尖岩與水晶
-      for (let i = 0; i < 60; i++) { const a = r() * Math.PI * 2, d = 18 + r() * 62, x = Math.cos(a) * d, z = Math.sin(a) * d; if (bad(x, z) || Math.hypot(x, z + 60) < 18 || Math.abs(x) < 6 || Math.hypot(x - lx, z - lz) < 8) continue; const y = H(x, z); if (y < .6) continue; if (r() < .55) { b.cyl(x, y - .5, z, 1 + r() * 1.5, 0, 4 + r() * 7, 5, mix('#3b3548', '#565066', r())); O.push([x, z, 1.6]); } else if (r() < .5) { b.cyl(x, y - .3, z, .7, 0, 2.6 + r() * 2, 4, '#9b6bff', '#c9a8ff', r()); O.push([x, z, 1]); } else { P.rock(b, x, y, z, 1 + r() * 1.6, r, '#3f3a4c'); O.push([x, z, 1.4]); } }
-      // 破碎要塞
-      const fy = H(0, -60); P.arena(b, 0, fy, -60, 14, '#4a4458', 12);
-      [[-16, -76, 12], [16, -76, 9], [-22, -60, 7], [22, -58, 10]].forEach(([x, z, h], i) => { b.box(x, fy - .5, z, 8, h, 3, '#3a3446', i * .3); O.push([x, z, 4]); });
-      [[-10, -48], [10, -48]].forEach(([x, z]) => { const y = H(x, z); b.cyl(x, y - .3, z, .2, .2, 6, 5, '#2a2a2a'); b.box(x + 1.5, y + 4.6, z, 3, 1.8, .1, '#141418'); b.sphere(x + 1.5, y + 4.8, z + .1, .45, 6, '#e8e4dc'); });
-      // 沉船
-      P.ship(b, 60, -2.4, -20, .7, 1, '#3a3446'); P.ship(b, -64, -3, -30, 2.2, .9, '#2c2838');
+      // 骷髏山
+      const sy = H(0, -100) - 6; b.sphere(0, sy + 34, -104, 34, 12, '#d8cdb8', .95, .06, 11); b.box(0, sy - 2, -104, 44, 20, 40, '#c8bca6', 0, .85);
+      b.sphere(-12, sy + 36, -76, 8, 8, '#1b1614', 1.1); b.sphere(12, sy + 36, -76, 8, 8, '#1b1614', 1.1); b.cyl(0, sy + 22, -74, 3.5, 0, 7, 3, '#1b1614', null, Math.PI);
+      for (let k = -4; k <= 4; k++) b.box(k * 4, sy + 10, -72, 3, 5, 3, '#efe6d2');
+      for (let x = -30; x <= 30; x += 10) O.push([x, -98, 12]);
+      P.arena(b, 0, H(0, -60), -60, 14, '#5a4a40', 12);
+      // 黑鬍子海賊旗
+      const flag = (x, z, h) => { const y = H(x, z); b.cyl(x, y - .3, z, .18, .15, h, 5, '#3a2a1a'); b.box(x + 2, y + h - 2.6, z, 4, 2.6, .12, '#141414'); [-1, 0, 1].forEach(k => b.sphere(x + 2 + k * 1.1, y + h - 1.4, z + .1, .38, 6, '#efe6d2')); };
+      [[-12, -46, 9], [12, -46, 9], [-30, 30, 8], [30, 32, 8], [48, 10, 10]].forEach(([x, z, h]) => flag(x, z, h));
+      // 海賊城鎮（拼湊的木屋）
+      [[-22, 30, .2], [-32, 16, -.3], [22, 22, .4], [34, 40, -.2], [-40, 38, .6], [16, 6, 0], [-18, 4, .3], [40, -6, -.4]].forEach(([x, z, a], i) => { P.house(b, x, H(x, z), z, 6, 5.5, 3.4, mix('#7a5a3a', '#9a7a52', r()), ['#4a2a2a', '#2f3a3a', '#5a3a1a'][i % 3], a); b.box(x + Math.sin(a) * 2.8, H(x, z) + 1.4, z + Math.cos(a) * 2.8, 1, 1.3, .06, '#efe2c0', a); O.push([x, z, 4.2]); });
+      // 篝火
+      [[-6, 26], [8, 14], [-26, -8], [26, -20]].forEach(([x, z]) => { const y = H(x, z); for (let k = 0; k < 4; k++) b.box(x, y - .1, z, 2.4, .35, .35, '#4a3222', k * Math.PI / 4); b.cyl(x, y + .1, z, .8, 0, 1.6, 6, '#ff7a2a'); b.cyl(x, y + .1, z, .45, 0, 2.2, 5, '#ffd26c'); O.push([x, z, 1.3]); });
+      // 瞭望塔
+      [[-44, -20], [44, -30], [-10, -30]].forEach(([x, z]) => { const y = H(x, z); [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, c]) => b.cyl(x + a * 1.4, y - .3, z + c * 1.4, .2, .2, 8, 4, '#5a3d27')); b.box(x, y + 7.6, z, 4, .4, 4, '#6b4a2f'); b.cyl(x, y + 8, z, 3.2, 0, 2, 4, '#3a2a1a', null, Math.PI / 4); O.push([x, z, 2.4]); });
+      // 港口與船（東側海賊船、南側海軍軍艦）
+      for (let i = 0; i < 9; i++) { b.box(56 + i * 2.2, -.2, 18, 2.1, .35, 3.4, i % 2 ? '#6a4a30' : '#5a3d27'); b.box(56 + i * 2.2, -3, 16.5, .35, 3, .35, '#3a2a1a'); }
+      P.ship(b, 76, 0, 4, 0, 1.1, '#1b1b1b'); P.ship(b, 72, 0, 34, .2, 1, '#1b1b1b'); P.ship(b, -78, 0, -10, 1.3, 1.2, '#1b1b1b');
+      P.ship(b, 20, 0, 88, Math.PI / 2, 1.2, '#f4f2ea');
+      // 枯木與岩石
+      for (let i = 0; i < 40; i++) { const a = r() * Math.PI * 2, d = 20 + r() * 58, x = Math.cos(a) * d, z = Math.sin(a) * d; if (bad(x, z) || Math.abs(x) < 6 || Math.hypot(x, z + 60) < 18 || z < -80) continue; const y = H(x, z); if (y < 1) continue; if (r() < .4) { b.cyl(x, y - .3, z, .35, .15, 4, 5, '#3a2a22', null, 0, [.6, .3]); b.cyl(x + .6, y + 3, z + .3, .12, .05, 1.8, 4, '#3a2a22', null, 0, [1, .5]); O.push([x, z, .8]); } else { P.rock(b, x, y, z, .9 + r() * 1.6, r, mix('#5a4a40', '#7a6a5a', r())); O.push([x, z, 1.4]); } }
+      [[-8, 36], [6, 38], [-14, 18], [18, 30]].forEach(([x, z], i) => i % 2 ? P.crate(b, x, H(x, z), z, 1, .4) : P.barrel(b, x, H(x, z), z));
     },
     enies(b, H, r, O, D) {
       const col = (x, y, z) => { const n = hash(x, z); if (y < .9) return mix('#9a9a92', '#aaa89e', n); if (Math.abs(x) < 7 && z < 40) return mix('#c9c3b0', '#d6d0bd', n); return mix('#7d8a6a', '#8e9a78', n); };
@@ -349,13 +370,13 @@
     east: { R: 78, flats: [[0, 44, 26], [0, -58, 18, 2.2], [0, 10, 16]], hill: 1.4 },
     alabasta: { R: 80, flats: [[0, 44, 26], [0, -60, 18, 1.8], [0, 0, 14]], hill: 2.2, bump: (x, z) => Math.sin(x * .09 + z * .05) * 1.4, carve: (x, z, h) => { const d = Math.hypot(x + 18, z - 18); return d < 8 ? h - (1 - d / 8) * 2.4 : h; } },
     skypiea: { R: 76, flats: [[0, 44, 26], [0, -62, 18, 2.6], [0, 0, 16]], hill: 1.2 },
-    dark: { R: 74, flats: [[0, 44, 24], [0, -60, 18, 2], [0, 0, 14]], hill: 2.4 },
+    dark: { R: 80, flats: [[0, 44, 24], [0, -60, 18, 2], [0, 0, 14], [0, -38, 10, 2]], hill: 1.9 },
     giant: { R: 80, flats: [[0, 44, 26], [0, -60, 18, 1.8], [0, 0, 16]], hill: 1.8 },
     enies: { R: 76, flats: [[0, 44, 26], [0, -60, 18, 2.2], [0, 0, 20], [0, -34, 12, 2]], hill: 1.2 },
     fishman: { R: 78, flats: [[0, 44, 26], [0, -60, 18, 1.8], [0, 0, 16]], hill: 1.6 },
     wano: { R: 80, flats: [[0, 44, 26], [0, -62, 18, 2], [0, 0, 14], [0, -40, 10, 2]], hill: 2 }
   };
-  const WATER = { east: '#2f8fbf', alabasta: '#3a8fb0', skypiea: '#f6fbff', dark: '#1b1630', giant: '#2e7d8f', enies: '#2a6f9a', fishman: '#1f6f8a', wano: '#2f6f7f' };
+  const WATER = { east: '#2f8fbf', alabasta: '#3a8fb0', skypiea: '#f6fbff', dark: '#1f4a6a', giant: '#2e7d8f', enies: '#2a6f9a', fishman: '#1f6f8a', wano: '#2f6f7f' };
 
   /* 細節：草叢、花、木桶木箱、市集攤位、燈火 */
   const THEME = {
@@ -363,7 +384,7 @@
     alabasta: { grass: '#8a9a4a', flower: ['#ff9a4a'], stall: '#3f6fa3', dry: true },
     skypiea: { grass: '#9ad07a', flower: ['#ffffff', '#ffe7a0', '#bfe8ff'], stall: '#8ab4d8' },
     enies: { grass: '#6d7a5a', flower: ['#e8e4dc'], stall: '#3a4a6a' },
-    dark: { grass: '#4a4458', flower: ['#9b6bff'], stall: '#3a3446', dry: true },
+    dark: { grass: '#6b5a40', flower: ['#e8553b'], stall: '#3a2a1a', dry: true },
     fishman: { grass: '#5fb88a', flower: ['#ff7f7f', '#ffe46a'], stall: '#e85a8a' },
     wano: { grass: '#6f8a46', flower: ['#f7b6cc', '#ffffff'], stall: '#c8322b' },
     giant: { grass: '#4f7d36', flower: ['#ffd26c', '#e8553b'], stall: '#7d5a3a' }
@@ -407,5 +428,5 @@
     return scene;
   }
 
-  global.SCENES = { buildScene, npcMesh, itemMesh, barrierMesh, beaconMesh, rng, lookScale };
+  global.SCENES = { buildScene, npcMesh, itemMesh, barrierMesh, beaconMesh, coneMesh, moundMesh, rng, lookScale };
 })(window);

@@ -1,0 +1,120 @@
+/* ================= 手機與小螢幕排版（最後載入，覆蓋其他樣式） ================= */
+.news-toggle{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:0;color:inherit;text-align:left;cursor:pointer}
+.news-toggle h2{margin:0}
+.nt-count{font-size:12px;color:#7a5a30;background:rgba(122,90,48,.12);padding:2px 8px;border-radius:99px}
+.nt-arrow{margin-left:auto;font-style:normal;transition:transform .2s}
+.news-board.collapsed .nt-arrow{transform:rotate(-90deg)}
+.news-board.collapsed .news-body{display:none}
+.news-board.collapsed{padding-bottom:12px}
+.m-menu{display:none}
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet.show{opacity:1;pointer-events:auto}
+.sheet-card{width:min(520px,100%);background:var(--panel,#10243a);border-radius:18px 18px 0 0;padding:10px 16px calc(16px + var(--safeB,0px));transform:translateY(30px);transition:transform .25s;border-top:1px solid rgba(201,151,58,.4)}
+.sheet.show .sheet-card{transform:none}
+.sheet-grip{width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.3);margin:0 auto 12px}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sheet-grid button{min-height:52px;font-size:16px;border-radius:12px}
+.sheet-close{width:100%;margin-top:12px;min-height:46px}
+
+@media (max-width:860px){
+  /* 頂部列：單行、不換行，文字按鈕收進選單 */
+  .topbar{height:auto;min-height:56px;padding:calc(6px + var(--safeT,0px)) 8px 6px;gap:6px;flex-wrap:nowrap;align-items:center}
+  .topbar-right{gap:6px;flex-wrap:nowrap;margin-left:auto;align-items:center}
+  .topbar-right>.btn-ghost,.topbar-right>.btn-gold{display:none}
+  .topbar-right>[data-snd]{display:none}
+  .m-menu{display:grid;place-items:center;font-size:20px}
+  .icon-btn{width:40px;height:40px;min-width:40px}
+  .topbar .coin{padding:4px 8px 4px 4px;font-size:14px;gap:4px;min-width:0}
+  .topbar .coin i{width:22px;height:22px}
+  .captain{min-width:0;flex:1 1 auto;max-width:44vw;padding:4px 6px 4px 4px;gap:6px}
+  .captain img{width:36px;height:36px}
+  .captain b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-size:14px;line-height:1.2;writing-mode:horizontal-tb}
+  .captain b em{font-size:11px;margin-left:4px}
+  .captain small{white-space:nowrap;font-size:11px}
+  .captain .btn-ghost{display:none}
+  .g-title{font-size:20px;white-space:nowrap}
+
+  /* 海圖：上半部可捲動地圖、下半部篇章卡 */
+  #chapterScreen{display:flex;flex-direction:column}
+  #chapterScreen .chart{position:relative;inset:auto;flex:0 0 auto;height:52vh;height:52dvh;margin-top:calc(58px + var(--safeT,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  #chapterScreen .chart-route,#chapterScreen .chart-nodes{position:absolute;left:0;right:0;top:0;height:1160px;bottom:auto}
+  #chapterScreen .chart-compass{display:none}
+  #chapterScreen .node{width:88px;height:88px;transform:translate(-50%,-50%)}
+  #chapterScreen .node .node-label,#chapterScreen .node span:last-child{font-size:14px;white-space:nowrap}
+  #chapterScreen .arc-card{position:relative;inset:auto;flex:1 1 auto;width:auto;max-height:none;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + var(--safeB,0px));margin:0}
+  .arc-art{display:none}
+  .arc-head h2{font-size:24px}
+  .arc-blurb{font-size:14px;line-height:1.7}
+  .arc-rhythm{font-size:13px;padding:8px 12px}
+  .arc-boss{padding:8px 10px;gap:10px}.arc-boss img,.boss-unk{width:46px;height:46px}
+  .arc-actions .btn-primary.big{width:100%;min-height:52px}
+
+  /* 島上：任務框與小地圖不互相擋住 */
+  #questBox{top:calc(62px + var(--safeT,0px));left:8px;max-width:min(62vw,300px);padding:10px 12px;font-size:12.5px}
+  #questBox h3{font-size:14px}
+  #minimap{width:92px;height:92px;top:calc(62px + var(--safeT,0px));right:8px}
+  .act-btn{bottom:calc(24px + var(--safeB,0px));right:16px;min-height:56px}
+
+  /* 登入頁：公告預設收合成一條 */
+  .news-board{max-height:52vh;overflow:auto}
+  .login-main .logo h1{font-size:clamp(44px,14vw,72px)}
+  .login-actions{flex-wrap:wrap}
+
+  /* 彈窗貼合螢幕 */
+  .modal-card{width:100%!important;max-width:100%!important;max-height:92dvh;border-radius:18px 18px 0 0;margin-top:auto}
+  .modal{align-items:flex-end}
+}
+@media (max-width:380px){
+  .topbar .coin.berry{display:none}
+  .captain{max-width:40vw}
+}
+@media (max-width:860px){
+  #worldScreen .m-menu{display:none}
+  #worldScreen .topbar .w-title,#worldScreen .topbar [id=wChapter]{font-size:16px;white-space:nowrap}
+  #wChapterSub{display:none}
+  #worldScreen .topbar>div:nth-child(2){padding:4px 10px;max-width:40vw;overflow:hidden}
+  #questBox{top:calc(56px + var(--safeT,0px))}
+}
+
+/* ===== 直式手機二次調整 ===== */
+.wlabel.me{background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
+.wlabel.me::after,.wlabel.me::before{display:none!important}
+.captain b{display:flex;align-items:baseline;gap:4px;min-width:0}
+.captain .cn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.captain b em{flex-shrink:0}
+@media (max-width:860px){
+  .w-title{flex-shrink:0;max-width:34vw}.w-title b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .cx-tabs{gap:0}.cx-tabs button{flex:1;padding:10px 4px;font-size:13.5px;white-space:nowrap}.cx-tabs small{display:none}
+  /* 懸賞處：扭蛋機縮小，抽獎按鈕不用捲動就看得到 */
+  #gachaScreen .g-main{grid-template-columns:1fr!important;gap:10px!important}
+  #gachaScreen .machine{width:min(58vw,240px)!important;margin:0 auto}
+  #gachaScreen .g-lead,#gachaScreen .rates{font-size:12.5px}
+  #gachaScreen .g-pulls{position:sticky;bottom:calc(8px + var(--safeB,0px));z-index:3}
+}
+/* 直式戰鬥：技能卡改為 3＋2 兩排、只顯示重點資訊 */
+@media (max-width:860px) and (orientation:portrait){
+  .plate .pl-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:28vw;display:inline-block;vertical-align:bottom}
+  .plate .pl-name small{display:none}
+  .b-cmd{display:grid!important;grid-template-columns:1fr;gap:6px;padding:6px 8px calc(8px + var(--safeB,0px))!important}
+  .b-cmd .b-team{order:0}
+  .skills{order:1;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important;overflow:visible!important}
+  .skill{min-height:0!important;height:auto!important;padding:7px 8px!important;display:flex!important;flex-direction:column;gap:2px}
+  .skill .sk-desc,.skill p,.skill .desc,.skill .tags,.skill .sk-tags{display:none!important}
+  .skill b,.skill .sk-name,.skill h4{font-size:14px!important;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;writing-mode:horizontal-tb!important}
+  .skill small,.skill .sk-meta{font-size:11px!important;white-space:nowrap}
+  .cmd-side{order:2;display:grid!important;grid-template-columns:repeat(6,1fr);gap:6px}
+  .cmd-side .cmd-btn{min-height:40px;padding:4px!important;font-size:13px}
+  .b-arena{bottom:clamp(250px,34vh,300px)!important}
+}
+@media (max-width:860px) and (orientation:portrait){
+  .skill.locked .sk-desc{display:block!important;font-size:11px}
+  .skill .sk-top{font-size:10.5px;gap:4px}.skill .sk-top kbd{display:none}
+  .skill .sk-pp{margin-top:3px}
+}
+@media (max-width:860px) and (orientation:portrait){
+  #bSkills{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+  #bSkills .skill{flex:none!important;min-width:0}
+  #bSkills .skill.ult{order:-1;aspect-ratio:auto!important;border-radius:10px!important;padding:7px 8px!important;align-items:stretch!important;text-align:left!important;flex-basis:auto!important}
+  #bSkills .skill.ult .sk-pp{width:auto!important}
+}
+@media (max-width:400px){.char .c-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px 3px}}
