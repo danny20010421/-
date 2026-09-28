@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/loader.css?v=26">
-<link rel="preload" as="image" href="assets/ui/loading_bg.webp?v=26">
-<link rel="stylesheet" href="css/style.css?v=26">
-<link rel="stylesheet" href="css/fx.css?v=26">
-<link rel="stylesheet" href="css/mobile.css?v=26">
-<link rel="stylesheet" href="css/ui2.css?v=26">
-<link rel="stylesheet" href="css/modes.css?v=26">
+<link rel="stylesheet" href="css/loader.css?v=30">
+<link rel="preload" as="image" href="assets/ui/loading_bg.webp?v=30">
+<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/fx.css?v=30">
+<link rel="stylesheet" href="css/mobile.css?v=30">
+<link rel="stylesheet" href="css/ui2.css?v=30">
+<link rel="stylesheet" href="css/modes.css?v=30">
 </head>
 <body>
 <div class="loader" id="loader" role="dialog" aria-modal="true" aria-label="遊戲載入中">
@@ -33,7 +33,7 @@
 
 <!-- ================= 登入 ================= -->
 <section class="screen" id="loginScreen">
-  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=26" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4?v=26" type="video/mp4"></video>
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=30" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4?v=30" type="video/mp4"></video>
   <div class="login-shade"></div>
   <header class="home-nav">
     <div class="hn-logo">海賊王</div>
@@ -95,7 +95,18 @@
       <button class="mode-card m-run" data-mode="run"><span class="mc-art" aria-hidden="true"></span><span class="mc-body"><b>奪寶大冒險</b><small>左右槳交替划船，越遠越刺激，沿途搶金幣</small><em id="mdRunBest"></em></span></button>
       <button class="mode-card m-stage" data-mode="stage"><span class="mc-art" aria-hidden="true"><i class="mc-island i1"></i><i class="mc-island i2"></i><i class="mc-route"></i></span><span class="mc-body"><b>關卡挑戰</b><small>登上八座傳說之島，推進原作劇情</small><em id="mdStageProg"></em></span></button>
       <button class="mode-card m-tower" data-mode="tower"><span class="mc-art" aria-hidden="true"></span><span class="mc-body"><b>勇者之塔</b><small>挑戰各地海賊，每 10 層一位 BOSS，共 120 層</small><em id="mdTowerProg"></em></span></button>
+      <button class="mode-card m-throne" data-mode="throne"><span class="mc-art" aria-hidden="true"></span><span class="mc-body"><b>登上虛空王座</b><small>派出三位船員挑戰伊姆完全體，比拚累積傷害</small><em id="mdThroneBest"></em></span></button>
     </div>
+  </div>
+</section>
+
+<!-- ================= 虛空王座 ================= -->
+<section class="screen hidden" id="throneScreen">
+  <header class="topbar"><button class="icon-btn" id="thBack" aria-label="返回">‹</button><div class="tw-title"><b>登上虛空王座</b><small>累積傷害挑戰</small></div><div class="topbar-right"></div></header>
+  <div class="th-wrap">
+    <aside class="th-boss" id="thBoss"></aside>
+    <section class="th-pick"><h3>選擇 3 位出戰船員 <small id="thCount"></small></h3><div class="th-grid" id="thGrid"></div><button class="btn-primary big" id="thGo" disabled>登上王座</button></section>
+    <aside class="th-rank"><h3>排行榜 <small>本機紀錄</small></h3><ol id="thRank"></ol></aside>
   </div>
 </section>
 
@@ -202,6 +213,7 @@
 
 <!-- ================= 對戰 ================= -->
 <section class="screen hidden" id="battleScreen">
+  <div class="void-dmg" id="voidDmg" hidden><small>累積傷害</small><b>0</b></div>
   <div class="b-trans" id="bTrans" aria-hidden="true"></div>
   <div class="b-typebar" id="bTypeBar"></div>
   <div class="b-yourturn" id="bYourTurn" aria-hidden="true"><span>你的回合</span></div>
@@ -283,7 +295,7 @@
   </nav>
   <div class="g-main tavern" data-pane="summon">
     <div class="g-scene-wrap"><div class="g-scene" id="machine">
-      <img class="g-bg" src="assets/ui/gacha_tavern.webp?v=26" alt="海賊酒館裡的寶藏扭蛋機">
+      <img class="g-bg" src="assets/ui/gacha_tavern.webp?v=30" alt="海賊酒館裡的寶藏扭蛋機">
       <i class="g-lamp" style="--x:16.16%;--y:12.96%"></i><i class="g-lamp" style="--x:5.72%;--y:24.54%;--d:-.7s"></i><i class="g-lamp" style="--x:18.05%;--y:80.56%;--d:-1.3s"></i><i class="g-lamp" style="--x:57.58%;--y:70.83%;--d:-.3s"></i><i class="g-lamp" style="--x:65.66%;--y:45.68%;--d:-1.9s"></i>
       <div class="g-motes" aria-hidden="true"><i style="--x:0%;--s:2px;--t:6s;--d:-0.0s"></i><i style="--x:37%;--s:3px;--t:7s;--d:-0.7s"></i><i style="--x:74%;--s:4px;--t:8s;--d:-1.4s"></i><i style="--x:11%;--s:2px;--t:9s;--d:-2.1s"></i><i style="--x:48%;--s:3px;--t:10s;--d:-2.8s"></i><i style="--x:85%;--s:4px;--t:6s;--d:-3.5s"></i><i style="--x:22%;--s:2px;--t:7s;--d:-4.2s"></i><i style="--x:59%;--s:3px;--t:8s;--d:-4.9s"></i><i style="--x:96%;--s:4px;--t:9s;--d:-5.6s"></i><i style="--x:33%;--s:2px;--t:10s;--d:-6.3s"></i><i style="--x:70%;--s:3px;--t:6s;--d:-7.0s"></i><i style="--x:7%;--s:4px;--t:7s;--d:-7.7s"></i><i style="--x:44%;--s:2px;--t:8s;--d:-8.4s"></i><i style="--x:81%;--s:3px;--t:9s;--d:-9.1s"></i><i style="--x:18%;--s:4px;--t:10s;--d:-9.8s"></i><i style="--x:55%;--s:2px;--t:6s;--d:-10.5s"></i><i style="--x:92%;--s:3px;--t:7s;--d:-11.2s"></i><i style="--x:29%;--s:4px;--t:8s;--d:-11.9s"></i><i style="--x:66%;--s:2px;--t:9s;--d:-12.6s"></i><i style="--x:3%;--s:3px;--t:10s;--d:-13.3s"></i><i style="--x:40%;--s:4px;--t:6s;--d:-14.0s"></i><i style="--x:77%;--s:2px;--t:7s;--d:-14.7s"></i></div>
       <div class="g-globe"><canvas class="g-cv" id="gCv" aria-hidden="true"></canvas><div class="m-caps" id="mCaps"></div><i class="g-glass"></i></div>
@@ -457,26 +469,27 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="loading" id="loading"><div class="ld-wheel"></div><span>載入中</span></div>
 
-<script src="js/data.js?v=26"></script>
-<script src="js/engine3d.js?v=26"></script>
-<script src="js/scenes.js?v=26"></script>
-<script src="js/world.js?v=26"></script>
-<script src="js/battle_core.js?v=26"></script>
-<script src="js/battle.js?v=26"></script>
-<script src="js/audio.js?v=26"></script>
-<script src="js/fx.js?v=26"></script>
-<script src="js/fx_choreo.js?v=26"></script>
-<script src="js/admin.js?v=26"></script>
-<script src="js/app.js?v=26"></script>
-<script src="js/hub.js?v=26"></script>
-<script src="js/seer.js?v=26"></script>
-<script src="js/treasure.js?v=26"></script>
-<script src="js/crew.js?v=26"></script>
-<script src="js/icons.js?v=26"></script>
-<script src="js/home.js?v=26"></script>
-<script src="js/modes.js?v=26"></script>
-<script src="js/runner.js?v=26"></script>
-<script src="js/tower.js?v=26"></script>
-<script src="js/loader.js?v=26"></script>
+<script src="js/data.js?v=30"></script>
+<script src="js/engine3d.js?v=30"></script>
+<script src="js/scenes.js?v=30"></script>
+<script src="js/world.js?v=30"></script>
+<script src="js/battle_core.js?v=30"></script>
+<script src="js/battle.js?v=30"></script>
+<script src="js/audio.js?v=30"></script>
+<script src="js/fx.js?v=30"></script>
+<script src="js/fx_choreo.js?v=30"></script>
+<script src="js/admin.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
+<script src="js/hub.js?v=30"></script>
+<script src="js/seer.js?v=30"></script>
+<script src="js/treasure.js?v=30"></script>
+<script src="js/crew.js?v=30"></script>
+<script src="js/icons.js?v=30"></script>
+<script src="js/home.js?v=30"></script>
+<script src="js/modes.js?v=30"></script>
+<script src="js/runner.js?v=30"></script>
+<script src="js/tower.js?v=30"></script>
+<script src="js/throne.js?v=30"></script>
+<script src="js/loader.js?v=30"></script>
 </body>
 </html>
