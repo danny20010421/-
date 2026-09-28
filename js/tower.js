@@ -19,7 +19,10 @@
     return id;
   }
   const skinOf = f => (TOWER.bossSkin || {})[f] || null;
-  const lvOf = f => Math.min(MAX_LV, Math.round(6 + f * .85 + (isBoss(f) ? 4 : 0)));
+  /* 第 1 層 LV25，每層 +0.75，BOSS 層再 +4，上限 LV100 */
+  const lvOf = f => Math.min(MAX_LV, Math.round(25 + (f - 1) * .75 + (isBoss(f) ? 4 : 0)));
+  let sel = null;
+  const replayOf = r => ({ berry: Math.round(r.berry * .3), items: {}, tokens: 0 });
   const chapterOf = f => TIER[Math.min(TIER.length - 1, Math.floor((f - 1) / 15))];
   function rewardOf(f) {
     const r = { berry: 60 + f * 15, items: {}, tokens: 0 };
@@ -34,31 +37,35 @@
   function render() {
     const s = state(), cur = Math.min(TOWER.floors, s.floor), done = s.floor > TOWER.floors;
     $('twSub').textContent = done ? '已登頂 120 層！' : `目前第 ${cur} 層・最高紀錄 ${s.best} 層`;
-    const from = Math.max(1, Math.min(TOWER.floors - 11, cur - 3)), rows = [];
-    for (let f = Math.min(TOWER.floors, from + 11); f >= from; f--) {
+    if (sel == null || sel > cur || (done && sel > TOWER.floors)) sel = done ? TOWER.floors : cur;
+    const rows = [];
+    for (let f = Math.min(TOWER.floors, cur + 2); f >= 1; f--) {
       const st = f < s.floor ? 'clear' : f === cur && !done ? 'now' : 'lock', c = { ...CHARACTERS[foeOf(f)], ...(skinOf(f) ? { avatar: SKINS[skinOf(f)].avatar, name: SKINS[skinOf(f)].name } : {}) };
-      rows.push(`<li class="tw-f ${st} ${isBoss(f) ? 'boss' : ''}" data-f="${f}"><span class="tw-no">${f}</span><img src="${c.avatar}" alt=""><span class="tw-n"><b>${isBoss(f) ? 'BOSS・' : ''}${c.name}</b><small>LV ${lvOf(f)}</small></span><i class="tw-st">${st === 'clear' ? '✓' : st === 'now' ? '挑戰中' : '🔒'}</i></li>`);
+      rows.push(`<li class="tw-f ${st} ${isBoss(f) ? 'boss' : ''} ${f === sel ? 'sel' : ''}" data-f="${f}" ${st !== 'lock' ? 'role="button" tabindex="0"' : ''}><span class="tw-no">${f}</span><img src="${c.avatar}" alt=""><span class="tw-n"><b>${isBoss(f) ? 'BOSS・' : ''}${c.name}</b><small>LV ${lvOf(f)}</small></span><i class="tw-st">${st === 'clear' ? (f === sel ? '重複挑戰' : '✓ 可重打') : st === 'now' ? '挑戰中' : '🔒'}</i></li>`);
     }
     $('twFloors').innerHTML = rows.join('');
-    const f = cur, c = { ...CHARACTERS[foeOf(f)], ...(skinOf(f) ? { image: SKINS[skinOf(f)].image, name: SKINS[skinOf(f)].name } : {}) }, r = rewardOf(f), L = lvStats(CHARACTERS[foeOf(f)], lvOf(f));
-    $('twPanel').innerHTML = done ? `<div class="tw-done"><h3>🏆 登頂成功</h3><p>你已經打敗了勇者之塔的所有對手。</p><button class="btn-ghost" id="twReset">重新挑戰（不再給獎勵）</button></div>` :
+    $('twFloors').querySelectorAll('.tw-f.clear,.tw-f.now').forEach(li => { const pick = () => { sel = +li.dataset.f; render(); }; li.onclick = pick; li.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } }; });
+    requestAnimationFrame(() => { const el = $('twFloors').querySelector('.tw-f.sel'); if (el) el.scrollIntoView({ block: 'center' }); });
+    const f = sel, replay = f < s.floor, c = { ...CHARACTERS[foeOf(f)], ...(skinOf(f) ? { image: SKINS[skinOf(f)].image, name: SKINS[skinOf(f)].name } : {}) }, r = rewardOf(f), L = lvStats(CHARACTERS[foeOf(f)], lvOf(f));
+    $('twPanel').innerHTML = (done ? '<p class="tw-top">🏆 已登頂 120 層！點左側任一層可以重複挑戰。</p>' : '') +
       `<div class="tw-foe ${isBoss(f) ? 'boss' : ''}"><div class="tw-art"><img src="${c.image}" alt=""></div>
         <div class="tw-info"><small>第 ${f} 層${isBoss(f) ? '・BOSS 層' : ''}</small><h3>${c.name}</h3><p class="tw-lv">LV ${lvOf(f)}・${c.title}</p>
         <div class="tw-stats"><span>體力 <b>${L.hp}</b></span><span>攻擊 <b>${L.atk}</b></span><span>防禦 <b>${L.def}</b></span><span>速度 <b>${L.spd}</b></span></div>
-        <p class="tw-rew">過關獎勵：<b>${rewardText(r)}</b></p>
+        <p class="tw-rew">${replay ? `重複挑戰獎勵：<b>${rewardText(replayOf(r))}・陣容經驗 ${Math.round((40 + f * 12) / 2)}</b><br><small>首次通關獎勵已領取，重複挑戰不影響目前樓層</small>` : `過關獎勵：<b>${rewardText(r)}</b>`}</p>
         <p class="tw-team">出戰陣容：${SAVE.data.lineup.map(id => `<img src="${CHARACTERS[id].avatar}" alt="${CHARACTERS[id].name}" title="${CHARACTERS[id].name}">`).join('')}</p>
-        <button class="btn-primary big" id="twGo">挑戰第 ${f} 層</button></div></div>`;
+        <button class="btn-primary big" id="twGo">${replay ? '重複挑戰' : '挑戰'}第 ${f} 層</button></div></div>`;
     const go = $('twGo'); if (go) go.onclick = () => fight(f);
-    const rs = $('twReset'); if (rs) rs.onclick = () => { s.floor = 1; s.replay = true; SAVE.save(); render(); };
   }
   function fight(f) {
     const s = state();
-    startBattle({ team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })), enemyId: foeOf(f), enemySkin: skinOf(f), enemyLv: lvOf(f), chapterId: chapterOf(f), isBoss: isBoss(f), revives: isBoss(f) ? 1 : 0,
+    startBattle({ team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })), enemyId: foeOf(f), enemySkin: skinOf(f), enemyLv: lvOf(f), bg: 'assets/ui/tower_bg.webp?v=23', chapterId: chapterOf(f), isBoss: isBoss(f), revives: isBoss(f) ? 1 : 0,
       onEnd: r => {
         if (!r.win) return { message: `第 ${f} 層挑戰失敗。調整陣容、升級船員後再來挑戰吧！` };
         track('wins'); track('towerWins'); if (isBoss(f)) track('bossWins');
-        const first = f > (s.best || 0) && !s.replay, rw = rewardOf(f);
-        s.floor = f + 1; s.best = Math.max(s.best || 0, f); SAVE.save();
+        if (f < s.floor) { const rr = replayOf(rewardOf(f)), ex = Math.round((40 + f * 12) / 2); addBerry(rr.berry); SAVE.data.lineup.forEach(id => gainExp(id, ex, true)); SAVE.save(); if (window.checkTitles) checkTitles(false);
+          return { message: `重複挑戰第 ${f} 層成功！<br>獲得 貝里 ${rr.berry.toLocaleString()}・陣容經驗 ${ex}`, next: { label: '再挑戰一次', fn: () => fight(f) }, alt: { label: '返回勇者之塔', fn: () => openTower(true) } }; }
+        const first = f > (s.best || 0), rw = rewardOf(f);
+        s.floor = f + 1; s.best = Math.max(s.best || 0, f); sel = null; SAVE.save();
         const lines = [`突破第 ${f} 層！`];
         if (first) { addBerry(rw.berry); if (rw.tokens) addTokens(rw.tokens, '勇者之塔'); Object.entries(rw.items).forEach(([k, n]) => { SAVE.data.inventory[k] = (SAVE.data.inventory[k] || 0) + n; }); SAVE.data.lineup.forEach(id => gainExp(id, 40 + f * 12, true)); SAVE.save(); lines.push(`獲得 ${rewardText(rw)}`); }
         if (window.checkTitles) checkTitles(false);
@@ -66,6 +73,6 @@
       },
       onLeave: () => openTower() });
   }
-  window.openTower = function () { if (typeof coins === 'function') coins(); render(); showScreen('towerScreen'); };
+  window.openTower = function (keepSel) { if (keepSel !== true) sel = null; if (typeof coins === 'function') coins(); render(); showScreen('towerScreen'); };
   window.addEventListener('DOMContentLoaded', () => { $('twBack').onclick = () => openModes(); $('twCrew').onclick = () => openCrew(); });
 })();

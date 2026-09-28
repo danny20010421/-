@@ -8,6 +8,7 @@ function layoutBattleHud() {
   const scr = $('battleScreen'); if (!scr || scr.classList.contains('hidden')) return;
   const S = scr.getBoundingClientRect(), bot = ids => Math.max(...ids.map(i => { const e = $(i); if (!e || !e.offsetParent) return 0; const r = e.getBoundingClientRect(); return r.height ? r.bottom : 0; }));
   const tb = $('bTypeBar'); if (tb) tb.style.top = (bot(['bPlateL', 'bPlateR', 'bTimerWrap']) - S.top + 6) + 'px';
+  const vd = $('voidDmg'); if (vd && !vd.hidden) vd.style.top = (bot(['bPlateL', 'bPlateR', 'bTimerWrap', 'bTypeBar']) - S.top + 8) + 'px';
   const tk = $('bTicker'), cmd = document.querySelector('#battleScreen .b-cmd'); if (tk && cmd) { tk.style.transform = 'translateX(-50%)'; const a = tk.getBoundingClientRect(), c = cmd.getBoundingClientRect(); const over = a.bottom - (c.top - 6); if (over > 0) tk.style.transform = `translate(-50%, ${-over}px)`; }
 }
 window.layoutBattleHud = layoutBattleHud;
@@ -40,10 +41,11 @@ function startBattle(opts) {
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
   const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
+  if (opts.throne) { e.maxHp = e.hp = 99999999; e.voidImmune = true; e.name = '伊姆（完全體）'; e.title = '虛空王座'; e.skills.forEach(s => { s.pp = s.maxPP = 9999; s.locked = 0; }); e.status.lives = 0; }
   if (battle) clearInterval(battle.timerHandle);
   battle = { team, pi, mustSwitch: false, player: p, enemy: e, round: 1, timer: 20, timerHandle: null, isBusy: false, gameOver: false, isBoss, bossRevivesUsed: 0, chapterId, onEnd, itemsUsed: 0, opts, difficulty: CHAPTER_DIFFICULTY[chapterId] || CHAPTER_DIFFICULTY.east };
   const ch = CHAPTERS.find(c => c.id === chapterId);
-  $('bBg').style.backgroundImage = `url("${ch ? ch.art : ''}")`;
+  $('bBg').style.backgroundImage = `url("${opts.bg || (ch ? ch.art : '')}")`; battle.voidDamage = 0; const vd = $('voidDmg'); if (vd) { vd.hidden = !opts.throne; vd.querySelector('b').textContent = '0'; }
   $('bLogList').innerHTML = ''; $('bResult').classList.remove('show'); closeDrawers(); $('bFL').classList.remove('down', 'hit'); $('bFR').classList.remove('down', 'hit');
   ['L', 'R'].forEach(s => { const c = s === 'L' ? p : e; $('bImg' + s).src = c.image; $('bAv' + s).src = c.avatar; $('bName' + s).textContent = c.name; $('bTitle' + s).textContent = c.title; $('bTypes' + s).innerHTML = c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join(''); $('bF' + s).style.setProperty('--sc', c.scale || .9); });
   $('bPlateR').classList.toggle('boss', !!isBoss);
@@ -87,6 +89,7 @@ function requestSwitch(i) {
 
 /* ---------- 介面繪製 ---------- */
 function renderHUD(instant) {
+  if (battle && battle.opts && battle.opts.throne) { const vd = $('voidDmg'); if (vd) vd.querySelector('b').textContent = (battle.voidDamage || 0).toLocaleString(); }
   if (!battle) return;
   ['L', 'R'].forEach(s => {
     const c = s === 'L' ? battle.player : battle.enemy, pct = Math.max(0, c.hp / c.maxHp * 100);
@@ -295,13 +298,14 @@ function finishBattle(win, fled) {
   setTimeout(() => {
     const res = b.onEnd ? b.onEnd({ win, fled, enemyId: b.enemy.id, isBoss: b.isBoss, rounds: b.round, team: b.team.map(f => ({ id: f.id, hp: f.hp })) }) : {};
     if (win && window.__tbcNext) { window.__tbcNext = false; showTBC(); } else window.__tbcNext = false;
-    $('bResTitle').textContent = fled ? '撤退' : win ? '勝利' : '戰敗';
+    $('bResTitle').textContent = res && res.title ? res.title : fled ? '撤退' : win ? '勝利' : '戰敗';
     $('bResult').className = 'b-result show ' + (fled ? 'fled' : win ? 'win' : 'lose');
     $('bResImg').src = win ? b.player.image : b.enemy.image;
     const lines = [];
     if (fled) lines.push('你離開了戰場，敵人還在原地等你。');
     else if (win) { lines.push(`${b.enemy.name} 被擊敗了，共 ${b.round} 回合。`); if (res && res.message) lines.push(res.message); }
     else lines.push(`${b.enemy.name} 還站著。補充道具、換個打法再來。`);
+    if (res && res.always) { lines.length = 0; lines.push(res.message); }
     $('bResDesc').innerHTML = lines.map(l => `<p>${l}</p>`).join('');
     $('bRetry').style.display = res && res.alt ? '' : win || (res && res.next) ? 'none' : ''; $('bRetry').textContent = res && res.alt ? res.alt.label : '再挑戰一次'; b.altFn = res && res.alt ? res.alt.fn : null;
     b.nextFn = res && res.next ? res.next.fn : null; $('bBack').textContent = res && res.next ? res.next.label : '回到島上';

@@ -20,6 +20,7 @@
     const tw = (d.tower || {}).best || 0; if (tw >= 10) give('tower10'); if (tw >= 50) give('tower50'); if (tw >= 120) give('tower120');
     const rb = (d.runner || {}).best || 0; if (rb >= 500) give('run500'); if (rb >= 2000) give('run2000'); if (rb >= 5000) give('run5000');
     if ((d.treasure || {}).done) give('laughtale');
+    const th = d.throne || {}; if ((th.runs || []).length || th.best) give('void1'); if ((th.best || 0) >= 1000000) give('void1m');
     if (got.length) { SAVE.save(); if (!silent) got.forEach((id, i) => setTimeout(() => { SFX.play('rare'); toast(`獲得稱號「${titleName(id)}」！可在玩家資料中更換`, 'gold'); }, i * 900)); }
     return got;
   }
@@ -63,6 +64,7 @@
     const rb = (d.runner || {}).best || 0, tw = (d.tower || {}).floor || 1, cl = CHAPTERS.filter(x => d.chapters[x.id] && d.chapters[x.id].cleared).length;
     if ($('mdRunBest')) $('mdRunBest').textContent = rb ? `最遠 ${rb} m` : '尚未挑戰';
     if ($('mdStageProg')) $('mdStageProg').textContent = `通關 ${cl}/${CHAPTERS.length}`;
+    if ($('mdThroneBest')) $('mdThroneBest').textContent = (d.throne && d.throne.best) ? `最高傷害 ${d.throne.best.toLocaleString()}` : '尚未挑戰';
     if ($('mdTowerProg')) $('mdTowerProg').textContent = `目前第 ${Math.min(TOWER.floors, tw)} 層`;
   }
   window.openModes = function () { profile(); checkTitles(false); if (typeof coins === 'function') coins(); refresh(); showScreen('modeScreen'); };
@@ -72,6 +74,6 @@
     $('mdBackBtn').onclick = () => { if (typeof loginInfo === 'function') loginInfo(); showScreen('loginScreen'); };
     $('mdCrewBtn').onclick = () => openCrew();
     $('mdHubBtn').onclick = () => openGacha('modeScreen');
-    document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { const m = b.dataset.mode; if (m === 'stage') openChart(); if (m === 'run') openRunner(); if (m === 'tower') openTower(); });
+    document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { const m = b.dataset.mode; if (m === 'stage') openChart(); if (m === 'run') openRunner(); if (m === 'tower') openTower(); if (m === 'throne') openThrone(); });
   });
 })();

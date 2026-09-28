@@ -26,7 +26,7 @@ function toast(msg, kind) { const el = $('toast'); el.textContent = msg; el.clas
 function openModal(id) { const _m = document.getElementById(id); if (_m) _m.querySelectorAll('.modal-card,.cx-detail,.cx-grid').forEach(e => e.scrollTop = 0); $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfOk').textContent = ok || '確定'; $('cfOk').onclick = () => { closeModal('confirmModal'); fn(); }; openModal('confirmModal'); }
-const SCREENS = ['loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
+const SCREENS = ['loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'throneScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
 let currentScreen = 'loginScreen';
 function showScreen(id) {
   document.querySelectorAll('.sk-tip.show').forEach(t => t.classList.remove('show'));
@@ -34,8 +34,8 @@ function showScreen(id) {
   const v = $('loginVideo'); if (id === 'loginScreen') { v.play && v.play().catch(() => { }); } else v.pause && v.pause();
   if (id === 'worldScreen') { WORLD && WORLD.start(); } else if (WORLD) WORLD.stop();
   const song = { loginScreen: 'title', modeScreen: 'map', chapterScreen: 'map', gachaScreen: 'gacha', worldScreen: CH ? CH.id : 'map' }[id];
-  if (song) AUDIO.playSong(song); else if (id === 'runnerScreen' || id === 'towerScreen') AUDIO.stopSong();
-  AUDIO.ambient(id === 'runnerScreen' ? 'seawind' : id === 'towerScreen' ? 'dungeon' : id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
+  if (song) AUDIO.playSong(song); else if (id === 'runnerScreen' || id === 'towerScreen' || id === 'throneScreen') AUDIO.stopSong();
+  AUDIO.ambient(id === 'runnerScreen' ? 'seawind' : id === 'towerScreen' || id === 'throneScreen' ? 'dungeon' : id === 'worldScreen' && CH ? ({ alabasta: 'wind', skypiea: 'wind' }[CH.id] || 'sea') : null);
 }
 function syncSound() { const off = AUDIO.pref.muted; document.querySelectorAll('[data-snd]').forEach(b => { b.classList.toggle('off', off); b.setAttribute('aria-pressed', String(!off)); }); $('soundBtn').textContent = '音樂：' + (off ? '關' : '開'); }
 function toggleSound() { AUDIO.setPref({ muted: !AUDIO.pref.muted }); AUDIO.unlock(); syncSound(); }
