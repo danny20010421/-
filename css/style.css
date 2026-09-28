@@ -958,3 +958,48 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
   .tc-planinfo,.tc-plans{grid-template-columns:repeat(2,1fr)}.cx-tabs button{padding:10px 10px;font-size:14px}
 }
 #cxTrainNote{display:block;line-height:1.7}
+
+/* ================= 奧義卡（第五技能） ================= */
+#bSkills .skill.ult.ult-v2{order:-1;flex:0 0 240px;aspect-ratio:auto;border-radius:14px;padding:0;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;text-align:left;
+  background:linear-gradient(160deg,#2a0f0a,#120608);border:2px solid #f3c969;
+  box-shadow:0 0 0 1px #6b3a0a inset,0 0 0 3px rgba(0,0,0,.6),0 0 18px rgba(255,190,80,.35),0 8px 24px rgba(0,0,0,.5);isolation:isolate;cursor:pointer}
+#bSkills .skill.ult.ult-v2::before{content:'';position:absolute;inset:-2px;border-radius:15px;padding:2px;background:conic-gradient(from var(--ua,0deg),#fff3c4,#e8a53b,#8a4a1a,#ffd26c,#fff3c4);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ultSpin 3s linear infinite;z-index:3;pointer-events:none}
+@property --ua{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes ultSpin{to{--ua:360deg}}
+.ult-art{position:absolute;inset:0;background-size:cover;background-position:60% 18%;z-index:-2;transform:scale(1.05);transition:transform .4s}
+.ult-v2::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,6,8,.05) 0%,rgba(18,6,8,.35) 40%,rgba(18,6,8,.94) 78%),radial-gradient(circle at 80% 10%,rgba(255,200,90,.25),transparent 50%)}
+.ult-shine{position:absolute;top:0;bottom:0;left:-60%;width:40%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,240,200,.45),transparent);transform:skewX(-18deg);animation:ultShine 2.8s ease-in-out infinite;pointer-events:none}
+@keyframes ultShine{0%,55%{left:-60%}85%,100%{left:130%}}
+.ult-ribbon{position:absolute;top:8px;left:-4px;z-index:2;display:flex;align-items:center;gap:6px;padding:3px 12px 3px 10px;background:linear-gradient(90deg,#c8322b,#8a1a14);color:#fff3c4;font-weight:900;font-size:12px;letter-spacing:.2em;clip-path:polygon(0 0,100% 0,92% 50%,100% 100%,0 100%);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.ult-ribbon kbd{letter-spacing:0;font-size:10px;padding:0 4px;border-radius:3px;background:rgba(0,0,0,.35);color:#ffd26c;border:0}
+.ult-name{position:relative;z-index:2;padding:0 12px;font-family:var(--serif);font-weight:900;font-size:21px;line-height:1.15;background:linear-gradient(180deg,#fffbe8 0%,#ffe08a 45%,#e8a53b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #3a1a06) drop-shadow(0 0 8px rgba(255,190,80,.55))}
+.ult-meta{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 12px 10px;font-size:11.5px;color:#ffd9a0;font-weight:700}
+.ult-gems{display:flex;gap:5px;margin-left:auto}
+.ult-gems i{width:12px;height:12px;transform:rotate(45deg);border-radius:2px;background:rgba(255,255,255,.12);border:1px solid rgba(255,220,150,.4)}
+.ult-gems i.on{background:radial-gradient(circle at 35% 35%,#fffbe8,#ffcf5a 45%,#c8322b);border-color:#fff3c4;box-shadow:0 0 8px rgba(255,190,80,.9)}
+.ult-desc{display:none}
+#bSkills .skill.ult.ult-v2:not(:disabled){animation:ultBreath 2.2s ease-in-out infinite}
+@keyframes ultBreath{50%{box-shadow:0 0 0 1px #6b3a0a inset,0 0 0 3px rgba(0,0,0,.6),0 0 30px rgba(255,190,80,.7),0 8px 24px rgba(0,0,0,.5)}}
+#bSkills .skill.ult.ult-v2:not(:disabled):hover{transform:translateY(-4px)}
+#bSkills .skill.ult.ult-v2:not(:disabled):hover .ult-art{transform:scale(1.12)}
+#bSkills .skill.ult.ult-v2:disabled{filter:grayscale(.85) brightness(.65);animation:none}
+#bSkills .skill.ult.ult-v2:disabled::before,#bSkills .skill.ult.ult-v2:disabled .ult-shine{animation:none;opacity:.3}
+#bSkills .skill.ult.ult-v2 .sk-name,#bSkills .skill.ult.ult-v2 .sk-pp{display:none}
+@media (max-width:860px){#bSkills .skill.ult.ult-v2{flex-basis:170px}.ult-name{font-size:17px}}
+@media (max-width:860px) and (orientation:portrait){#bSkills .skill.ult.ult-v2{grid-column:span 1;min-height:92px}.ult-name{font-size:15px;padding:0 8px}.ult-meta{padding:2px 8px 7px}.ult-ribbon{font-size:10.5px;top:5px}}
+@media (max-width:860px) and (orientation:portrait){
+  #bSkills .skill.ult.ult-v2{grid-column:span 2!important;min-height:96px;justify-content:flex-end}
+  .ult-v2 .ult-name{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:26px}
+  .ult-v2 .ult-art{background-position:70% 15%}
+}
+/* 任務指引：邊緣箭頭、自動前往 */
+.guide-arrow{position:absolute;left:0;top:0;z-index:6;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;margin:-24px 0 0 -24px;opacity:0;transition:opacity .2s}
+.guide-arrow.show{opacity:1}
+.guide-arrow i{width:48px;height:48px;display:grid;place-items:center;font-style:normal;font-size:26px;color:#2a1a06;background:radial-gradient(circle,#ffe7a0,#e8a53b);border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 3px rgba(200,50,43,.8),0 6px 16px rgba(0,0,0,.45);animation:gaPulse 1s ease-in-out infinite}
+.guide-arrow b{font-family:var(--num);font-size:14px;color:#fff;background:rgba(6,18,30,.8);padding:1px 8px;border-radius:99px}
+@keyframes gaPulse{50%{box-shadow:0 0 0 7px rgba(200,50,43,.35),0 6px 16px rgba(0,0,0,.45)}}
+.q-foot{display:flex;align-items:center;gap:8px;margin-top:6px}
+.q-go{margin-left:auto;border:0;border-radius:99px;padding:6px 12px;font-weight:900;font-size:12.5px;color:#fff;background:linear-gradient(90deg,#c8322b,#e8553b);box-shadow:0 3px 8px rgba(0,0,0,.25);cursor:pointer}
+.q-go:active{transform:scale(.96)}
+.q-chest{font-size:12px;font-weight:800;color:#7a5a30;background:rgba(201,151,58,.2);padding:2px 8px;border-radius:99px}
+#questBox.mini>.q-foot{display:flex}#questBox.mini .q-rew{display:none}

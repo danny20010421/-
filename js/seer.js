@@ -23,6 +23,7 @@
     const p = W.p, opts = [];
     W.npcs.forEach(n => { const d = Math.hypot(n.x - p.x, n.z - p.z); if (d < 4.2 + SCENES.lookScale(n.look) * 1.2) opts.push({ d, key: 'n' + n.id, icon: 'talk', label: n.name, sub: '對話', fn: () => onInteract(n) }); });
     W.enemies.forEach(e => { const d = Math.hypot(e.x - p.x, e.z - p.z); if (d < 6.5) opts.push({ d, key: 'e' + e.id, icon: e.boss ? 'boss' : 'fight', label: CHARACTERS[e.id].name, sub: e.boss ? '挑戰 BOSS' : '挑戰', boss: e.boss, fn: () => onInteract(e) }); });
+    (W.chests || []).forEach(c => { if (c.opened) return; const d = Math.hypot(c.x - p.x, c.z - p.z); if (d < 4) opts.push({ d, key: 'c' + c.idx, icon: 'dig', label: '寶箱', sub: '打開', fn: () => onInteract(c) }); });
     if (W.canDig) opts.push({ d: 0, key: 'dig', icon: 'dig', label: '挖掘', sub: '調查', fn: () => W.interact() });
     opts.sort((a, b) => a.d - b.d); setBubbles(opts.slice(0, 4));
   }

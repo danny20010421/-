@@ -106,6 +106,14 @@ function renderSkills() {
     const dis = battle.isBusy || s.pp <= 0 || battle.gameOver || battle.mustSwitch;
     const tags = (s.tags || []).map(t => `<span class="tag ${t[1]}">${t[0]}</span>`).join('');
     const kind = s.ultimate ? '奧義' : s.type === 'attack' ? '攻擊' : '輔助';
+    if (s.ultimate) { const gems = Array.from({ length: s.maxPP }, (_, k) => `<i class="${k < s.pp ? 'on' : ''}"></i>`).join('');
+      return `<button class="skill ult ult-v2" data-i="${i}" ${dis ? 'disabled' : ''} title="${esc(s.desc)}">
+        <span class="ult-art" style="background-image:url('${p.ultimateBg || p.image}')"></span><span class="ult-shine"></span>
+        <span class="ult-ribbon">奧義<kbd>${i + 1}</kbd></span>
+        <span class="ult-name">${s.name}</span>
+        <span class="ult-meta">${s.power ? `<span>威力 ${s.power}</span>` : ''}<span class="ult-gems" aria-label="剩餘 ${s.pp} 次">${gems}</span></span>
+        <span class="ult-desc">${s.desc}</span>
+      </button>`; }
     return `<button class="skill ${s.ultimate ? 'ult' : s.type}" data-i="${i}" ${dis ? 'disabled' : ''} title="${esc(s.desc)}">
       <span class="sk-top"><kbd>${i + 1}</kbd><span class="sk-kind">${kind}</span><span class="sk-pow">${s.power ? '威力 ' + s.power : ''}</span></span>
       <span class="sk-name">${s.name}</span>

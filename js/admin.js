@@ -8,7 +8,15 @@ const ADMIN_BASE = {
   rarity: JSON.parse(JSON.stringify(RARITY)),
   cost: JSON.parse(JSON.stringify(GACHA_COST))
 };
-function adminLoad() { try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function adminLoad() {
+  let c; try { c = JSON.parse(localStorage.getItem(ADMIN_KEY) || '{}') || {}; } catch (e) { c = {}; }
+  // 舊版本的後台設定會把新劇情、新技能蓋回去：備份後停用
+  if (Object.keys(c).length && c.dataVersion !== DATA_VERSION) {
+    try { localStorage.setItem(ADMIN_KEY + '_backup_v' + (c.dataVersion || 'old'), JSON.stringify(c)); } catch (e) { }
+    localStorage.removeItem(ADMIN_KEY); window.__adminReset = true; return {};
+  }
+  return c;
+}
 function adminApply(cfg) {
   cfg = cfg || {};
   const B = JSON.parse(JSON.stringify(ADMIN_BASE));
@@ -105,7 +113,7 @@ function renderAdmin(tab) {
       <button class="btn-ghost danger" data-t="resetSave">清除遊戲進度</button>
       <button class="btn-ghost danger" data-t="resetAdmin">後台設定恢復預設</button></div>`;
     P.querySelectorAll('[data-t]').forEach(b => b.onclick = () => adminTool(b.dataset.t));
-    $('admImport').onchange = (e) => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { try { const c = JSON.parse(t); localStorage.setItem(ADMIN_KEY, JSON.stringify(c)); adminApply(c); ADM = c; renderAdmin('tools'); toast('後台設定已匯入'); } catch (err) { toast('檔案格式不正確，請選擇匯出的 JSON 檔', 'warn'); } }); };
+    $('admImport').onchange = (e) => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { try { const c = JSON.parse(t); c.dataVersion = DATA_VERSION; localStorage.setItem(ADMIN_KEY, JSON.stringify(c)); adminApply(c); ADM = c; renderAdmin('tools'); toast('後台設定已匯入'); } catch (err) { toast('檔案格式不正確，請選擇匯出的 JSON 檔', 'warn'); } }); };
   }
   $('adminStatus').textContent = '';
 }
@@ -138,7 +146,7 @@ function collectAdmin() {
 }
 function saveAdmin() {
   if (!collectAdmin()) return;
-  localStorage.setItem(ADMIN_KEY, JSON.stringify(ADM)); adminApply(ADM);
+  ADM.dataVersion = DATA_VERSION; localStorage.setItem(ADMIN_KEY, JSON.stringify(ADM)); adminApply(ADM);
   $('adminStatus').textContent = '已儲存並套用'; $('adminStatus').className = 'astatus ok'; SFX.play('coin');
   if (currentScreen === 'chapterScreen') openChart(selChapter);
   const t = document.querySelector('#adminNav .on').dataset.tab; renderAdmin(t); $('adminStatus').textContent = '已儲存並套用'; $('adminStatus').className = 'astatus ok';

@@ -9,16 +9,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/fx.css">
-<link rel="stylesheet" href="css/mobile.css">
+<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/fx.css?v=14">
+<link rel="stylesheet" href="css/mobile.css?v=14">
 </head>
 <body>
 <div id="app">
 
 <!-- ================= 登入 ================= -->
 <section class="screen" id="loginScreen">
-  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4" type="video/mp4"></video>
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=14" autoplay muted loop playsinline preload="auto"><source src="assets/login/loop.mp4?v=14" type="video/mp4"></video>
   <div class="login-shade"></div>
   <div class="login-main">
     <div class="logo">
@@ -72,7 +72,8 @@
 <!-- ================= 3D 世界 ================= -->
 <section class="screen hidden" id="worldScreen">
   <canvas id="worldCanvas"></canvas>
-  <div class="wlabels" id="worldLabels"></div>
+  <div class="guide-arrow" id="guideArrow" aria-hidden="true"><i>➤</i><b></b></div>
+    <div class="wlabels" id="worldLabels"></div>
   <div class="w-top">
     <button class="icon-btn" id="wBackBtn" aria-label="回到海圖">‹</button>
     <div class="w-title"><b id="wChapter"></b><span id="wChapterSub"></span></div>
@@ -351,20 +352,20 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="loading" id="loading"><div class="ld-wheel"></div><span>載入中</span></div>
 
-<script src="js/data.js"></script>
-<script src="js/engine3d.js"></script>
-<script src="js/scenes.js"></script>
-<script src="js/world.js"></script>
-<script src="js/battle_core.js"></script>
-<script src="js/battle.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/fx.js"></script>
-<script src="js/fx_choreo.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/app.js"></script>
-<script src="js/hub.js"></script>
-<script src="js/seer.js"></script>
-<script src="js/treasure.js"></script>
-<script src="js/crew.js"></script>
+<script src="js/data.js?v=14"></script>
+<script src="js/engine3d.js?v=14"></script>
+<script src="js/scenes.js?v=14"></script>
+<script src="js/world.js?v=14"></script>
+<script src="js/battle_core.js?v=14"></script>
+<script src="js/battle.js?v=14"></script>
+<script src="js/audio.js?v=14"></script>
+<script src="js/fx.js?v=14"></script>
+<script src="js/fx_choreo.js?v=14"></script>
+<script src="js/admin.js?v=14"></script>
+<script src="js/app.js?v=14"></script>
+<script src="js/hub.js?v=14"></script>
+<script src="js/seer.js?v=14"></script>
+<script src="js/treasure.js?v=14"></script>
+<script src="js/crew.js?v=14"></script>
 </body>
 </html>

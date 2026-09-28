@@ -17,7 +17,7 @@
     load(chapter, playerId, state) {
       if (this.scene) { this.r.free(this.scene.staticMesh); this.r.free(this.scene.water); }
       this.chapter = chapter; this.playerId = playerId;
-      this.scene = SCENES.buildScene(this.r, chapter.id, (state && state.clear) || []);
+      this.scene = SCENES.buildScene(this.r, chapter.id, (state && state.clear) || [], chapter.layout);
       const env = chapter.env; this.r.env = { sky: E3.hex(env.sky), ground: E3.hex(env.ground), fog: E3.hex(env.fog), fogR: env.fogR, sun: env.sun };
       const [sx, sz] = chapter.spawn; this.p = { x: sx, z: sz, y: this.scene.H(sx, sz), flip: false, moving: false, t: 0, target: null };
       this.cam.yaw = this.cam.tYaw = 0;
@@ -39,6 +39,8 @@
       this.bossUnlocked = !!st.bossUnlocked; this.target = st.target || null; this.beacon = st.beacon || null; this._reached = false;
       if (this.beacon) { this.beacon.y = this.scene.H(this.beacon.x, this.beacon.z); if (!this.beaconMesh) this.beaconMesh = SCENES.beaconMesh(this.r); }
       if (!this.coneMesh) { this.coneMesh = SCENES.coneMesh(this.r); this.moundMesh = SCENES.moundMesh(this.r); }
+      this.chests = (st.chests || []).map(c => ({ ...c, kind: 'chest', name: '寶箱' }));
+      if (!this.chestMesh) { const B = new E3.Builder(); B.box(0, 0, 0, 1.6, .9, 1.1, '#8a5a2e'); B.box(0, 0, 0, 1.66, .16, 1.16, '#e8c170'); B.box(0, .45, 0, 1.66, .12, 1.16, '#e8c170'); this.chestBase = this.r.mesh(B); const Lb = new E3.Builder(); Lb.box(0, 0, 0, 1.64, .45, 1.14, '#9a6a36', 0, .7); Lb.box(0, .1, .58, .3, .3, .06, '#ffd26c'); this.chestLid = this.r.mesh(Lb); this.chestMesh = true; }
       this.escort = st.escort || null; this._escDone = false; this.canDig = !!st.canDig; this.digMarks = st.digMarks || [];
       this.guards = (st.guards || []).map(g => ({ ...g, x: g.path[0][0], z: g.path[0][1], seg: 0, face: 0 }));
       this.guards.forEach(g => { if (!this.npcMeshes[g.look]) this.npcMeshes[g.look] = SCENES.npcMesh(this.r, g.look); });
@@ -66,7 +68,7 @@
       c.addEventListener('touchend', e => { if (e.touches.length < 2) pinch0 = 0; }, { passive: true });
       c.addEventListener('wheel', e => { e.preventDefault(); this.cam.dist = Math.max(10, Math.min(38, this.cam.dist + e.deltaY * .02)); }, { passive: false });
     }
-    setJoystick(x, y) { this.joy.x = x; this.joy.y = y; if (x || y) this.p.target = null; }
+    setJoystick(x, y) { this.joy.x = x; this.joy.y = y; if (x || y) { this.p.target = null; this.autoGo = false; } }
     _clickMove(e) {
       const rect = this.canvas.getBoundingClientRect(), nx = (e.clientX - rect.left) / rect.width * 2 - 1, ny = 1 - (e.clientY - rect.top) / rect.height * 2;
       const eye = this.r.eye, tg = this.r.target; let fx = tg[0] - eye[0], fy = tg[1] - eye[1], fz = tg[2] - eye[2]; const fl = Math.hypot(fx, fy, fz); fx /= fl; fy /= fl; fz /= fl;
@@ -81,9 +83,33 @@
       let best = null, bd = 1e9;
       for (const n of this.npcs) { const d = Math.hypot(n.x - this.p.x, n.z - this.p.z); if (d < TALK_R && d < bd) { bd = d; best = n; } }
       for (const e of this.enemies) { if (e.boss && !this.bossUnlocked) continue; const d = Math.hypot(e.x - this.p.x, e.z - this.p.z); if (d < FIGHT_R && d < bd) { bd = d; best = e; } }
+      for (const c of this.chests || []) { if (c.opened) continue; const d = Math.hypot(c.x - this.p.x, c.z - this.p.z); if (d < 3.2 && d < bd) { bd = d; best = c; } }
       return best;
     }
     interact() { const n = this.nearest(); if (!n) { if (this.canDig && this.cb.onDig) this.cb.onDig(this.p.x, this.p.z); return; } if (n.kind === 'npc') n.face = Math.atan2(this.p.x - n.x, this.p.z - n.z); this.cb.onInteract(n); }
+    /* 任務指引：目前目標的位置（光柱、任務 NPC、BOSS、收集物） */
+    guidePoint() {
+      const p = this.p, t = this.target;
+      if (this.beacon) return { x: this.beacon.x, z: this.beacon.z, label: this.beacon.label };
+      if (t && t.type === 'npc') { let best = null, bd = 1e9; for (const n of this.npcs) if (t.ids.includes(n.id)) { const d = Math.hypot(n.x - p.x, n.z - p.z); if (d < bd) { bd = d; best = n; } } if (best) return { x: best.x, z: best.z, label: best.name, npc: best }; }
+      if (t && t.type === 'boss') { const e = this.enemies.find(e => e.boss); if (e) return { x: e.x, z: e.z, label: 'BOSS・' + CHARACTERS[e.id].name }; }
+      const its = this.items.filter(i => !i.taken); if (its.length) { let best = its[0], bd = 1e9; for (const i of its) { const d = Math.hypot(i.x - p.x, i.z - p.z); if (d < bd) { bd = d; best = i; } } return { x: best.x, z: best.z, label: best.label || '任務道具' }; }
+      return null;
+    }
+    /* 目標在畫面外時，於螢幕邊緣顯示方向箭頭與距離 */
+    updateGuide() {
+      const el = document.getElementById('guideArrow'); if (!el) return; const g = this._guide;
+      if (!g || this.paused) { el.classList.remove('show'); return; }
+      const p = this.p, W = this.canvas.clientWidth, Hh = this.canvas.clientHeight, dist = Math.hypot(g.x - p.x, g.z - p.z);
+      const pr = this.r.project(g.x, this.scene.H(g.x, g.z) + 2, g.z);
+      if (pr && pr.x > 50 && pr.x < W - 50 && pr.y > 110 && pr.y < Hh - 80) { el.classList.remove('show'); return; }
+      const e = this.r.eye, tg = this.r.target, fx = tg[0] - e[0], fz = tg[2] - e[2], fl = Math.hypot(fx, fz) || 1, R = this.r.right;
+      const dx = g.x - p.x, dz = g.z - p.z, sx = dx * R[0] + dz * R[2], sy = (dx * fx + dz * fz) / fl, a = Math.atan2(-sy, sx);
+      const rx = W / 2 - 46, ry = Hh / 2 - 90; el.style.transform = `translate(${W / 2 + Math.cos(a) * rx}px, ${Hh / 2 + Math.sin(a) * ry}px)`;
+      el.querySelector('i').style.transform = `rotate(${a}rad)`; el.querySelector('b').textContent = Math.round(dist) + 'm';
+      el.classList.add('show');
+    }
+    autoGuide(on) { this.autoGo = on; if (!on) this.p.target = null; }
     goTo(obj) { this.p.target = [obj.x, obj.z + 3]; this._goObj = obj; }
 
     /* ---------- 更新 ---------- */
@@ -129,6 +155,13 @@
         const dp = Math.hypot(p.x - e.x, p.z - e.z); if (dp < 9) { e.flip = p.x < e.x; continue; }
         e.wt -= dt; if (e.wt <= 0 || !e.goal) { const a = Math.random() * 6.283, r = 1.5 + Math.random() * 4.5; e.goal = [e.home[0] + Math.cos(a) * r, e.home[1] + Math.sin(a) * r]; e.wt = 2.5 + Math.random() * 3; }
         const gx = e.goal[0] - e.x, gz = e.goal[1] - e.z, gd = Math.hypot(gx, gz); if (gd > .2) { const sp = Math.min(gd, 2.4 * dt); e.x += gx / gd * sp; e.z += gz / gd * sp; e.y = S0.H(e.x, e.z); e.flip = gx < 0; } }
+      this._guide = this.guidePoint();
+      if (this.autoGo) { const g = this._guide; if (!g || this.paused) this.autoGo = false; else { const d = Math.hypot(g.x - p.x, g.z - p.z);
+        if (d < (g.npc ? 3 : 2.2)) { this.autoGo = false; p.target = null; }
+        else { // 卡住時往側邊繞路
+          this._agT = (this._agT || 0) + dt; if (this._agT > .45) { const mv = Math.hypot(p.x - (this._agX ?? p.x), p.z - (this._agZ ?? p.z)); if (mv < .6 && !(this._det > 0)) { this._det = .9; this._detS = -(this._detS || 1); } this._agT = 0; this._agX = p.x; this._agZ = p.z; }
+          if (this._det > 0) { this._det -= dt; const a = Math.atan2(g.x - p.x, g.z - p.z) + this._detS * 1.3; p.target = [p.x + Math.sin(a) * 5, p.z + Math.cos(a) * 5]; } else p.target = [g.x, g.z]; } } }
+      if (Object.values(this.keys).some(Boolean)) this.autoGo = false;
       if (this.escort) { const n = this.npcs.find(n => n.id === this.escort.id); if (n) { const dx = p.x - n.x, dz = p.z - n.z, d = Math.hypot(dx, dz); n.walking = d > 3.4; if (n.walking) { const sp = Math.min(d - 3.2, SPEED * .95 * dt); n.x += dx / d * sp; n.z += dz / d * sp; n.face = Math.atan2(dx, dz); }
         if (!this._escDone && Math.hypot(n.x - this.escort.to[0], n.z - this.escort.to[1]) < (this.escort.r || 6)) { this._escDone = true; this.cb.onEscortDone && this.cb.onEscortDone(); } } }
       if (this._spotCd > 0) this._spotCd -= dt;
@@ -180,9 +213,12 @@
       for (const e of this.enemies) { const hh = e.boss ? 8 : 5.8; list.push({ url: CHARACTERS[e.id].image, x: e.x, y: e.y + Math.sin(t * 1.8 + e.x) * .12, z: e.z, h: hh, flip: e.flip !== undefined ? !e.flip : true, d: Math.hypot(e.x - eye[0], e.z - eye[2]), glow: e.boss && !this.bossUnlocked ? .0 : 0, tint: [1, 1, 1, 1] }); }
       list.forEach(o => { if (!o.d) o.d = Math.hypot(o.x - eye[0], o.z - eye[2]); }); list.sort((a, b) => b.d - a.d);
       for (const o of list) { const rec = r.texture(o.url); const asp = rec.ready ? rec.w / rec.h : .75; r.sprite(o.url, o.x, o.y, o.z, o.h * asp * (o.wk || 1), o.h, { flip: o.flip, tint: o.tint }); }
+      this.updateGuide();
+      for (const c of this.chests) { const cy = S.H(c.x, c.z), f = c.face || 0; r.draw(this.chestBase, M.trs(c.x, cy - .45, c.z, f, 1), { mat: 1 }); if (c.opened) r.draw(this.chestLid, M.mul(M.trs(c.x - Math.sin(f) * .5, cy + .55, c.z - Math.cos(f) * .5, f, 1), M.rx(-1.1)), { mat: 1 }); else { r.draw(this.chestLid, M.trs(c.x, cy + .1, c.z, f, 1), { mat: 1 }); const d = Math.hypot(c.x - p.x, c.z - p.z); if (d < 16) r.draw(this.beaconMesh, M.trs3(c.x, cy - .9, c.z, t, .5, .5 + Math.sin(t * 4) * .1, .5), { alpha: true, noCull: true, tint: [1, .9, .5, .35 * (1 - d / 16)] }); } }
       for (const g of this.guards) { const gy = S.H(g.x, g.z); r.draw(this.npcMeshes[g.look], M.trs(g.x, gy + Math.abs(Math.sin(t * 6 + g.x)) * .08, g.z, g.face, 1), { mat: 2 }); r.draw(this.coneMesh, M.trs3(g.x, gy + .05, g.z, g.face, g.view || 9, 1, g.view || 9), { alpha: true, noCull: true, tint: [1, .35, .25, .3 + Math.sin(t * 4) * .06] }); }
       for (const m of this.digMarks) r.draw(this.moundMesh, M.trs(m[0], S.H(m[0], m[1]), m[1], 0, 1), { mat: 1 });
-      if (this.beacon) r.draw(this.beaconMesh, M.trs3(this.beacon.x, this.beacon.y - 1, this.beacon.z, t, 1 + Math.sin(t * 3) * .08, 1, 1 + Math.sin(t * 3) * .08), { alpha: true, noCull: true, tint: [1, .9, .5, .28 + Math.sin(t * 4) * .06] });
+      if (this.beacon) { const by = this.beacon.y, pu = (t * .8) % 1; r.draw(this.beaconMesh, M.trs3(this.beacon.x, by - 1, this.beacon.z, t, 1.6 + Math.sin(t * 3) * .12, 2.6, 1.6 + Math.sin(t * 3) * .12), { alpha: true, noCull: true, tint: [1, .92, .55, .5] }); r.draw(this.beaconMesh, M.trs3(this.beacon.x, by - .9, this.beacon.z, 0, 1 + pu * 5, .02, 1 + pu * 5), { alpha: true, noCull: true, tint: [1, .85, .4, .55 * (1 - pu)] }); }
+      if (this.target && this.target.type === 'npc') for (const n of this.npcs) if (this.target.ids.includes(n.id)) { const ny = S.H(n.x, n.z), pu = (t * .9 + n.x * .01) % 1, sc = SCENES.lookScale(n.look); r.draw(this.beaconMesh, M.trs3(n.x, ny - .95, n.z, 0, (1.3 + pu * 2.2) * sc, .02, (1.3 + pu * 2.2) * sc), { alpha: true, noCull: true, tint: [1, .82, .3, .7 * (1 - pu)] }); r.draw(this.beaconMesh, M.trs3(n.x, ny - .95, n.z, 0, 1.3 * sc, .03, 1.3 * sc), { alpha: true, noCull: true, tint: [1, .85, .35, .45] }); }
       // BOSS 屏障
       const boss = this.enemies.find(e => e.boss);
       if (boss && !this.bossUnlocked) r.draw(this.barrier, M.trs3(boss.x, boss.y - 1, boss.z, t * .3, 1, 1 + Math.sin(t * 2) * .03, 1), { alpha: true, noCull: true, tint: [.6, .85, 1, .22 + Math.sin(t * 3) * .05] });
@@ -222,6 +258,7 @@
       for (const n of this.npcs) { const q = tg && tg.type === 'npc' && tg.ids.includes(n.id); dot(n.x, n.z, 3, q ? '#ffd26c' : '#f4ead2', q ? '#fff' : null); }
       if (this.beacon) dot(this.beacon.x, this.beacon.z, 5, '#ffd26c', '#fff');
       for (const g of this.guards) dot(g.x, g.z, 3.5, '#ff4a3a', '#fff');
+      if (this._guide) { const G = this._guide; ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,210,108,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo((this.p.x + 100) * sc, (this.p.z + 100) * sc); ctx.lineTo((G.x + 100) * sc, (G.z + 100) * sc); ctx.stroke(); ctx.restore(); if (Math.floor(now / 300) % 2) dot(G.x, G.z, 6, '#ffd26c', '#c8322b'); }
       for (const e of this.enemies) dot(e.x, e.z, e.boss ? 5 : 3.2, e.boss ? (this.bossUnlocked ? '#ff5a4a' : '#8f9bb0') : '#e8553b', e.boss ? '#ffd26c' : null);
       const px = (this.p.x + 100) * sc, pz = (this.p.z + 100) * sc, a = -this.cam.yaw;
       ctx.translate(px, pz); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 5); ctx.lineTo(0, 2.5); ctx.lineTo(-5, 5); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#0a1f33'; ctx.lineWidth = 1.5; ctx.stroke();

@@ -6,16 +6,20 @@
   function rng(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
   const sm = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   let CLEAR = [];
-  const bad = (x, z) => CLEAR.some(c => Math.hypot(x - c[0], z - c[1]) < (c[2] || 6));
+  const bad = (x, z) => CLEAR.some(c => Math.hypot(x - c[0], z - c[1]) < (c[2] || 6)) || (CUR_PATH && onPath(x, z, 4.5));
   const hash = (x, z) => { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); };
 
+  /* 各章路線：到路線折線的距離小於 w 就算在路上 */
+  let CUR_PATH = null;
+  function onPath(x, z, w) { const P2 = CUR_PATH; if (!P2) return Math.abs(x) < w && z > -54; for (let i = 0; i < P2.length - 1; i++) { const [ax, az] = P2[i], [bx, bz] = P2[i + 1], dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1))); if (Math.hypot(x - ax - dx * t, z - az - dz * t) < w) return true; } return false; }
   /* 通用島嶼高度：陸地半徑 R，重要地點會被整平 */
   function makeHeight(opt) {
     const R = opt.R || 76, flats = opt.flats || [];
     return function (x, z) {
       const r = Math.hypot(x, z * (opt.squash || 1));
       const wob = Math.sin(Math.atan2(z, x) * 5 + 1.3) * 5 + Math.sin(Math.atan2(z, x) * 11) * 2.2;
-      const land = 1 - sm(R - 12, R + 6, r + wob);
+      let land = 1 - sm(R - 12, R + 6, r + wob);
+      for (const L of opt.lobes || []) { const d = Math.hypot(x - L[0], z - L[1]) + wob * .4; land = Math.max(land, 1 - sm(L[2] - 9, L[2] + 4, d)); }
       let hills = 1.6 + Math.sin(x * 0.07) * Math.cos(z * 0.06) * (opt.hill || 1.6) + Math.sin(x * 0.13 + z * 0.1) * 0.7 + (opt.bump ? opt.bump(x, z) : 0);
       for (const f of flats) { const d = Math.hypot(x - f[0], z - f[1]); const k = 1 - sm(f[2] * 0.6, f[2], d); hills = hills * (1 - k) + (f[3] == null ? 1.6 : f[3]) * k; }
       hills = Math.max(hills, 0.9);
@@ -230,7 +234,7 @@
       [-18, -9, 0, 9, 18].forEach((x, i) => { b.sphere(x, py + (i === 2 ? 17 : 11), -84, i === 2 ? 5 : 3, 9, '#f6e8c8', .8); });
       [-24, 24].forEach(x => { b.cyl(x, py - 1, -80, 2.4, 2, 22, 8, '#e7d3a8'); b.sphere(x, py + 21.5, -80, 2.6, 8, '#d9b35c', 1); });
       for (let x = -40; x <= 40; x += 8) O.push([x, -80, 6]);
-      P.arena(b, 0, H(0, -60), -60, 14, '#c9a86a', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#c9a86a', 12);
       // 岩石、仙人掌
       for (let i = 0; i < 46; i++) { const a = r() * Math.PI * 2, d = 20 + r() * 60, x = Math.cos(a) * d, z = Math.sin(a) * d; if (bad(x, z) || Math.hypot(x + 18, z - 18) < 18 || Math.hypot(x, z + 60) < 18 || Math.abs(x) < 6 || z < -70) continue; const y = H(x, z); if (r() < .5) { P.rock(b, x, y, z, 1 + r() * 2.2, r, mix('#b58d5a', '#c9a06a', r())); O.push([x, z, 1.6]); } else { b.cyl(x, y - .2, z, .5, .45, 3 + r() * 2, 6, '#5d8a3a'); b.cyl(x + .9, y + 1.4, z, .3, .3, 1.4, 5, '#5d8a3a'); O.push([x, z, .9]); } }
       // 外圍台地
@@ -263,7 +267,7 @@
       b.sphere(-12, sy + 36, -76, 8, 8, '#1b1614', 1.1); b.sphere(12, sy + 36, -76, 8, 8, '#1b1614', 1.1); b.cyl(0, sy + 22, -74, 3.5, 0, 7, 3, '#1b1614', null, Math.PI);
       for (let k = -4; k <= 4; k++) b.box(k * 4, sy + 10, -72, 3, 5, 3, '#efe6d2');
       for (let x = -30; x <= 30; x += 10) O.push([x, -98, 12]);
-      P.arena(b, 0, H(0, -60), -60, 14, '#5a4a40', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#5a4a40', 12);
       // 黑鬍子海賊旗
       const flag = (x, z, h) => { const y = H(x, z); b.cyl(x, y - .3, z, .18, .15, h, 5, '#3a2a1a'); b.box(x + 2, y + h - 2.6, z, 4, 2.6, .12, '#141414'); [-1, 0, 1].forEach(k => b.sphere(x + 2 + k * 1.1, y + h - 1.4, z + .1, .38, 6, '#efe6d2')); };
       [[-12, -46, 9], [12, -46, 9], [-30, 30, 8], [30, 32, 8], [48, 10, 10]].forEach(([x, z, h]) => flag(x, z, h));
@@ -295,7 +299,7 @@
       // 世界政府旗
       b.cyl(8, ty + 36, -84, .2, .2, 14, 5, '#b8b0a0'); b.box(11, ty + 46, -84, 6, 4, .15, '#f4f2ea'); b.sphere(11, ty + 46, -83.9, 1.1, 6, '#3a6ad8');
       for (let x = -12; x <= 12; x += 6) O.push([x, -84, 9]);
-      P.arena(b, 0, H(0, -60), -60, 14, '#b8b0a0', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#b8b0a0', 12);
       // 無底洞瀑布感（外圍白色水花）
       for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, x = Math.cos(a) * 86, z = Math.sin(a) * 86; b.sphere(x, -1, z, 3 + r() * 3, 6, '#f4fbff', .5, .2, i + 2); }
       // 街燈與石柱
@@ -317,7 +321,7 @@
       [-16, 0, 16].forEach((x, i) => b.sphere(x, py + (i === 1 ? 20 : 12), -86, i === 1 ? 7 : 4.5, 10, i === 1 ? '#f7b6cc' : '#ffd6e2', 1.1));
       [-22, 22].forEach(x => { b.cyl(x, py - 1, -80, 2, 1.6, 20, 8, '#fff2f6'); b.sphere(x, py + 20, -80, 2.4, 8, '#e89ab8', 1.3); });
       for (let x = -20; x <= 20; x += 8) O.push([x, -86, 7]);
-      P.arena(b, 0, H(0, -60), -60, 14, '#e8d6c0', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#e8d6c0', 12);
       // 陽光樹伊布的樹根
       const ex = -34, ez = -20, ey = H(ex, ez); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; b.cyl(ex + Math.cos(a) * 3, ey - 1, ez + Math.sin(a) * 3, 1.3, .7, 50, 6, '#8a6a4a', null, 0, [-Math.cos(a) * 2, -Math.sin(a) * 2]); } O.push([ex, ez, 5]);
       // 泡泡屋
@@ -326,7 +330,7 @@
       D.dome = true;
     },
     wano(b, H, r, O, D) {
-      const col = (x, y, z) => { const n = hash(x, z); if (y < .9) return mix('#b8a888', '#c7b797', n); if (Math.abs(x) < 5 && z > -44) return mix('#9a8a6a', '#a89878', n); return mix('#5f7a3a', '#6f8a46', n); };
+      const col = (x, y, z) => { const n = hash(x, z); if (y < .9) return mix('#b8a888', '#c7b797', n); if (onPath(x, z, 5)) return mix('#9a8a6a', '#a89878', n); return mix('#5f7a3a', '#6f8a46', n); };
       b.terrain(200, 70, H, col);
       const wood = '#5a3a2a', roof = '#2b2f3a';
       // 町屋
@@ -336,7 +340,7 @@
       // 天守閣
       const cy = H(0, -86); let lw = 30, ly = cy - 1; for (let i = 0; i < 4; i++) { b.box(0, ly, -88, lw, 6, lw * .7, i % 2 ? '#f4f2ea' : '#e8e4dc'); b.cyl(0, ly + 5.6, -88, lw * .78, lw * .42, 2.2, 4, roof, null, Math.PI / 4); ly += 7.4; lw *= .76; } b.cyl(0, ly, -88, 3, 0, 3, 4, '#c9973a', null, Math.PI / 4);
       for (let x = -14; x <= 14; x += 7) O.push([x, -88, 8]);
-      P.arena(b, 0, H(0, -62), -62, 14, '#8a8a82', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#8a8a82', 12);
       // 櫻花樹
       for (let i = 0; i < 44; i++) { const a = r() * Math.PI * 2, d = 20 + r() * 58, x = Math.cos(a) * d, z = Math.sin(a) * d; if (bad(x, z) || Math.abs(x) < 8 || Math.hypot(x, z + 62) < 18) continue; const y = H(x, z); if (y < 1) continue; if (r() < .65) { b.cyl(x, y - .3, z, .45, .3, 3.4, 6, '#5a3a2a', null, 0, [(r() - .5), (r() - .5)]); b.sphere(x, y + 4, z, 2.4 + r(), 8, mix('#f7b6cc', '#ffd6e2', r()), .8, .25, i); O.push([x, z, 1.3]); } else { P.pine(b, x, y, z, .8 + r() * .4, '#2f5a3a'); O.push([x, z, 1.2]); } }
       // 遠方的富士山與鬼之島
@@ -355,7 +359,7 @@
       // 神木（BOSS 後方）
       const gy = H(0, -84); b.cyl(0, gy - 2, -86, 9, 6, 42, 10, '#5a3d27'); b.sphere(0, gy + 46, -86, 22, 10, '#2f5d27', .6, .15, 5); b.sphere(-16, gy + 38, -80, 12, 8, '#3a6e2e', .6, .15, 9); b.sphere(16, gy + 40, -82, 13, 8, '#356a2b', .6, .15, 13);
       for (let x = -12; x <= 12; x += 6) O.push([x, -86, 7]);
-      P.arena(b, 0, H(0, -60), -60, 14, '#7a6a52', 12);
+      P.arena(b, D.L.boss[0], H(D.L.boss[0], D.L.boss[1]), D.L.boss[1], 14, '#7a6a52', 12);
       // 巨獸肋骨
       for (let i = 0; i < 5; i++) { const z = 26 - i * 5, x = 44, y = H(x, z) - .5; b.cyl(x - 7, y, z, 1, .7, 12, 6, '#efe6d2', null, 0, [5, 0]); b.cyl(x + 7, y, z, 1, .7, 12, 6, '#efe6d2', null, 0, [-5, 0]); O.push([x - 7, z, 1.3]); O.push([x + 7, z, 1.3]); }
       // 巨人小屋
@@ -405,11 +409,18 @@
       else if (i % 3 === 1) { b.box(x, y - .1, z, 1.2, 1.1, 1.2, '#a07a4a', r()); b.box(x + .3, y + 1, z, .9, .8, .9, '#b58d5a', r()); O.push([x, z, 1]); }
       else { b.box(x, y - .2, z, 3.2, 1.1, 1.6, '#8a6240'); [-1.4, 1.4].forEach(dx => b.cyl(x + dx, y, z - .7, .08, .08, 2.6, 4, '#5a3a2a')); b.box(x, y + 2.5, z - .2, 3.6, .15, 2.2, T.stall, 0, .9); for (let k = 0; k < 3; k++) b.sphere(x - 1 + k, y + 1.05, z, .25, 5, ['#ff9a4a', '#e8553b', '#ffd26c'][k]); O.push([x, z, 1.8]); } });
   }
-  function buildScene(renderer, chapterId, clear) {
-    CLEAR = clear || [];
-    const H = makeHeight(OPTS[chapterId]);
-    const b = new Builder(); const O = []; const D = {}; const r = rng(chapterId.length * 7919 + chapterId.charCodeAt(0));
+  function buildScene(renderer, chapterId, clear, layout) {
+    CLEAR = clear || []; CUR_PATH = layout ? layout.path : null;
+    const base = OPTS[chapterId], opt = Object.assign({}, base);
+    if (layout) { opt.lobes = layout.lobes || []; opt.flats = [...(base.flats || []), [layout.spawn[0], layout.spawn[1], 18], [layout.boss[0], layout.boss[1], 18, 2], ...layout.path.map(p => [p[0], p[1], 7])]; }
+    const H = makeHeight(opt);
+    const b = new Builder(); const O = []; const D = { L: layout || { boss: [0, -60], spawn: [0, 55], path: null } }; const r = rng(chapterId.length * 7919 + chapterId.charCodeAt(0));
     BUILD[chapterId](b, H, r, O, D);
+    // 路線：沿著各章的路徑鋪出貼地的道路
+    if (layout && layout.path) { const RC = { east: '#c9a06a', alabasta: '#e0c080', skypiea: '#f4f7ff', enies: '#c4bcac', dark: '#6a4a32', fishman: '#efe0b8', wano: '#b09a6e', giant: '#7a6440' }[chapterId] || '#c9a06a'; const pts = layout.path, wd = 2.6;
+      for (let i = 0; i < pts.length - 1; i++) { const [ax, az] = pts[i], [bx, bz] = pts[i + 1], L2 = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.ceil(L2 / 2)), nx = -(bz - az) / L2 * wd, nz = (bx - ax) / L2 * wd;
+        for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, x0 = ax + (bx - ax) * t0, z0 = az + (bz - az) * t0, x1 = ax + (bx - ax) * t1, z1 = az + (bz - az) * t1, y = (X, Z) => H(X, Z) + .08;
+          const c = mix(RC, '#ffffff', hash(x0, z0) * .12); b.quad([x0 - nx, y(x0 - nx, z0 - nz), z0 - nz], [x0 + nx, y(x0 + nx, z0 + nz), z0 + nz], [x1 + nx, y(x1 + nx, z1 + nz), z1 + nz], [x1 - nx, y(x1 - nx, z1 - nz), z1 - nz], c); } } }
     detail(b, H, r, O, chapterId);
     const w = new Builder(); w.grid(520, 44, 0, WATER[chapterId]);
     const scene = { H, obstacles: O, dyn: D, staticMesh: renderer.mesh(b), water: renderer.mesh(w), waterAlpha: chapterId === 'skypiea' ? 1 : .9, tris: b.count / 3 };
