@@ -12,9 +12,9 @@
   function rewardOf(f) {
     const r = { berry: 60 + f * 15, items: {}, tokens: 0 };
     if (f % 5 === 0) r.items.exp_s = 1;
-    if (isBoss(f)) { r.tokens = 2; r.items.exp_m = 1; }
-    if (f === 50 || f === 100) { r.items.exp_l = 1; r.tokens += 5; }
-    if (f === 120) { r.items.exp_l = 3; r.tokens += 20; }
+    if (isBoss(f)) { r.tokens = 10; r.items.exp_m = 1; }
+    if (f === 50 || f === 100) { r.items.exp_l = 1; r.tokens += 50; }
+    if (f === 120) { r.items.exp_l = 3; r.tokens = 2000; }
     return r;
   }
   const rewardText = r => [`貝里 ${r.berry.toLocaleString()}`, r.tokens ? `寶藏幣 ×${r.tokens}` : '', ...Object.entries(r.items).map(([k, n]) => `${ITEMS[k].name} ×${n}`)].filter(Boolean).join('、');
@@ -44,13 +44,13 @@
     startBattle({ team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })), enemyId: foeOf(f), enemyLv: lvOf(f), chapterId: chapterOf(f), isBoss: isBoss(f), revives: isBoss(f) ? 1 : 0,
       onEnd: r => {
         if (!r.win) return { message: `第 ${f} 層挑戰失敗。調整陣容、升級船員後再來挑戰吧！` };
-        track('wins'); if (isBoss(f)) track('bossWins');
+        track('wins'); track('towerWins'); if (isBoss(f)) track('bossWins');
         const first = f > (s.best || 0) && !s.replay, rw = rewardOf(f);
         s.floor = f + 1; s.best = Math.max(s.best || 0, f); SAVE.save();
         const lines = [`突破第 ${f} 層！`];
         if (first) { addBerry(rw.berry); if (rw.tokens) addTokens(rw.tokens, '勇者之塔'); Object.entries(rw.items).forEach(([k, n]) => { SAVE.data.inventory[k] = (SAVE.data.inventory[k] || 0) + n; }); SAVE.data.lineup.forEach(id => gainExp(id, 40 + f * 12, true)); SAVE.save(); lines.push(`獲得 ${rewardText(rw)}`); }
         if (window.checkTitles) checkTitles(false);
-        return { message: lines.join('<br>'), next: f < TOWER.floors ? { label: `繼續挑戰第 ${f + 1} 層`, fn: () => fight(f + 1) } : null };
+        return { message: lines.join('<br>'), next: f < TOWER.floors ? { label: `繼續挑戰（第 ${f + 1} 層）`, fn: () => fight(f + 1) } : { label: '返回船上', fn: () => openModes() }, alt: f < TOWER.floors ? { label: '返回船上', fn: () => openModes() } : null };
       },
       onLeave: () => openTower() });
   }

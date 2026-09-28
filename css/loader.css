@@ -1,0 +1,38 @@
+/* ================= 載入畫面 ================= */
+.loader{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 clamp(18px,6vw,80px) calc(clamp(28px,8vh,80px) + env(safe-area-inset-bottom,0px));background:#050b18;color:#fff;font-family:"Noto Sans TC",system-ui,sans-serif;overflow:hidden;transition:opacity .6s}
+.loader.out{opacity:0;pointer-events:none}
+.ld-bg{position:absolute;inset:0;background:url('../assets/ui/loading_bg.webp?v=25') center 35%/cover no-repeat;animation:ldZoom 18s ease-in-out infinite alternate}
+.ld-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,24,.25) 0%,rgba(4,10,24,.05) 40%,rgba(4,10,24,.75) 78%,rgba(4,10,24,.95) 100%)}
+@keyframes ldZoom{to{transform:scale(1.06)}}
+.ld-flash{position:absolute;inset:0;background:radial-gradient(circle at 62% 45%,rgba(190,225,255,.55),rgba(120,180,255,.15) 40%,transparent 70%);opacity:0;pointer-events:none}
+.ld-flash.on{animation:ldFlash .45s ease-out}
+@keyframes ldFlash{10%{opacity:1}30%{opacity:.2}45%{opacity:.8}100%{opacity:0}}
+.ld-box{position:relative;z-index:2;width:min(760px,100%);text-align:center}
+.ld-title{margin:0 0 4px;font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(30px,5vw,54px);letter-spacing:.12em;color:#fff7e8;text-shadow:0 3px 0 #7a4a1a,0 0 24px rgba(120,190,255,.55)}
+.ld-sub{margin:0 0 18px;color:#bfe0ff;letter-spacing:.3em;font-size:13px}
+.ld-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:10px}
+.ld-text{font-size:14px;color:#dbe9ff;text-align:left;min-height:1.4em}
+.ld-pctw{font-family:"Anton",sans-serif;font-size:clamp(34px,6vw,52px);line-height:1;color:#e8f6ff;text-shadow:0 0 10px #6fc3ff,0 0 26px #2f7fff}
+.ld-pctw small{font-size:.5em;margin-left:2px}
+.ld-bar{position:relative;height:18px;border-radius:99px;background:rgba(6,14,32,.85);box-shadow:inset 0 0 0 1px rgba(150,200,255,.35),0 0 0 3px rgba(4,10,24,.8),0 0 22px rgba(80,150,255,.35);overflow:visible}
+.ld-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;overflow:hidden;background:linear-gradient(90deg,#1f5fff,#5fb8ff 60%,#e8f6ff);box-shadow:0 0 14px #6fc3ff,0 0 30px rgba(80,150,255,.8);transition:width .25s ease-out}
+.ld-fill::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.0) 0 10px,rgba(255,255,255,.45) 10px 12px,rgba(255,255,255,0) 12px 26px);animation:ldFlow .6s linear infinite}
+.ld-fill::after{content:'';position:absolute;right:0;top:-6px;bottom:-6px;width:26px;background:radial-gradient(circle,#fff 0 20%,rgba(160,210,255,.8) 40%,transparent 70%);filter:blur(1px);animation:ldHead .12s steps(2) infinite}
+@keyframes ldFlow{to{background-position:28px 0}}
+@keyframes ldHead{50%{opacity:.55;transform:scale(1.3)}}
+.ld-bolt{position:absolute;left:0;right:0;top:-18px;height:54px;width:100%;pointer-events:none;overflow:visible}
+.ld-bolt path{fill:none;stroke:#dff2ff;stroke-width:1.6;stroke-linejoin:round;filter:drop-shadow(0 0 4px #6fc3ff) drop-shadow(0 0 8px #2f7fff);opacity:.9}
+.ld-bolt path.core{stroke-width:1.1;opacity:.55}
+.ld-count{margin-top:10px;font-size:12px;color:#8fb0d8;letter-spacing:.1em}
+.ld-done{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ld-done[hidden]{display:none}
+.ld-done small{color:#8fb0d8;font-size:12px}
+.ld-enter{min-width:220px;padding:14px 28px;border:1px solid #e8f6ff;border-radius:14px;cursor:pointer;font-family:"Noto Serif TC",serif;font-size:22px;font-weight:900;letter-spacing:.3em;text-indent:.3em;color:#06122a;background:linear-gradient(180deg,#f2fbff,#8fd0ff 55%,#3f8fff);box-shadow:0 0 0 3px rgba(4,10,24,.7),0 0 30px rgba(110,190,255,.8);animation:ldPulse 1.4s ease-in-out infinite}
+.ld-enter:hover{filter:brightness(1.08)}
+@keyframes ldPulse{50%{box-shadow:0 0 0 3px rgba(4,10,24,.7),0 0 50px rgba(160,215,255,1)}}
+.ld-skip{padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(6,14,32,.6);color:#fff;cursor:pointer}
+.ld-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.ld-warn{margin:0;color:#ffd26c}.ld-fail{margin:0;padding:0;list-style:none;font-size:12.5px;color:#ffb3a0;max-height:120px;overflow:auto}
+.loader.ready .ld-text{color:#9dffcf}
+@media (max-width:560px){.ld-sub{letter-spacing:.15em}.ld-enter{min-width:180px;font-size:19px}}
+@media (prefers-reduced-motion:reduce){.ld-bg,.ld-fill::before,.ld-fill::after,.ld-enter{animation:none}}

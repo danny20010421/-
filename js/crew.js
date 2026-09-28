@@ -71,7 +71,7 @@
   }
   function skillCards(c, lv, own) {
     const L = lvStats(c, lv);
-    return `<ol class="cx-skills">${c.skills.map((s, i) => { const need = SKILL_UNLOCK[i] || 1, ok = own && lv >= need, pp = Math.max(1, s.maxPP + L.ppAdj);
+    return `<ol class="cx-skills">${c.skills.map((s, i) => { const need = SKILL_UNLOCK[i] || 1, ok = own && lv >= need, pp = skillPP(s, lv, L.ppAdj);
       return `<li class="sk ${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}"><div class="sk-top"><span class="sk-no">${i + 1}</span><b>${s.name}</b><em class="sk-type ${s.type}">${s.ultimate ? '奧義' : s.type === 'attack' ? '攻擊' : '輔助'}</em></div>
         <div class="sk-meta"><span>威力 <b>${s.power || '—'}</b></span><span>命中 <b>${s.accuracy}</b></span><span>次數 <b>${own ? pp : s.maxPP}/${s.maxPP}</b></span></div>
         <p>${s.desc}</p>${(s.tags || []).length ? `<div class="sk-tags">${s.tags.map(([t, cl]) => `<span class="tag ${cl}">${t}</span>`).join('')}</div>` : ''}
@@ -88,7 +88,7 @@
     const id = pickChar, c = CHARACTERS[id], lv = crewLv(id), r = SAVE.data.roster[id], need = expNeed(lv), S = lvStats(c, lv), tr = training().find(t => t.id === id), k = L.indexOf(id);
     const pct = lv >= MAX_LV ? 100 : Math.min(100, r.exp / need * 100);
     const slots = Array.from({ length: max }, (_, i) => L[i] ? tile(L[i], L[i] === id).replace('class="sb-tile', `data-slot="${i}" class="sb-tile slot`) : `<div class="sb-tile empty"><span>空位 ${i + 1}</span></div>`).join('');
-    const skills = c.skills.map((s, i) => { const need2 = SKILL_UNLOCK[i] || 1, ok = lv >= need2, pp = Math.max(1, s.maxPP + S.ppAdj);
+    const skills = c.skills.map((s, i) => { const need2 = SKILL_UNLOCK[i] || 1, ok = lv >= need2, pp = skillPP(s, lv, S.ppAdj);
       return `<div class="sb-sk ${ok ? '' : 'lock'} ${s.ultimate ? 'ult' : ''}" title="${esc(s.desc)}"><b>${s.ultimate ? '★ ' : ''}${s.name}</b><span>威力 ${s.power || '—'}</span><span>次數 ${ok ? pp : 0}/${s.maxPP}</span>${ok ? '' : `<i>LV ${need2} 解鎖</i>`}<p>${s.desc}</p></div>`; }).join('');
     const BOOKS = ['exp_s', 'exp_m', 'exp_l'];
     const books = BOOKS.map(b => { const n = SAVE.data.inventory[b] || 0, q = Math.min(n, bookQty[b] || 1), pv = previewLv(id, ITEMS[b].effect.exp * q); return `<div class="exp-row ${n ? '' : 'off'}" data-row="${b}">${itemIcon(ITEMS[b])}<div class="er-name"><b>${ITEMS[b].name}</b><small>每本 +${ITEMS[b].effect.exp.toLocaleString()}・持有 ${n}</small></div>

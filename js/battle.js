@@ -111,6 +111,8 @@ function statusChips(c) {
   if (st.buffBlock > 0) chip('強化封鎖 ' + st.buffBlock, 'bad');
   if (st.damageDealtReductionTurns > 0 && st.damageDealtReductionValue > 0) chip('輸出 -' + Math.round(st.damageDealtReductionValue * 100) + '%', 'bad');
   if (st.shield > 0) chip('護盾 ' + Math.round(st.shield), 'good');
+  if (st.decoys > 0) chip('小兵替身 ×' + st.decoys, 'good');
+  if (battle && battle.eruption && battle.eruption.owner.hp > 0) chip(battle.eruption.owner === c ? '火山噴發・回復' : (battle.team.includes(battle.eruption.owner) !== battle.team.includes(c) ? '熔岩灼燒 -10%' : ''), battle.eruption.owner === c ? 'good' : 'bad');
   if (st.immunePermanent) chip('永久免疫', 'good'); else if (st.immune > 0) chip('免疫異常 ' + st.immune, 'good');
   if (st.regen > 0) chip('回復 ' + st.regen, 'good');
   if (st.fullRestoreTurns > 0) chip('回滿 ' + st.fullRestoreTurns, 'good');
@@ -296,7 +298,7 @@ function finishBattle(win, fled) {
     else if (win) { lines.push(`${b.enemy.name} 被擊敗了，共 ${b.round} 回合。`); if (res && res.message) lines.push(res.message); }
     else lines.push(`${b.enemy.name} 還站著。補充道具、換個打法再來。`);
     $('bResDesc').innerHTML = lines.map(l => `<p>${l}</p>`).join('');
-    $('bRetry').style.display = win || (res && res.next) ? 'none' : '';
+    $('bRetry').style.display = res && res.alt ? '' : win || (res && res.next) ? 'none' : ''; $('bRetry').textContent = res && res.alt ? res.alt.label : '再挑戰一次'; b.altFn = res && res.alt ? res.alt.fn : null;
     b.nextFn = res && res.next ? res.next.fn : null; $('bBack').textContent = res && res.next ? res.next.label : '回到島上';
   }, fled ? 0 : 900);
 }
@@ -392,7 +394,7 @@ function bindBattle() {
   $('bLogBtn').onclick = () => { $('bBag').classList.remove('show'); $('bLog').classList.toggle('show'); };
   document.querySelectorAll('[data-close-drawer]').forEach(b => b.onclick = closeDrawers);
   $('bFleeBtn').onclick = () => { if (!battle || battle.gameOver) return; if (battle.isBusy && !battle.mustSwitch) return; confirmBox('要撤退嗎？', '撤退後這場戰鬥不算勝負，敵人會留在原地。', '撤退', () => finishBattle(false, true)); };
-  $('bRetry').onclick = () => { const o = battle.opts; $('bFL').classList.remove('down'); $('bFR').classList.remove('down'); startBattle(o); };
+  $('bRetry').onclick = () => { if (battle && battle.altFn) { const f = battle.altFn; battle.altFn = null; f(); return; } const o = battle.opts; $('bFL').classList.remove('down'); $('bFR').classList.remove('down'); startBattle(o); };
   $('bBack').onclick = () => { if (!battle) return; if (battle.nextFn) { const f = battle.nextFn; battle.nextFn = null; f(); return; } if (battle.opts.onLeave) battle.opts.onLeave(); };
   window.addEventListener('keydown', e => {
     if ($('battleScreen').classList.contains('hidden') || !battle) return;

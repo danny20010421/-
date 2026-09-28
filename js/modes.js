@@ -48,7 +48,7 @@
       </div>
       <h4 class="cx-h">稱號 <small>${p.titles.length}/${TITLES.length}</small></h4>
       <div class="pf-titles">${TITLES.map(t => { const has = p.titles.includes(t.id); return `<button class="pf-t ${has ? '' : 'lock'} ${p.title === t.id ? 'on' : ''}" data-t="${t.id}" ${has ? '' : 'disabled'} title="${t.how}"><b>${t.name}</b><small>${has ? (p.title === t.id ? '使用中' : '點擊使用') : t.how}</small></button>`; }).join('')}</div>
-      <div class="pf-actions"><button class="btn-primary" id="pfCodex">角色手機圖鑑</button><button class="btn-ghost" id="pfCrew">角色背包</button></div>`;
+      <div class="pf-actions"><button class="btn-primary" id="pfCodex">角色圖鑑</button><button class="btn-ghost" id="pfCrew">角色背包</button></div>`;
     $('pfSave').onclick = () => { const v = $('pfName').value.trim().slice(0, 12); if (!v) { toast('名稱不能是空白'); return; } p.name = v; SAVE.save(); toast('名稱已更新', 'gold'); refresh(); };
     $('pfBody').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { p.title = b.dataset.t; SAVE.save(); openProfile(); refresh(); });
     $('pfCodex').onclick = () => { closeModal('profileModal'); openCrew('codex'); };

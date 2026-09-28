@@ -1,5 +1,5 @@
 /* 懸賞處：懸賞召喚、懸賞任務、道具商店、海軍本部（販賣角色） */
-const CHAR_RARITY = { lucci: 'SSR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
+const CHAR_RARITY = { akainu: 'SSR', marine: 'R', mayor: 'R', lucci: 'SR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
 const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, perLv: 80 } };
 const BOUNTY_POOL = [
   { id: 'win3', text: '擊敗 3 名敵人', stat: 'wins', goal: 3, berry: 1500 },
@@ -10,7 +10,10 @@ const BOUNTY_POOL = [
   { id: 'skill15', text: '在戰鬥中使用 15 次技能', stat: 'skills', goal: 15, berry: 1500 },
   { id: 'ult2', text: '在戰鬥中發動 2 次奧義', stat: 'ults', goal: 2, berry: 2500 },
   { id: 'item2', text: '在戰鬥中使用 2 次道具', stat: 'items', goal: 2, berry: 1000 },
-  { id: 'switch2', text: '在戰鬥中換人 2 次', stat: 'switches', goal: 2, berry: 1200 }
+  { id: 'switch2', text: '在戰鬥中換人 2 次', stat: 'switches', goal: 2, berry: 1200 },
+  { id: 'run1000', text: '奪寶大冒險累計航行 1000 公尺', stat: 'runDist', goal: 1000, berry: 1800 },
+  { id: 'tower3', text: '勇者之塔突破 3 層', stat: 'towerWins', goal: 3, berry: 2000, tokens: 1 },
+  { id: 'chest1', text: '在島上打開 1 個寶箱', stat: 'chests', goal: 1, berry: 1500 }
 ];
 const TOKEN_PRICE = 2500;
 
@@ -68,8 +71,8 @@ function renderNavy() {
   $('navyList').querySelectorAll('.char').forEach(b => b.onclick = () => { navyPick = b.dataset.id; renderNavy(); });
   const id = navyPick, c = CHARACTERS[id]; if (!id) { $('navyDetail').innerHTML = ''; return; }
   const targets = ids.filter(x => x !== id && crewLv(x) < MAX_LV); if (!targets.includes(navyTarget)) navyTarget = targets[0] || null;
-  const onlyOne = ids.length <= 1, lastInLineup = inLineup(id) && SAVE.data.lineup.length <= 1;
-  const reason = onlyOne ? '這是你唯一的船員，不能販賣。' : (window.isTraining && isTraining(id)) ? '這位船員正在訓練營，訓練結束或中止後才能販賣。' : lastInLineup ? '陣容至少要留一位船員。請先把其他船員加入陣容。' : '';
+  const onlyOne = ids.length <= 1, lastInLineup = inLineup(id);
+  const reason = onlyOne ? '這是你唯一的船員，不能販賣。' : (window.isTraining && isTraining(id)) ? '這位船員正在訓練營，訓練結束或中止後才能販賣。' : lastInLineup ? '這位船員正在出戰陣容中，不能販賣。請先到角色背包讓他下陣。' : '';
   $('navyDetail').innerHTML = `<img src="${c.avatar}" alt=""><div class="nv-main">
     <h3>${c.name}<small>LV ${crewLv(id)}・稀有度 ${CHAR_RARITY[id] || 'R'}</small></h3>
     <p class="nv-warn">販賣後船員會離開船隊，<b>無法反悔</b>。之後只能再從懸賞召喚或擊敗 BOSS 取得。</p>

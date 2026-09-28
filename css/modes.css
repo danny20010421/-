@@ -197,3 +197,9 @@
 @keyframes tbcShake{50%{transform:translate(3px,-2px)}}
 @media (prefers-reduced-motion:reduce){.tbc img{animation:tbcIn .3s both}}
 .tbc{z-index:99999!important}
+
+/* ===== v25：關卡挑戰頂部列與右側資訊欄銜接 ===== */
+@media (min-width:861px){
+  #chapterScreen .topbar{background:linear-gradient(180deg,rgba(10,24,42,.92),rgba(10,24,42,.82));border-bottom:1px solid rgba(243,201,105,.25);box-shadow:0 6px 18px rgba(0,0,0,.25);min-height:72px;box-sizing:border-box}
+  #chapterScreen .arc-card{top:72px!important;border-radius:0!important}
+}

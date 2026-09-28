@@ -124,7 +124,7 @@ function gainExp(id, n, silent, noShare) {
 }
 function expText(res) { if (!res) return ''; let t = `經驗 +${res.gained}`; if (res.to > res.from) t += `，升到 <b>LV ${res.to}</b>`; if (res.tierUp) t += `，晉升「${TIERS[tierOf(res.to)].name}」`; if (res.unlocked.length) t += `，學會「${res.unlocked.join('」「')}」`; return t; }
 function tierBadge(lv) { const t = TIERS[tierOf(lv)]; return `<span class="tier" style="--c:${t.color}">${t.name}</span>`; }
-function charSource(id) { const ch = CHAPTERS.find(c => c.boss === id), ob = CHAR_OBTAIN[id] || {}, rate = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinFirst; return [STARTERS.includes(id) ? '入門船員' : null, ob.npc ? `登場：${ob.npc}` : null, `懸賞處召喚（每抽 ${Math.round(GAME_SETTINGS.charRate * 1000) / 10}%）`, ch && rate > 0 ? `擊敗「${ch.name}」BOSS 有 ${Math.round(rate * 100)}% 機率加入` : ch ? `「${ch.name}」BOSS（戰勝無法取得）` : null].filter(Boolean).join('、'); }
+function charSource(id) { const ch = CHAPTERS.find(c => c.boss === id), ob = CHAR_OBTAIN[id] || {}, rate = ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst; if (ob.npcOnly) return ob.npc || 'NPC（無法取得）'; if (ob.reward) return ob.npc || '劇情獎勵'; return [STARTERS.includes(id) ? '入門船員' : null, ob.npc ? `登場：${ob.npc}` : null, `懸賞處召喚（每抽 ${Math.round(GAME_SETTINGS.charRate * 1000) / 10}%）`, ch && rate > 0 ? `擊敗「${ch.name}」BOSS：首次 ${Math.round(rate * 100)}%、重複 ${Math.round((ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat) * 100)}% 機率加入` : ch ? `「${ch.name}」BOSS（戰勝無法取得）` : null].filter(Boolean).join('、'); }
 
 /* 首次遊玩：選擇入門船員 */
 let pickChar = null, crewMode = 'crew';
@@ -476,7 +476,7 @@ function onBattleEnd(r) {
   }
   if (!r.win) return {};
   if (r.isBoss) {
-    if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = ob.boss != null ? ob.boss : first ? GAME_SETTINGS.bossJoinFirst : GAME_SETTINGS.bossJoinRepeat, again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
+    if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward === CH.id && !owned(cid)) { addCrew(cid, 10); msgs.push(`<b>${CHARACTERS[cid].name}</b> 加入了角色背包！（LV 10）`); } }); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = first ? (ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst) : (ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat), again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
     if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
     if (s && s.type === 'defeat') { if (st.defeated.length >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); } else msgs.push(`任務進度：${st.defeated.length}/${s.count}`); }
@@ -538,10 +538,16 @@ function updateGachaBtns() {
   $('gEmpty').textContent = t < 1 && !free ? '寶藏幣不夠了。回到篇章推進劇情任務就能再拿到。' : '';
   $('pull1').querySelector('small').textContent = `${GACHA_COST.single} 枚寶藏幣`; $('pull10').querySelector('small').textContent = `${GACHA_COST.ten} 枚・保底 SR 以上`;
 }
-const unownedChars = () => CHARACTER_ORDER.filter(id => !owned(id));
+/* 不會出現在扭蛋與拉霸的角色：NPC 與劇情獎勵角色 */
+const NOT_IN_GACHA = id => { const o = CHAR_OBTAIN[id] || {}; return !!(o.npcOnly || o.reward); };
+const unownedChars = () => CHARACTER_ORDER.filter(id => !owned(id) && !NOT_IN_GACHA(id));
+const gachaChars = () => CHARACTER_ORDER.filter(id => !NOT_IN_GACHA(id));
+const DUP_EXP = 6000;
+/* 機率為絕對值：船員 charRate＋N／R／SR／SSR 合計 100% */
 function rollOne(minR) {
-  if (!minR && Math.random() < GAME_SETTINGS.charRate) { const pool = unownedChars(); if (pool.length) return { char: pool[Math.floor(Math.random() * pool.length)], lv: GAME_SETTINGS.charLv }; return { item: 'exp_l' }; }
-  const order = ['N', 'R', 'SR', 'SSR']; let r = Math.random(), rar = 'N', acc = 0;
+  let r = Math.random();
+  if (!minR && r < GAME_SETTINGS.charRate) { const pool = gachaChars(); return { char: pool[Math.floor(Math.random() * pool.length)], lv: GAME_SETTINGS.charLv }; }
+  const order = ['N', 'R', 'SR', 'SSR']; let rar = 'N', acc = minR ? 0 : GAME_SETTINGS.charRate; if (minR) r = Math.random() * order.reduce((t, k) => t + RARITY[k].rate, 0);
   for (const k of order) { acc += RARITY[k].rate; if (r < acc) { rar = k; break; } }
   if (minR && order.indexOf(rar) < order.indexOf(minR)) rar = Math.random() < .9 ? 'SR' : 'SSR';
   const pool = Object.entries(ITEMS).filter(([, i]) => i.rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)][0] };
@@ -569,17 +575,17 @@ function showResults(res, title) {
   $('gResGrid').className = 'g-res-grid ' + (res.length > 1 ? 'ten' : 'one');
   setTimeout(() => { if (res.some(r => r.char || ['SSR'].includes(rarOf(r)))) coinBurst($('gResBurst'), 40); }, 400);
   $('gResGrid').innerHTML = res.map((x, i) => {
-    if (x.char) { const c = CHARACTERS[x.char]; return `<div class="g-cap r-SSR char" style="--d:${i * 90}ms"><span class="rar c-rar r-${CHAR_RARITY[x.char] || 'SSR'}">${CHAR_RARITY[x.char] || 'SSR'}</span><span class="c-tags"><span class="c-badge">新船員</span></span><img src="${c.image}" alt=""><b>${c.name}</b><small>LV ${x.lv}・${TIERS[tierOf(x.lv)].name}</small>${x.setCap ? `<button class="btn-gold sm" data-cap="${x.char}">加入陣容並設為先鋒</button>` : ''}</div>`; }
+    if (x.char) { const c = CHARACTERS[x.char]; return `<div class="g-cap r-SSR char" style="--d:${i * 90}ms"><span class="rar c-rar r-${CHAR_RARITY[x.char] || 'SSR'}">${CHAR_RARITY[x.char] || 'SSR'}</span><span class="c-tags"><span class="c-badge">${x.dup ? '重複' : '新船員'}</span></span><img src="${c.image}" alt=""><b>${c.name}</b><small>${x.dup ? `已擁有・轉為經驗 +${DUP_EXP.toLocaleString()}` : `LV ${x.lv}・${TIERS[tierOf(x.lv)].name}`}</small>${x.setCap ? `<button class="btn-gold sm" data-cap="${x.char}">加入陣容並設為先鋒</button>` : ''}</div>`; }
     const it = ITEMS[x.item]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`;
   }).join('');
   $('gResGrid').querySelectorAll('[data-cap]').forEach(b => b.onclick = () => { SAVE.data.player = b.dataset.cap; lineupAdd(b.dataset.cap, true); b.textContent = '已設為先鋒'; b.disabled = true; toast(`${CHARACTERS[b.dataset.cap].name} 成為先鋒`, 'gold'); });
   $('gResult').classList.add('show'); gachaBusy = false; updateGachaBtns();
 }
-function grant(res) { res.forEach(x => { if (x.char) addCrew(x.char, x.lv); else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
+function grant(res) { res.forEach(x => { if (x.char) { if (owned(x.char)) { x.dup = true; gainExp(x.char, DUP_EXP, true, true); } else addCrew(x.char, x.lv); } else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
 async function pull(n) {
   const cost = n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
   gachaBusy = true; SAVE.data.tokens -= cost; coins(); updateGachaBtns();
-  const res = []; for (let i = 0; i < n; i++) { const x = rollOne(); if (x.char && res.some(y => y.char === x.char)) { res.push({ item: 'exp_l' }); continue; } res.push(x); }
+  const res = []; for (let i = 0; i < n; i++) res.push(rollOne());
   if (n === 10 && !res.some(x => ['SR', 'SSR'].includes(rarOf(x)))) res[9] = rollOne('SR');
   grant(res); SAVE.data.pulls += n; SAVE.save();
   const best = res.map(rarOf).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];

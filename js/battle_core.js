@@ -7,7 +7,7 @@ function weightedChoice(items){const total=items.reduce((s,it)=>s+it[0],0);let r
 function buildFighter(id,lv){
   const base=deepClone(CHARACTERS[id]);
   lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; base.atk=L.atk; base.def=L.def;
-  base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=Math.max(1,s.maxPP+L.ppAdj);s.pp=s.maxPP}});
+  base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=skillPP(s,lv,L.ppAdj);s.pp=s.maxPP}});
   base.hp=base.maxHp;
   base.buffs={atk:0,def:0,spd:0};
   base.status={freeze:0,petrify:0,immune:0,immunePermanent:false,regen:0,regenRatio:0,fullRestoreTurns:0,dots:[],reflect:0,reflectMultiplier:1,reflectNegative:false,priority:0,attackFail:0,attackFailChance:0,skipAttack:0,skillNullify:0,shield:0,dodge:0,damageMultTurns:0,damageMultValue:1,damageReductionTurns:0,damageReductionValue:0,damageDealtReductionTurns:0,damageDealtReductionValue:0,nextAttackMultTurns:0,nextAttackMultValue:1,buffBlock:0,awaken:'',frostBoostTurns:0,allyBoostPer:0,lastSkill:'',executeBuffTurns:0,executeBuffChance:0,clutchHealThreshold:0,clutchHealCharges:0,weak:0,weakMin:1.2,weakMax:1.5,burn:0,paralyze:0,fatigue:0,fear:0,armorBreak:0,hitDouble:0};
@@ -26,6 +26,7 @@ function applyChapterDifficulty(fighter,chapterId,isBoss){
  fighter.isBossUnit=!!isBoss;
  fighter.skills.forEach((s,i)=>{
    if(s.locked)return;
+   if(s.effect&&s.effect.noRestore)return;
    if(d.order>=3 && s.pp>0){s.pp+=1; s.maxPP+=1;}
    if(d.order>=5 && s.ultimate && s.pp>0){s.pp+=1; s.maxPP+=1;}
  });
@@ -88,7 +89,7 @@ function computeSkillOutcome(actor,target,skill,blockedEffects){
  if(ef.enemyCurrentHpCut){damage+=Math.max(1,Math.floor(target.hp*ef.enemyCurrentHpCut));return {damage,meta};}
  if(ef.currentHpCut){damage+=Math.max(1,Math.floor(target.hp*ef.currentHpCut));return {damage,meta};}
  if(ef.damageFromSelfCurrentHpRatio){damage=Math.max(1,Math.floor(actor.hp*ef.damageFromSelfCurrentHpRatio));return {damage,meta};}
- if(ef.chanceHalfHpCut&&chance(ef.chanceHalfHpCut)){damage+=Math.max(1,Math.floor(target.hp*0.5));log('💥 沙漠寶刀造成巨額削血！');return {damage,meta:{halfCut:true}};}
+ if(ef.chanceHalfHpCut&&chance(ef.chanceHalfHpCut)){damage+=Math.max(1,Math.floor(target.hp*0.5));log(`💥 ${ef.halfCutLabel||'沙漠寶刀'}造成巨額削血！`);return {damage,meta:{halfCut:true}};}
  if(ef.randomPercentHits){const[count0,min,max,useCurrent]=ef.randomPercentHits;const count=hitsOf(actor,count0);for(let i=0;i<count;i++){const ratio=rand(min,max);const base=useCurrent?target.hp:target.maxHp;damage+=Math.max(1,Math.floor(base*ratio));}return {damage,meta};}
  if(ef.randomHitCount){const count=hitsOf(actor,Math.floor(rand(ef.randomHitCount[0],ef.randomHitCount[1]+1)));const perHit=ef.perHitPower||8;for(let i=0;i<count;i++)damage+=Math.max(1,Math.floor(perHit*atkMul(actor.buffs.atk)*defTake(target.buffs.def)));log(`🌸 連續繁衍攻擊 ${count} 次！`);return {damage,meta:{hitCount:count}};}
  if(ef.fixedLightHits){const[count0,ratio]=ef.fixedLightHits;const count=hitsOf(actor,count0);for(let i=0;i<count;i++)damage+=Math.max(1,Math.floor(target.maxHp*ratio));return {damage,meta};}
@@ -128,7 +129,10 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.damageMultTurns){actor.status.damageMultTurns=ef.damageMultTurns; actor.status.damageMultValue=ef.damageMultValue||2}
  if(ef.executeBuffTurns){actor.status.executeBuffTurns=ef.executeBuffTurns; actor.status.executeBuffChance=ef.executeBuffChance||0; log(`☠️ ${actor.name} 進入秒殺威壓狀態！`)}
  if(ef.damageReductionTurns){actor.status.damageReductionTurns=ef.damageReductionTurns; actor.status.damageReductionValue=ef.damageReductionValue||0}
- if(ef.dodgeTurns){actor.status.dodge=Math.max(actor.status.dodge,ef.dodgeTurns);log(`🪽 ${actor.name} 將閃避下一次攻擊！`)}if(ef.reflectTurns){actor.status.reflect=ef.reflectTurns; actor.status.reflectMultiplier=ef.reflectMultiplier||1; actor.status.reflectNegative=!!ef.reflectNegative; log(`🛡️ ${actor.name} 展開反彈護盾！`)}
+ if(ef.dodgeTurns){actor.status.dodge=Math.max(actor.status.dodge,ef.dodgeTurns);log(`🪽 ${actor.name} 將閃避下一次攻擊！`)}
+ if(ef.decoys){actor.status.decoys=(actor.status.decoys||0)+ef.decoys;log(`🎖️ ${ef.decoys} 名海軍小兵趕到，擋在 ${actor.name} 前面！`)}
+ if(ef.eruption){if(battle.eruption&&battle.eruption.owner.hp>0)log('🌋 火山已經在噴發中。');else{battle.eruption={owner:actor};log(`🌋 ${actor.name} 引發火山噴發！整個戰場陷入熔岩之中！`)}}
+ if(ef.perHitBurn&&result&&result.meta&&result.meta.hitCount){const p=1-Math.pow(1-ef.perHitBurn,result.meta.hitCount);if(chance(p)&&inflict(target,'burn',3))log(`🔥 流星火山的熔岩讓 ${target.name} 燒傷了！`)}if(ef.reflectTurns){actor.status.reflect=ef.reflectTurns; actor.status.reflectMultiplier=ef.reflectMultiplier||1; actor.status.reflectNegative=!!ef.reflectNegative; log(`🛡️ ${actor.name} 展開反彈護盾！`)}
  if(ef.skipAttackChance){if(chance(ef.skipAttackChance))inflict(target,ef.ccKind||'paralyze',ef.skipAttackTurns||1)}else if(ef.skipAttackTurns){inflict(target,ef.ccKind||'paralyze',ef.skipAttackTurns)}
  ['burn','fear','fatigue','paralyze','armorBreak'].forEach(k=>{if(ef[k+'Chance']&&chance(ef[k+'Chance']))inflict(target,k,ef[k+'Turns']||(k==='burn'||k==='armorBreak'?3:1))});
  if(ef.dotTurns&&!ef.dotChance&&target.status.immune<=0&&!target.status.immunePermanent){target.status.dots.push({turns:ef.dotTurns,ratio:ef.dotRatio,label:ef.dotLabel}); log(`☠️ ${target.name} 陷入${ef.dotLabel}！`)}
@@ -182,9 +186,10 @@ function applyReflectedNegativeEffects(skill,source,dest){
  if(ef.clearBuffs){dest.buffs.atk=0; dest.buffs.def=0; dest.buffs.spd=0; log(`↩️ ${dest.name} 的能力提升被反彈清除！`)}
  if(ef.buffBlockTurns){dest.status.buffBlock=Math.max(dest.status.buffBlock, ef.buffBlockTurns); log(`↩️ ${dest.name} 的能力提升被反彈封鎖！`)}
 }
-function applyDamage(target,amount,side,opts){let final=amount;if(target.status.armorBreak>0)final=Math.round(final*(1+(GAME_SETTINGS.armorBreak??0.05)));if(target.status.weak>0)final=Math.floor(final*rand(target.status.weakMin||1.2,target.status.weakMax||1.5));if(target.status.damageReductionTurns>0)final=Math.max(1,Math.floor(final*(1-target.status.damageReductionValue)));let absorbed=0;if(target.status.shield>0&&!(opts&&opts.ignoreShield)){absorbed=Math.min(target.status.shield,final);target.status.shield-=absorbed;final-=absorbed;if(absorbed>0)log(`🛡️ 護盾吸收了 ${absorbed} 點傷害！`)}if(final>0){target.hp=Math.max(0,target.hp-final);showDamage(side,final,side==='L'?'#ff8888':'#8fe8ff')}if(target.hp>0&&target.status.clutchHealCharges>0&&target.hp/target.maxHp<=(target.status.clutchHealThreshold||0.10)){target.status.clutchHealCharges--;const heal=target.maxHp-target.hp;target.hp=target.maxHp;showHeal(side,heal);log(`🌺 ${target.name} 觸發巨大人形保護，瞬間回滿血！`)}if(absorbed>0&&final<=0)showFx('BLOCK');renderHUD()}
+function applyDamage(target,amount,side,opts){let final=amount;if(target.status.armorBreak>0)final=Math.round(final*(1+(GAME_SETTINGS.armorBreak??0.05)));if(target.status.weak>0)final=Math.floor(final*rand(target.status.weakMin||1.2,target.status.weakMax||1.5));if(target.status.damageReductionTurns>0)final=Math.max(1,Math.floor(final*(1-target.status.damageReductionValue)));if(target.status.decoys>0&&final>0){target.status.decoys--;log(`🎖️ 海軍小兵替 ${target.name} 擋下了攻擊！（剩 ${target.status.decoys} 名）`);showFx('BLOCK');renderHUD();return}let absorbed=0;if(target.status.shield>0&&!(opts&&opts.ignoreShield)){absorbed=Math.min(target.status.shield,final);target.status.shield-=absorbed;final-=absorbed;if(absorbed>0)log(`🛡️ 護盾吸收了 ${absorbed} 點傷害！`)}if(final>0){target.hp=Math.max(0,target.hp-final);showDamage(side,final,side==='L'?'#ff8888':'#8fe8ff')}if(target.hp>0&&target.status.clutchHealCharges>0&&target.hp/target.maxHp<=(target.status.clutchHealThreshold||0.10)){target.status.clutchHealCharges--;const heal=target.maxHp-target.hp;target.hp=target.maxHp;showHeal(side,heal);log(`🌺 ${target.name} 觸發巨大人形保護，瞬間回滿血！`)}if(absorbed>0&&final<=0)showFx('BLOCK');renderHUD()}
 function endTurnStatus(c){
  const side=c===battle.player?'L':'R';
+ const E=battle.eruption; if(E&&c.hp>0){ if(E.owner.hp<=0){battle.eruption=null;log('🌋 火山噴發的熔岩冷卻了。');} else { const ownerSide=battle.team.includes(E.owner)?'L':'R'; if(c===E.owner){const h=Math.floor(c.maxHp*(0.05+Math.random()*0.03));c.hp=Math.min(c.maxHp,c.hp+h);showHeal(side,h);log(`🌋 ${c.name} 吸收熔岩，恢復 ${h} HP。`);} else if(side!==ownerSide){const d=Math.max(1,Math.floor(c.maxHp*0.10));c.hp=Math.max(0,c.hp-d);showDamage(side,d,'#ff6a3a');log(`🌋 ${c.name} 被熔岩灼燒，損失 ${d} HP！`);} } }
  if(c.status.regen>0&&c.hp>0){const heal=Math.floor(c.maxHp*c.status.regenRatio); c.hp=Math.min(c.maxHp,c.hp+heal); showHeal(side,heal); log(`💚 ${c.name} 回復 ${heal} HP。`); c.status.regen--;}
  const remainingDots=[];
  c.status.dots.forEach(dot=>{if(c.hp<=0)return; let ratio=dot.ratio; if(dot.sequence){const [a,b]=dot.sequence[dot.index]||[0,0]; ratio=rand(a,b); dot.index++;} const dmg=Math.max(1,Math.floor(c.maxHp*ratio)); c.hp=Math.max(0,c.hp-dmg); showDamage(side,dmg,'#ffd34d'); log(`☠️ ${c.name} 受到${dot.label} ${dmg} 點傷害！`); dot.turns--; if(dot.turns>0) remainingDots.push(dot);});

@@ -165,7 +165,7 @@
     G.over = true; const d = SAVE.data; d.runner = d.runner || { best: 0, total: 0 }; const R = d.runner, dist = Math.floor(G.dist), rec = dist > (R.best || 0);
     const today = new Date().toDateString(); if (!R.tok || R.tok.day !== today) R.tok = { day: today, n: 0 };
     const berry = G.coins * 10 + Math.floor(dist / 4), tok = Math.min(Math.floor(dist / 1500), 5 - R.tok.n);
-    R.best = Math.max(R.best || 0, dist); R.total = (R.total || 0) + dist; R.tok.n += Math.max(0, tok); SAVE.save();
+    R.best = Math.max(R.best || 0, dist); R.total = (R.total || 0) + dist; track('runDist', dist); R.tok.n += Math.max(0, tok); SAVE.save();
     addBerry(berry); if (tok > 0) addTokens(tok, '奪寶大冒險'); if (window.checkTitles) checkTitles(false);
     SFX.play(rec ? 'rare' : 'miss');
     setTimeout(() => panel(`<div class="rn-card"><h2>${rec ? '新紀錄！' : '航行結束'}</h2>
