@@ -93,6 +93,7 @@
     return `<button class="sb-tile ${sel ? 'on' : ''}" data-id="${id}" style="--rc:${RAR_COLOR[rarOf(id)]}"><img src="${ch.avatar}" alt=""><em>LV.${lv}</em>${k === 0 ? '<i class="sb-lead">先鋒</i>' : ''}${tr ? '<i class="sb-tr">訓練中</i>' : ''}<span>${ch.name}</span></button>`; }
   function renderMine() {
     const ids = ownedIds(); if (!owned(pickChar)) pickChar = ids[0];
+    if (!pickChar) return; /* 還沒有任何船員（尚未完成入門）時不顯示 */
     const L = SAVE.data.lineup, max = GAME_SETTINGS.lineupMax, bench = ids.filter(id => !L.includes(id));
     const id = pickChar, c = CHARACTERS[id], lv = crewLv(id), r = SAVE.data.roster[id], need = expNeed(lv), S = lvStats(c, lv), tr = training().find(t => t.id === id), k = L.indexOf(id);
     const pct = lv >= MAX_LV ? 100 : Math.min(100, r.exp / need * 100);

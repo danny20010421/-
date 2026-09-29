@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PlayCanvas 測試：風車村</title>
+<title>PlayCanvas 測試：風車村（精緻版）</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#8fc7ea;font-family:system-ui,"Noto Sans TC",sans-serif;touch-action:none;user-select:none}
   canvas{display:block;width:100%;height:100%}
@@ -39,106 +39,235 @@ function build() {
   const canvas = document.getElementById('c');
   const app = new pc.Application(canvas, { mouse: new pc.Mouse(canvas), touch: new pc.TouchDevice(canvas), keyboard: new pc.Keyboard(window) });
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW); app.setCanvasResolution(pc.RESOLUTION_AUTO);
-  const hiDpi = () => Math.min(window.devicePixelRatio || 1, 2);
-  app.graphicsDevice.maxPixelRatio = hiDpi();
-  window.addEventListener('resize', () => app.resizeCanvas());
+  const dev = app.graphicsDevice, hiDpi = () => Math.min(window.devicePixelRatio || 1, 2);
+  dev.maxPixelRatio = hiDpi(); window.addEventListener('resize', () => app.resizeCanvas());
 
-  /* 天空、霧、環境光 */
-  const SKY = new pc.Color(0.56, 0.78, 0.92);
-  app.scene.ambientLight = new pc.Color(0.42, 0.46, 0.52);
-  app.scene.fog = pc.FOG_LINEAR; app.scene.fogColor = SKY; app.scene.fogStart = 60; app.scene.fogEnd = 190;
-  app.scene.gammaCorrection = pc.GAMMA_SRGB; app.scene.toneMapping = pc.TONEMAP_ACES;
+  /* ---------- 隨機數與雜訊（固定種子，每次場景都一樣） ---------- */
+  let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const vnoise = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
+  const fbm = (x, y, o) => { let s = 0, a = .5, f = 1; for (let i = 0; i < (o || 4); i++) { s += vnoise(x * f, y * f) * a; f *= 2; a *= .5; } return s; };
+
+  /* ---------- 程序化貼圖：用畫布畫出材質，再產生法線貼圖 ---------- */
+  function cnv(n, paint) { const c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d'); paint(g, n); return c; }
+  function toTex(c) { const t = new pc.Texture(dev, { width: c.width, height: c.height, format: pc.PIXELFORMAT_R8_G8_B8_A8, mipmaps: true, minFilter: pc.FILTER_LINEAR_MIPMAP_LINEAR, magFilter: pc.FILTER_LINEAR, addressU: pc.ADDRESS_REPEAT, addressV: pc.ADDRESS_REPEAT, anisotropy: 4 }); t.setSource(c); return t; }
+  function normalFrom(c, k) { const n = c.width, src = c.getContext('2d').getImageData(0, 0, n, n).data, out = document.createElement('canvas'); out.width = out.height = n; const g = out.getContext('2d'), img = g.createImageData(n, n), d = img.data;
+    const h = (x, y) => { x = (x + n) % n; y = (y + n) % n; const i = (y * n + x) * 4; return (src[i] + src[i + 1] + src[i + 2]) / 765; };
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const dx = (h(x + 1, y) - h(x - 1, y)) * k, dy = (h(x, y + 1) - h(x, y - 1)) * k, l = Math.hypot(dx, dy, 1), i = (y * n + x) * 4;
+      d[i] = (-dx / l * .5 + .5) * 255; d[i + 1] = (-dy / l * .5 + .5) * 255; d[i + 2] = (1 / l * .5 + .5) * 255; d[i + 3] = 255; }
+    g.putImageData(img, 0, 0); return out; }
+  const noiseFill = (g, n, base, amp, sc, oct) => { const img = g.createImageData(n, n), d = img.data; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = fbm(x / n * sc, y / n * sc, oct || 4) - .5, i = (y * n + x) * 4; d[i] = base[0] + v * amp; d[i + 1] = base[1] + v * amp; d[i + 2] = base[2] + v * amp; d[i + 3] = 255; } g.putImageData(img, 0, 0); };
+  const TX = {};
+  /* 地面細節：中性灰階（顏色由地形頂點色決定） */
+  TX.ground = cnv(512, (g, n) => { noiseFill(g, n, [214, 214, 214], 70, 16, 5); for (let i = 0; i < 2600; i++) { const x = rnd() * n, y = rnd() * n, l = 3 + rnd() * 6; g.strokeStyle = `rgba(${rnd() < .5 ? 255 : 150},${rnd() < .5 ? 255 : 150},${rnd() < .5 ? 255 : 150},.35)`; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - .5) * 3, y - l); g.stroke(); } });
+  TX.wood = cnv(256, (g, n) => { g.fillStyle = '#7a5230'; g.fillRect(0, 0, n, n); for (let p = 0; p < 8; p++) { const y0 = p * n / 8; g.fillStyle = `hsl(28,${35 + rnd() * 15}%,${26 + rnd() * 10}%)`; g.fillRect(0, y0 + 1, n, n / 8 - 2); for (let i = 0; i < 40; i++) { g.strokeStyle = 'rgba(40,20,5,.25)'; g.beginPath(); const yy = y0 + rnd() * n / 8; g.moveTo(0, yy); g.bezierCurveTo(n * .3, yy + (rnd() - .5) * 4, n * .7, yy + (rnd() - .5) * 4, n, yy); g.stroke(); } g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, y0, n, 1.5); g.fillStyle = '#2a1a0a'; g.beginPath(); g.arc(12 + (p % 2) * n / 2, y0 + n / 16, 2, 0, 7); g.arc(n / 2 - 12 + (p % 2) * n / 2, y0 + n / 16, 2, 0, 7); g.fill(); } });
+  TX.roof = cnv(256, (g, n) => { g.fillStyle = '#a8432e'; g.fillRect(0, 0, n, n); const rows = 10, cols = 8; for (let r = 0; r < rows; r++) for (let c = 0; c <= cols; c++) { const x = (c + (r % 2) * .5) * n / cols, y = r * n / rows, w = n / cols - 2, h = n / rows; const gr = g.createLinearGradient(0, y, 0, y + h); const l = 38 + rnd() * 10; gr.addColorStop(0, `hsl(10,55%,${l + 8}%)`); gr.addColorStop(1, `hsl(8,60%,${l - 12}%)`); g.fillStyle = gr; g.beginPath(); g.moveTo(x - w / 2, y); g.lineTo(x + w / 2, y); g.lineTo(x + w / 2, y + h * .8); g.quadraticCurveTo(x, y + h * 1.15, x - w / 2, y + h * .8); g.fill(); } });
+  TX.plaster = cnv(256, (g, n) => { noiseFill(g, n, [236, 226, 204], 34, 10, 5); g.fillStyle = '#5a3a1e'; [[0, 0, n, 14], [0, n - 14, n, 14], [0, 0, 14, n], [n - 14, 0, 14, n], [n / 2 - 7, 0, 14, n]].forEach(r => g.fillRect(...r)); g.save(); g.translate(n / 2, n / 2); g.rotate(.6); g.fillRect(-7, -n, 14, n * 2); g.restore(); });
+  TX.stone = cnv(256, (g, n) => { g.fillStyle = '#6f6a62'; g.fillRect(0, 0, n, n); for (let r = 0; r < 8; r++) for (let c = 0; c < 6; c++) { const x = (c + (r % 2) * .5) * n / 6, y = r * n / 8; g.fillStyle = `hsl(35,${6 + rnd() * 8}%,${48 + rnd() * 16}%)`; g.beginPath(); g.roundRect ? g.roundRect(x - n / 12 + 2, y + 2, n / 6 - 4, n / 8 - 4, 5) : g.rect(x - n / 12 + 2, y + 2, n / 6 - 4, n / 8 - 4); g.fill(); } });
+  TX.bark = cnv(128, (g, n) => { g.fillStyle = '#5a3c22'; g.fillRect(0, 0, n, n); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(${rnd() < .5 ? '25,15,5' : '140,100,60'},.5)`; g.lineWidth = 1 + rnd() * 2; const x = rnd() * n; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + (rnd() - .5) * 10, n * .3, x + (rnd() - .5) * 10, n * .7, x, n); g.stroke(); } });
+  TX.leaf = cnv(256, (g, n) => { noiseFill(g, n, [170, 170, 170], 90, 24, 4); for (let i = 0; i < 700; i++) { const x = rnd() * n, y = rnd() * n; g.fillStyle = `rgba(${rnd() < .6 ? '255,255,255' : '40,40,40'},.35)`; g.beginPath(); g.ellipse(x, y, 4 + rnd() * 3, 2 + rnd() * 2, rnd() * 3, 0, 7); g.fill(); } });
+  TX.water = cnv(256, (g, n) => { noiseFill(g, n, [128, 128, 128], 200, 6, 5); });
+  TX.cloth = cnv(128, (g, n) => { noiseFill(g, n, [238, 230, 212], 20, 20, 3); g.strokeStyle = 'rgba(120,100,70,.35)'; for (let i = 0; i < n; i += 8) { g.beginPath(); g.moveTo(0, i); g.lineTo(n, i); g.stroke(); } });
+  TX.shirt = cnv(128, (g, n) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f2efe6' : '#2c4f8a'; g.fillRect(0, i * n / 8, n, n / 8); } });
+  TX.sky = cnv(4, () => { }); TX.sky.width = 2; TX.sky.height = 256; { const g = TX.sky.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#2f6fb8'); gr.addColorStop(.42, '#79b4e4'); gr.addColorStop(.5, '#cfe6f2'); gr.addColorStop(.52, '#b9d8ea'); gr.addColorStop(1, '#6a9fc4'); g.fillStyle = gr; g.fillRect(0, 0, 2, 256); }
+
+  const T = {}; for (const k in TX) T[k] = toTex(TX[k]);
+  const N = { ground: toTex(normalFrom(TX.ground, 3)), wood: toTex(normalFrom(TX.wood, 4)), roof: toTex(normalFrom(TX.roof, 6)), stone: toTex(normalFrom(TX.stone, 5)), bark: toTex(normalFrom(TX.bark, 5)), leaf: toTex(normalFrom(TX.leaf, 3)), water: toTex(normalFrom(TX.water, 2.5)), plaster: toTex(normalFrom(TX.plaster, 2)) };
 
   const mats = {};
-  function mat(hex, opt) {
-    const k = hex + JSON.stringify(opt || {}); if (mats[k]) return mats[k];
-    const m = new pc.StandardMaterial(); const c = new pc.Color().fromString(hex); m.diffuse = c;
-    m.useMetalness = true; m.metalness = (opt && opt.metal) || 0; m.gloss = (opt && opt.gloss) ?? 0.25;
-    if (opt && opt.opacity) { m.opacity = opt.opacity; m.blendType = pc.BLEND_NORMAL; m.depthWrite = false; }
-    m.update(); return (mats[k] = m);
-  }
-  function box(parent, type, pos, scale, color, opt) {
-    const e = new pc.Entity(); e.addComponent('render', { type, material: mat(color, opt), castShadows: !(opt && opt.noShadow), receiveShadows: true });
-    e.setLocalPosition(pos[0], pos[1], pos[2]); e.setLocalScale(scale[0], scale[1], scale[2]);
-    if (opt && opt.rot) e.setLocalEulerAngles(opt.rot[0], opt.rot[1], opt.rot[2]);
-    (parent || app.root).addChild(e); return e;
-  }
+  function mat(key, o) { if (mats[key]) return mats[key]; const m = new pc.StandardMaterial(); o = o || {};
+    m.diffuse = new pc.Color().fromString(o.color || '#ffffff'); if (o.map) { m.diffuseMap = T[o.map]; m.diffuseMapTiling = new pc.Vec2(o.tile || 1, o.tileV || o.tile || 1); }
+    if (o.nmap) { m.normalMap = N[o.nmap]; m.normalMapTiling = new pc.Vec2(o.tile || 1, o.tileV || o.tile || 1); m.bumpiness = o.bump ?? 1; }
+    m.useMetalness = true; m.metalness = o.metal || 0; m.gloss = o.gloss ?? .25;
+    if (o.emissive) { m.emissive = new pc.Color().fromString(o.emissive); m.emissiveIntensity = o.ei || 1; }
+    if (o.vcol) m.diffuseVertexColor = true;
+    if (o.opacity != null) { m.opacity = o.opacity; m.blendType = pc.BLEND_NORMAL; m.depthWrite = false; }
+    if (o.noLight) { m.useLighting = false; m.useFog = false; m.useSkybox = false; }
+    if (o.cull != null) m.cull = o.cull;
+    m.update(); return (mats[key] = m); }
 
-  /* 太陽光（即時陰影） */
+  /* ---------- 批次合併：靜態物件共用材質會合併成少量繪製 ---------- */
+  const STATIC = app.batcher ? app.batcher.addGroup('static', false, 120).id : undefined;
+  function prim(parent, type, pos, scale, m, opt) { opt = opt || {}; const e = new pc.Entity();
+    const rc = { type, material: m, castShadows: opt.shadow !== false, receiveShadows: true }; if (!opt.dynamic && STATIC !== undefined) rc.batchGroupId = STATIC; e.addComponent('render', rc);
+    e.setLocalPosition(pos[0], pos[1], pos[2]); e.setLocalScale(scale[0], scale[1], scale[2]); if (opt.rot) e.setLocalEulerAngles(opt.rot[0], opt.rot[1], opt.rot[2]);
+    (parent || app.root).addChild(e); return e; }
+  function meshEntity(parent, positions, uvs, indices, m, opt) { opt = opt || {}; const mesh = new pc.Mesh(dev); mesh.setPositions(positions); mesh.setNormals(pc.calculateNormals(positions, indices)); if (uvs) mesh.setUvs(0, uvs); if (opt.colors) mesh.setColors32(opt.colors); mesh.setIndices(indices); mesh.update();
+    const e = new pc.Entity(); e.addComponent('render', { meshInstances: [new pc.MeshInstance(mesh, m)], castShadows: opt.shadow !== false, receiveShadows: true }); (parent || app.root).addChild(e); return e; }
+  /* 三角柱：人字屋頂 */
+  let prismGeo = null;
+  function roof(parent, pos, w, h, d, m, ry) { if (!prismGeo) prismGeo = { p: [-.5, 0, -.5, .5, 0, -.5, 0, 1, -.5, -.5, 0, .5, .5, 0, .5, 0, 1, .5, -.5, 0, -.5, 0, 1, -.5, 0, 1, .5, -.5, 0, .5, .5, 0, -.5, .5, 0, .5, 0, 1, .5, 0, 1, -.5],
+      u: [0, 0, 1, 0, .5, 1, 0, 0, 1, 0, .5, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1], i: [0, 2, 1, 3, 4, 5, 6, 9, 8, 6, 8, 7, 10, 12, 11, 10, 13, 12] };
+    const e = meshEntity(parent, prismGeo.p, prismGeo.u, prismGeo.i, m); e.setLocalPosition(pos[0], pos[1], pos[2]); e.setLocalScale(w, h, d); e.setLocalEulerAngles(0, ry || 0, 0); return e; }
+
+  /* ---------- 地形：高度＋頂點色（草地、沙灘、泥路） ---------- */
+  const PATHS = [[[6, 30], [0, 18], [-6, 4], [-10, -12], [-14, -22]], [[0, 18], [14, 10], [26, 2], [40, 30]], [[-6, 4], [-22, 10]]];
+  const segDist = (x, z, a, b) => { const vx = b[0] - a[0], vz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * vx + (z - a[1]) * vz) / (vx * vx + vz * vz))); return Math.hypot(x - a[0] - vx * t, z - a[1] - vz * t); };
+  const pathD = (x, z) => { let m = 99; PATHS.forEach(p => { for (let i = 0; i < p.length - 1; i++) m = Math.min(m, segDist(x, z, p[i], p[i + 1])); }); return m; };
+  const sstep = (a, b, v) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  function H(x, z) { const r = Math.hypot(x, z) + (fbm(x * .05 + 3, z * .05, 3) - .5) * 10;
+    let h = 1.4 * (1 - sstep(50, 66, r)) - 2.2 * sstep(64, 80, r) + .25;
+    h += 6 * Math.exp(-((x + 14) ** 2 + (z + 26) ** 2) / 260) + 3.5 * Math.exp(-((x + 36) ** 2 + (z + 8) ** 2) / 180);
+    h += (fbm(x * .08, z * .08, 4) - .5) * 1.4 * (1 - sstep(48, 62, r));
+    h -= .35 * Math.max(0, 1 - pathD(x, z) / 2.2);
+    return h; }
+  { const S = 150, R = 110, pos = [], uv = [], col = [], idx = [];
+    for (let j = 0; j <= S; j++) for (let i = 0; i <= S; i++) { const x = -R + 2 * R * i / S, z = -R + 2 * R * j / S, y = H(x, z); pos.push(x, y, z); uv.push(x / 6, z / 6);
+      const n = fbm(x * .12, z * .12, 3), p = Math.max(0, 1 - pathD(x, z) / 2.4), sand = 1 - sstep(.35, 1.1, y), deep = sstep(-.3, -1.6, y);
+      let c = [72 + n * 50, 132 + n * 55, 52 + n * 25]; if (y > 3) c = [c[0] * .92 + 12, c[1] * .95, c[2] * .9];
+      c = c.map((v, k) => v * (1 - p) + [150, 118, 78][k] * p); c = c.map((v, k) => v * (1 - sand) + [226, 206, 158][k] * sand); c = c.map((v, k) => v * (1 - deep) + [150, 140, 110][k] * deep);
+      col.push(c[0], c[1], c[2], 255); }
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const a = j * (S + 1) + i, b = a + 1, c = a + S + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    meshEntity(null, pos, uv, idx, mat('ground', { map: 'ground', nmap: 'ground', vcol: true, gloss: .15, bump: .8 }), { colors: new Uint8ClampedArray(col), shadow: false }); }
+
+  /* ---------- 天空與雲 ---------- */
+  const skyM = mat('sky', { noLight: true, cull: pc.CULLFACE_FRONT }); skyM.emissiveMap = T.sky; skyM.emissive = new pc.Color(1, 1, 1); skyM.diffuse = new pc.Color(0, 0, 0); skyM.update();
+  prim(null, 'sphere', [0, 0, 0], [900, 900, 900], skyM, { shadow: false, dynamic: true });
+  const HORIZON = new pc.Color(.72, .85, .93);
+  app.scene.ambientLight = new pc.Color(.38, .44, .52);
+  app.scene.fog = pc.FOG_LINEAR; app.scene.fogColor = HORIZON; app.scene.fogStart = 90; app.scene.fogEnd = 380;
+  app.scene.gammaCorrection = pc.GAMMA_SRGB; app.scene.toneMapping = pc.TONEMAP_ACES; app.scene.exposure = 1.1;
+  const cloudM = mat('cloud', { color: '#ffffff', emissive: '#c8d8e8', ei: .55, gloss: 0 }), clouds = [];
+  for (let i = 0; i < 9; i++) { const g = new pc.Entity(), a = rnd() * 6.28, r = 90 + rnd() * 110; g.setLocalPosition(Math.cos(a) * r, 34 + rnd() * 16, Math.sin(a) * r); app.root.addChild(g); clouds.push({ e: g, a, r, s: .004 + rnd() * .004 });
+    for (let k = 0; k < 5; k++) prim(g, 'sphere', [(k - 2) * 5 + rnd() * 2, rnd() * 2, rnd() * 4], [9 + rnd() * 6, 5 + rnd() * 3, 7 + rnd() * 4], cloudM, { shadow: false, dynamic: true }); }
+
+  /* ---------- 海面（雙層法線貼圖流動） ---------- */
+  const waterM = new pc.StandardMaterial(); waterM.diffuse = new pc.Color().fromString('#1f6fa0'); waterM.useMetalness = true; waterM.metalness = .1; waterM.gloss = .92;
+  waterM.normalMap = N.water; waterM.normalMapTiling = new pc.Vec2(40, 40); waterM.bumpiness = .7; waterM.normalDetailMap = N.water; waterM.normalDetailMapTiling = new pc.Vec2(90, 90); waterM.normalDetailMapBumpiness = .5;
+  waterM.opacity = .88; waterM.blendType = pc.BLEND_NORMAL; waterM.emissive = new pc.Color(.02, .09, .14); waterM.update();
+  prim(null, 'plane', [0, -.15, 0], [1200, 1, 1200], waterM, { shadow: false, dynamic: true });
+  const foamM = mat('foam', { color: '#ffffff', opacity: .45, gloss: .4 });
+  const foam = prim(null, 'cylinder', [0, -.12, 0], [128, .02, 128], foamM, { shadow: false, dynamic: true });
+
+  /* ---------- 共用材質 ---------- */
+  const M = { wood: mat('wood', { map: 'wood', nmap: 'wood', tile: 1 }), woodDark: mat('woodD', { map: 'wood', nmap: 'wood', color: '#8a7060' }), roof: mat('roof', { map: 'roof', nmap: 'roof', tile: 2, gloss: .35 }), roofBlue: mat('roofB', { map: 'roof', nmap: 'roof', tile: 2, color: '#6a9ae0', gloss: .35 }),
+    plaster: mat('plaster', { map: 'plaster', nmap: 'plaster' }), stone: mat('stone', { map: 'stone', nmap: 'stone', tile: 2 }), bark: mat('bark', { map: 'bark', nmap: 'bark', tile: 1, tileV: 3 }),
+    leaf: mat('leaf', { map: 'leaf', nmap: 'leaf', color: '#5fae48', tile: 2, gloss: .2 }), leaf2: mat('leaf2', { map: 'leaf', nmap: 'leaf', color: '#78c050', tile: 2, gloss: .2 }), palm: mat('palm', { map: 'leaf', color: '#4f9a3a', tile: 1 }),
+    cloth: mat('cloth', { map: 'cloth' }), glass: mat('glass', { color: '#9fd4f0', gloss: .95, metal: .2, emissive: '#1a3040', ei: 1 }), rock: mat('rock', { map: 'stone', nmap: 'stone', color: '#a8a094', tile: 1 }),
+    iron: mat('iron', { color: '#3a3a3e', metal: .8, gloss: .55 }), lamp: mat('lamp', { color: '#ffd98a', emissive: '#ffb84a', ei: 2 }), grass: mat('grass', { color: '#5fa843', gloss: .1 }),
+    flowerR: mat('fR', { color: '#e8505a', emissive: '#401010' }), flowerY: mat('fY', { color: '#f4d24a', emissive: '#403010' }), flowerW: mat('fW', { color: '#f6f0f8', emissive: '#303030' }), sign: mat('sign', { color: '#c9973a', gloss: .4 }) };
+  const onG = (x, z) => H(x, z);
+
+  /* ---------- 風車（石造塔身＋木造葉片） ---------- */
+  const millP = [-14, -26], mill = new pc.Entity(); mill.setLocalPosition(millP[0], onG(...millP) - .3, millP[1]); mill.setLocalEulerAngles(0, 20, 0); app.root.addChild(mill);
+  prim(mill, 'cylinder', [0, 4.5, 0], [6.2, 9, 6.2], M.stone); prim(mill, 'cylinder', [0, 9.4, 0], [6.8, .6, 6.8], M.wood); prim(mill, 'cone', [0, 11.6, 0], [7.2, 4.2, 7.2], M.roof);
+  prim(mill, 'box', [0, 1.4, 3.05], [1.6, 2.8, .2], M.woodDark); [[1.8, 5.5], [-1.8, 7]].forEach(([x, y]) => prim(mill, 'box', [x, y, 2.95], [.9, 1.2, .2], M.glass));
+  const hub = new pc.Entity(); hub.setLocalPosition(0, 9.2, 3.6); mill.addChild(hub); prim(hub, 'cylinder', [0, 0, 0], [1, 1.2, 1], M.woodDark, { rot: [90, 0, 0], dynamic: true });
+  for (let i = 0; i < 4; i++) { const arm = new pc.Entity(); arm.setLocalEulerAngles(0, 0, i * 90); hub.addChild(arm); prim(arm, 'box', [0, 4.2, 0], [.28, 8.4, .28], M.wood, { dynamic: true });
+    prim(arm, 'box', [.85, 5, .15], [1.6, 6, .06], M.cloth, { dynamic: true }); for (let k = 0; k < 4; k++) prim(arm, 'box', [.85, 2.6 + k * 1.6, .2], [1.7, .08, .1], M.woodDark, { dynamic: true }); }
+
+  /* ---------- 房屋（木骨架牆＋人字屋頂＋煙囪、窗框、花箱） ---------- */
+  function house(x, z, w, d, ry, roofM, tall) { const g = new pc.Entity(), y = onG(x, z) - .2, h = tall || 3.4; g.setLocalPosition(x, y, z); g.setLocalEulerAngles(0, ry, 0); app.root.addChild(g);
+    prim(g, 'box', [0, .3, 0], [w + .4, .6, d + .4], M.stone); prim(g, 'box', [0, h / 2 + .6, 0], [w, h, d], M.plaster);
+    roof(g, [0, h + .6, 0], w + 1.1, 2.4, d + .8, roofM); prim(g, 'box', [w * .28, h + 2.3, -d * .2], [.7, 2.2, .7], M.stone);
+    prim(g, 'box', [0, 1.6, d / 2 + .05], [1.1, 2, .12], M.woodDark); prim(g, 'box', [0, 2.7, d / 2 + .15], [1.4, .15, .35], M.wood);
+    [-1, 1].forEach(s => { const wx = s * w * .3; prim(g, 'box', [wx, 2.4, d / 2 + .04], [.95, .85, .08], M.glass); prim(g, 'box', [wx, 2.4, d / 2 + .08], [1.1, .08, .08], M.wood); prim(g, 'box', [wx, 2.4, d / 2 + .08], [.08, .95, .08], M.wood);
+      prim(g, 'box', [wx, 1.85, d / 2 + .25], [1.1, .25, .35], M.wood); for (let k = 0; k < 4; k++) prim(g, 'sphere', [wx - .4 + k * .27, 2.05, d / 2 + .28], [.22, .22, .22], k % 2 ? M.flowerR : M.flowerY, { shadow: false }); });
+    return g; }
+  house(-8, 38, 8, 6, 0, M.roof, 4); house(16, 22, 6, 5, -25, M.roofBlue); house(-27, 16, 5.5, 4.5, 15, M.roof); house(26, -2, 6, 5, -45, M.roof); house(-31, -3, 5, 5, 35, M.roofBlue); house(8, -8, 5, 4.5, 160, M.roof);
+  /* 港口酒館招牌 */
+  { const g = new pc.Entity(); g.setLocalPosition(-8, onG(-8, 38), 38); app.root.addChild(g); prim(g, 'box', [4.6, 3, 3.4], [.15, 3, .15], M.woodDark); prim(g, 'box', [4.6, 4.2, 4.2], [.12, 1.1, 1.6], M.sign); prim(g, 'box', [4.6, 4.3, 3.6], [.1, .1, 1.3], M.iron); }
+
+  /* ---------- 碼頭、船、木桶、木箱 ---------- */
+  const dock = new pc.Entity(); dock.setLocalPosition(44, 0, 44); dock.setLocalEulerAngles(0, 45, 0); app.root.addChild(dock);
+  prim(dock, 'box', [0, .45, 8], [3.6, .3, 18], M.wood); for (let i = 0; i < 5; i++) [-1.7, 1.7].forEach(s => prim(dock, 'cylinder', [s, -.3, i * 4], [.4, 2, .4], M.woodDark));
+  [-1.7, 1.7].forEach(s => prim(dock, 'box', [s, 1.1, 8], [.12, .12, 18], M.woodDark));
+  const boat = new pc.Entity(); boat.setLocalPosition(4.5, -.05, 12); dock.addChild(boat);
+  prim(boat, 'box', [0, .3, 0], [2, .8, 5], M.wood, { dynamic: true }); prim(boat, 'cone', [0, .3, 2.9], [2, 1.4, .8], M.wood, { rot: [90, 0, 0], dynamic: true });
+  prim(boat, 'cylinder', [0, 2.6, .3], [.16, 4.2, .16], M.woodDark, { dynamic: true }); prim(boat, 'box', [0, 3, .3], [.06, 2.6, 2], M.cloth, { dynamic: true });
+  function barrel(x, z) { const y = onG(x, z); prim(null, 'cylinder', [x, y + .55, z], [.9, 1.1, .9], M.wood); [.2, .9].forEach(h => prim(null, 'cylinder', [x, y + h, z], [.94, .08, .94], M.iron)); }
+  function crate(x, z, s, r) { const y = onG(x, z); prim(null, 'box', [x, y + s / 2, z], [s, s, s], M.wood, { rot: [0, r || 0, 0] }); }
+  [[36, 34], [37.2, 35], [35, 36.2], [-4, 40], [-3, 41.3]].forEach(p => barrel(...p)); [[33, 37, 1.1, 10], [34, 38.5, .8, 30], [-12, 41, 1, 5]].forEach(p => crate(...p));
+
+  /* ---------- 柵欄、路燈 ---------- */
+  function fence(a, b) { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(2, Math.round(L / 2.2)), ang = Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI;
+    for (let i = 0; i <= n; i++) { const x = a[0] + (b[0] - a[0]) * i / n, z = a[1] + (b[1] - a[1]) * i / n; prim(null, 'box', [x, onG(x, z) + .6, z], [.18, 1.2, .18], M.woodDark); }
+    [.55, 1].forEach(h => { const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2; prim(null, 'box', [mx, onG(mx, mz) + h, mz], [.1, .12, L], M.wood, { rot: [0, ang, 0] }); }); }
+  fence([-30, -12], [-24, -30]); fence([-24, -30], [-6, -34]); fence([-34, 20], [-34, 8]);
+  const lamps = [[3, 24], [-4, 10], [12, 12], [22, 4], [-8, -6]];
+  lamps.forEach(([x, z]) => { const y = onG(x, z); prim(null, 'cylinder', [x, y + 1.6, z], [.14, 3.2, .14], M.iron); prim(null, 'box', [x, y + 3.35, z], [.45, .55, .45], M.lamp, { shadow: false }); prim(null, 'cone', [x, y + 3.8, z], [.6, .35, .6], M.iron); });
+
+  /* ---------- 麥田 ---------- */
+  const wheatM = mat('wheat', { color: '#e0c060', gloss: .2 });
+  for (let f = 0; f < 4; f++) { const cx0 = -30 + (f % 2) * 9, cz0 = -20 + Math.floor(f / 2) * 8; for (let i = 0; i < 70; i++) { const x = cx0 + rnd() * 7, z = cz0 + rnd() * 6; prim(null, 'cone', [x, onG(x, z) + .55, z], [.35, 1.1 + rnd() * .3, .35], wheatM, { shadow: false }); } }
+
+  /* ---------- 樹木（闊葉樹＋海邊椰子樹） ---------- */
+  function tree(x, z, s) { const y = onG(x, z); prim(null, 'cylinder', [x, y + 1.6 * s, z], [.55 * s, 3.2 * s, .55 * s], M.bark);
+    const m = rnd() < .5 ? M.leaf : M.leaf2; for (let k = 0; k < 4; k++) { const a = k * 1.7 + rnd(), r = k ? 1.1 * s : 0; prim(null, 'sphere', [x + Math.cos(a) * r, y + (3.6 + (k ? .1 : .9)) * s, z + Math.sin(a) * r], [(2.6 - (k ? .6 : 0)) * s, (2.2 - (k ? .4 : 0)) * s, (2.6 - (k ? .6 : 0)) * s], m); } }
+  function palm(x, z) { const y = onG(x, z), lean = (rnd() - .5) * 18; const g = new pc.Entity(); g.setLocalPosition(x, y, z); g.setLocalEulerAngles(lean, rnd() * 360, 0); app.root.addChild(g);
+    for (let k = 0; k < 6; k++) prim(g, 'cylinder', [0, .5 + k * 1, 0], [.45 - k * .03, 1.05, .45 - k * .03], M.bark);
+    for (let k = 0; k < 7; k++) { const f = new pc.Entity(); f.setLocalPosition(0, 6.2, 0); f.setLocalEulerAngles(-35, k * 51, 0); g.addChild(f); prim(f, 'box', [0, 0, 1.8], [.9, .06, 3.6], M.palm, { shadow: true }); } }
+  let placed = 0; for (let g = 0; g < 400 && placed < 70; g++) { const a = rnd() * 6.28, r = 14 + rnd() * 40, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (pathD(x, z) < 4 || Math.hypot(x - millP[0], z - millP[1]) < 9 || [[-8, 38], [16, 22], [-27, 16], [26, -2], [-31, -3], [8, -8]].some(h => Math.hypot(x - h[0], z - h[1]) < 7) || (x > -32 && x < -12 && z > -22 && z < -4) || H(x, z) < 1.2) continue; tree(x, z, .8 + rnd() * .6); placed++; }
+  for (let i = 0; i < 16; i++) { const a = rnd() * 6.28, r = 57 + rnd() * 5, x = Math.cos(a) * r, z = Math.sin(a) * r; if (H(x, z) > .2 && H(x, z) < 1.3 && Math.hypot(x - 44, z - 44) > 10) palm(x, z); }
+
+  /* ---------- 岩石、草叢、花 ---------- */
+  for (let i = 0; i < 26; i++) { const a = rnd() * 6.28, r = 50 + rnd() * 20, x = Math.cos(a) * r, z = Math.sin(a) * r; prim(null, 'sphere', [x, H(x, z) + .2, z], [2 + rnd() * 3, 1.2 + rnd() * 1.6, 2 + rnd() * 3], M.rock, { rot: [rnd() * 20, rnd() * 360, rnd() * 20] }); }
+  for (let i = 0; i < 520; i++) { const x = (rnd() - .5) * 110, z = (rnd() - .5) * 110, y = H(x, z); if (y < 1 || pathD(x, z) < 1.8) continue;
+    if (i % 5 === 0) prim(null, 'sphere', [x, y + .25, z], [.3, .3, .3], [M.flowerR, M.flowerY, M.flowerW][i % 3], { shadow: false });
+    else prim(null, 'cone', [x, y + .25, z], [.35, .6 + rnd() * .4, .35], M.grass, { shadow: false }); }
+
+  /* ---------- 太陽 ---------- */
   const sun = new pc.Entity('sun');
-  sun.addComponent('light', { type: 'directional', color: new pc.Color(1, 0.95, 0.85), intensity: 1.35, castShadows: true, shadowDistance: 70, shadowResolution: 2048, shadowBias: 0.3, normalOffsetBias: 0.05, numCascades: 1 });
-  sun.setEulerAngles(48, 35, 0); app.root.addChild(sun);
+  sun.addComponent('light', { type: 'directional', color: new pc.Color(1, .93, .8), intensity: 1.5, castShadows: true, shadowDistance: 80, shadowResolution: 2048, shadowBias: .25, normalOffsetBias: .05, numCascades: 1, shadowType: pc.SHADOW_PCF3 });
+  sun.setEulerAngles(50, 30, 0); app.root.addChild(sun);
+  const fill = new pc.Entity(); fill.addComponent('light', { type: 'directional', color: new pc.Color(.55, .7, .95), intensity: .35, castShadows: false }); fill.setEulerAngles(-40, 200, 0); app.root.addChild(fill);
 
-  /* 海、沙灘、島 */
-  const sea = box(null, 'plane', [0, -0.35, 0], [600, 1, 600], '#2f7fb8', { gloss: 0.85, noShadow: true });
-  box(null, 'cylinder', [0, -0.6, 0], [92, 1, 92], '#e9d6a0', { noShadow: true });
-  box(null, 'cylinder', [0, -0.3, 0], [80, 1, 80], '#79b65a', { noShadow: true });
-  /* 麥田與小路 */
-  for (let i = 0; i < 6; i++) box(null, 'box', [-26 + (i % 3) * 7, 0.25, -18 + Math.floor(i / 3) * 7], [6, 0.5, 6], i % 2 ? '#e6c35a' : '#d9b44a');
-  [[0, 20, 6, 30], [14, 6, 28, 4], [-10, -2, 4, 22]].forEach(([x, z, w, d]) => box(null, 'box', [x, 0.02, z], [w, 0.05, d], '#c9a877', { noShadow: true }));
+  /* ---------- 海鷗 ---------- */
+  const gullM = mat('gull', { color: '#f4f4f4', emissive: '#606060' }), gulls = [];
+  for (let i = 0; i < 7; i++) { const g = new pc.Entity(); app.root.addChild(g); const L = new pc.Entity(), R = new pc.Entity(); g.addChild(L); g.addChild(R);
+    prim(L, 'box', [-.55, 0, 0], [1.1, .05, .35], gullM, { shadow: false, dynamic: true }); prim(R, 'box', [.55, 0, 0], [1.1, .05, .35], gullM, { shadow: false, dynamic: true }); prim(g, 'sphere', [0, 0, 0], [.35, .3, .7], gullM, { shadow: false, dynamic: true });
+    gulls.push({ g, L, R, a: rnd() * 6.28, r: 20 + rnd() * 40, h: 18 + rnd() * 10, s: .15 + rnd() * .15, cx: (rnd() - .5) * 40, cz: (rnd() - .5) * 40 }); }
 
-  /* 風車（葉片會轉） */
-  const mill = new pc.Entity(); mill.setLocalPosition(-14, 0, -26); app.root.addChild(mill);
-  box(mill, 'cylinder', [0, 5, 0], [5, 10, 5], '#f1eadb'); box(mill, 'cone', [0, 11.4, 0], [6.4, 3, 6.4], '#b5553a');
-  const hub = new pc.Entity(); hub.setLocalPosition(0, 8.6, 2.8); mill.addChild(hub);
-  box(hub, 'cylinder', [0, 0, 0], [0.8, 0.8, 0.8], '#6b4a2a', { rot: [90, 0, 0] });
-  for (let i = 0; i < 4; i++) { const arm = new pc.Entity(); arm.setLocalEulerAngles(0, 0, i * 90); hub.addChild(arm); box(arm, 'box', [0, 3.6, 0.2], [1.3, 6.4, 0.12], '#efe6d0'); box(arm, 'box', [0, 3.6, 0.1], [0.18, 7, 0.2], '#7a5530'); }
+  /* ---------- 玩家（原創水手造型） ---------- */
+  const player = new pc.Entity(); player.setLocalPosition(6, onG(6, 32), 32); app.root.addChild(player);
+  const shirtM = mat('shirt', { map: 'shirt', tile: 1, tileV: 2 }), skinM = mat('skin', { color: '#f0c49a', gloss: .3 }), pantsM = mat('pants', { color: '#3a3f58' }), bandM = mat('band', { color: '#c8322b' });
+  const body = new pc.Entity(); player.addChild(body);
+  const legL = new pc.Entity(), legR = new pc.Entity(); legL.setLocalPosition(-.25, .9, 0); legR.setLocalPosition(.25, .9, 0); body.addChild(legL); body.addChild(legR);
+  prim(legL, 'box', [0, -.45, 0], [.32, .9, .32], pantsM, { dynamic: true }); prim(legR, 'box', [0, -.45, 0], [.32, .9, .32], pantsM, { dynamic: true });
+  prim(body, 'capsule', [0, 1.55, 0], [.95, 1.3, .7], shirtM, { dynamic: true });
+  prim(body, 'sphere', [0, 2.55, 0], [.75, .78, .75], skinM, { dynamic: true }); prim(body, 'sphere', [0, 2.72, -.02], [.8, .5, .8], bandM, { dynamic: true }); prim(body, 'box', [0, 2.7, -.42], [.25, .12, .4], bandM, { dynamic: true, rot: [30, 0, 0] });
+  const armL = new pc.Entity(), armR = new pc.Entity(); armL.setLocalPosition(-.55, 2, 0); armR.setLocalPosition(.55, 2, 0); body.addChild(armL); body.addChild(armR);
+  prim(armL, 'box', [0, -.4, 0], [.22, .8, .22], skinM, { dynamic: true }); prim(armR, 'box', [0, -.4, 0], [.22, .8, .22], skinM, { dynamic: true });
 
-  /* 房子、酒館、碼頭 */
-  const house = (x, z, w, d, wall, roof, ry) => { const g = new pc.Entity(); g.setLocalPosition(x, 0, z); g.setLocalEulerAngles(0, ry || 0, 0); app.root.addChild(g);
-    box(g, 'box', [0, 1.6, 0], [w, 3.2, d], wall); const r = box(g, 'cone', [0, 4.2, 0], [w * 0.95, 2.2, d * 1.05], roof, { rot: [0, 45, 0] }); r.setLocalScale(w * 1.3, 2.2, d * 1.3);
-    box(g, 'box', [0, 1, d / 2 + 0.01], [1.1, 2, 0.1], '#5a3a1e'); box(g, 'box', [w / 3, 2.1, d / 2 + 0.01], [0.9, 0.8, 0.08], '#9fd4f0', { gloss: 0.9 }); return g; };
-  house(-8, 36, 7, 5, '#f4e3c2', '#c0503a', 0);
-  house(16, 22, 5, 5, '#efe9df', '#3f7fb8', -20); house(-26, 14, 5, 4, '#f0dcc0', '#8a5a30', 15); house(24, -4, 6, 5, '#e8e0d0', '#c0503a', -40); house(-30, -4, 4.5, 4.5, '#f4e3c2', '#4f8a4a', 30);
-  const dock = new pc.Entity(); dock.setLocalPosition(40, 0, 40); dock.setLocalEulerAngles(0, 45, 0); app.root.addChild(dock);
-  box(dock, 'box', [0, 0.3, 6], [3, 0.3, 14], '#8a6238'); for (let i = 0; i < 4; i++) { box(dock, 'cylinder', [-1.4, -0.2, i * 4], [0.35, 1.4, 0.35], '#5a3a1e'); box(dock, 'cylinder', [1.4, -0.2, i * 4], [0.35, 1.4, 0.35], '#5a3a1e'); }
-  const boat = new pc.Entity(); boat.setLocalPosition(3.5, -0.1, 12); dock.addChild(boat); box(boat, 'box', [0, 0.2, 0], [1.6, 0.6, 3.6], '#9a6a3a'); box(boat, 'cylinder', [0, 1.6, 0.4], [0.12, 2.6, 0.12], '#6b4a2a'); box(boat, 'box', [0, 1.8, 0.2], [0.05, 1.6, 1.2], '#f4efe2', { noShadow: true });
-
-  /* 樹與岩石（隨機但固定種子） */
-  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 46; i++) { const a = rnd() * 6.283, r = 18 + rnd() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.hypot(x - 0, z - 20) < 6 || Math.hypot(x + 14, z + 26) < 8) continue;
-    const s = 0.8 + rnd() * 0.7; box(null, 'cylinder', [x, 1.2 * s, z], [0.45 * s, 2.4 * s, 0.45 * s], '#6b4a2a'); box(null, 'sphere', [x, 3.1 * s, z], [2.6 * s, 2.3 * s, 2.6 * s], rnd() < .5 ? '#4f9a44' : '#5fae4e'); }
-  for (let i = 0; i < 14; i++) { const a = rnd() * 6.283, r = 38 + rnd() * 5; box(null, 'sphere', [Math.cos(a) * r, 0.2, Math.sin(a) * r], [2 + rnd() * 2, 1.2 + rnd(), 2 + rnd() * 2], '#8f8a80'); }
-
-  /* 玩家（膠囊＋草帽） */
-  const player = new pc.Entity(); player.setLocalPosition(6, 0, 30); app.root.addChild(player);
-  box(player, 'capsule', [0, 1.1, 0], [0.9, 2.2, 0.9], '#c0392b'); box(player, 'box', [0, 0.45, 0], [0.9, 0.9, 0.75], '#3f6fb0');
-  box(player, 'sphere', [0, 2.35, 0], [0.75, 0.75, 0.75], '#f2c9a0'); box(player, 'cylinder', [0, 2.72, 0], [1.5, 0.06, 1.5], '#e6c35a'); box(player, 'cylinder', [0, 2.86, 0], [0.8, 0.28, 0.8], '#e6c35a'); box(player, 'cylinder', [0, 2.8, 0], [0.82, 0.08, 0.82], '#b0302a');
-
-  /* 相機（第三人稱跟隨） */
-  const cam = new pc.Entity('cam'); cam.addComponent('camera', { clearColor: SKY, fov: 55, farClip: 400 }); app.root.addChild(cam);
-
-  /* 操作：鍵盤＋手機拖曳 */
+  /* ---------- 相機與操作 ---------- */
+  const cam = new pc.Entity('cam'); cam.addComponent('camera', { clearColor: HORIZON, fov: 50, farClip: 1200, nearClip: .3 }); app.root.addChild(cam);
   const kb = app.keyboard; let drag = null, dragV = { x: 0, y: 0 };
   canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y, m = Math.hypot(dx, dy); const k = Math.min(1, m / 60); dragV = m > 6 ? { x: dx / m * k, y: dy / m * k } : { x: 0, y: 0 }; });
+  canvas.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y, m = Math.hypot(dx, dy), k = Math.min(1, m / 60); dragV = m > 6 ? { x: dx / m * k, y: dy / m * k } : { x: 0, y: 0 }; });
   const up = () => { drag = null; dragV = { x: 0, y: 0 }; }; canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  const blocked = (x, z) => H(x, z) < .15 || Math.hypot(x - millP[0], z - millP[1]) < 3.8 || [[-8, 38, 4.6], [16, 22, 3.6], [-27, 16, 3.3], [26, -2, 3.6], [-31, -3, 3.3], [8, -8, 3.3]].some(h => Math.hypot(x - h[0], z - h[1]) < h[2]);
 
   const bS = document.getElementById('bShadow'), bR = document.getElementById('bRes');
-  let t = 0, frames = 0, acc = 0, heading = 0, lowRun = 0;
+  let t = 0, frames = 0, acc = 0, heading = 0, lowRun = 0, walk = 0; const camPos = new pc.Vec3(6, 20, 52);
   const dcEl = document.getElementById('dc'), note = m => { const e = document.getElementById('tip'); e.textContent = m; setTimeout(() => { e.textContent = 'WASD／方向鍵移動・手機：按住畫面拖曳移動'; }, 2500); };
-  const fpsEl = document.getElementById('fps');
+  const off = new pc.Vec2(), off2 = new pc.Vec2();
   app.on('update', dt => {
-    t += dt; hub.setLocalEulerAngles(0, 0, t * 40);
-    boat.setLocalPosition(3.5, -0.1 + Math.sin(t * 1.6) * 0.08, 12); boat.setLocalEulerAngles(Math.sin(t * 1.3) * 3, 0, Math.sin(t) * 4);
+    t += dt; hub.setLocalEulerAngles(0, 0, t * 35);
+    boat.setLocalPosition(4.5, -.05 + Math.sin(t * 1.4) * .1, 12); boat.setLocalEulerAngles(Math.sin(t * 1.1) * 3, 0, Math.sin(t * .9) * 4);
+    off.set(t * .012, t * .008); off2.set(-t * .02, t * .015); waterM.normalMapOffset = off; waterM.normalDetailMapOffset = off2; waterM.update();
+    const fs = 128 + Math.sin(t * .8) * 1.2; foam.setLocalScale(fs, .02, fs);
+    clouds.forEach(c => { c.a += c.s * dt; c.e.setLocalPosition(Math.cos(c.a) * c.r, c.e.getLocalPosition().y, Math.sin(c.a) * c.r); });
+    gulls.forEach(q => { q.a += q.s * dt; const x = q.cx + Math.cos(q.a) * q.r, z = q.cz + Math.sin(q.a) * q.r; q.g.setLocalPosition(x, q.h + Math.sin(t + q.a) * 1.5, z); q.g.setLocalEulerAngles(0, -q.a * 180 / Math.PI, Math.sin(t * .7) * 10); const f = Math.sin(t * 7 + q.a * 5) * 25; q.L.setLocalEulerAngles(0, 0, f); q.R.setLocalEulerAngles(0, 0, -f); });
     let mx = (kb.isPressed(pc.KEY_D) || kb.isPressed(pc.KEY_RIGHT) ? 1 : 0) - (kb.isPressed(pc.KEY_A) || kb.isPressed(pc.KEY_LEFT) ? 1 : 0) + dragV.x;
     let mz = (kb.isPressed(pc.KEY_S) || kb.isPressed(pc.KEY_DOWN) ? 1 : 0) - (kb.isPressed(pc.KEY_W) || kb.isPressed(pc.KEY_UP) ? 1 : 0) + dragV.y;
-    const p = player.getLocalPosition(), m = Math.hypot(mx, mz);
-    if (m > 0.05) { mx /= Math.max(1, m); mz /= Math.max(1, m); let nx = p.x + mx * 11 * dt, nz = p.z + mz * 11 * dt; const r = Math.hypot(nx, nz); if (r > 39) { nx *= 39 / r; nz *= 39 / r; }
-      heading = Math.atan2(mx, mz) * 180 / Math.PI; player.setLocalPosition(nx, Math.abs(Math.sin(t * 12)) * 0.12, nz); }
-    player.setLocalEulerAngles(0, heading, 0);
-    const q = player.getLocalPosition(); cam.setLocalPosition(q.x, q.y + 13, q.z + 17); cam.lookAt(q.x, q.y + 1.5, q.z);
-    frames++; acc += dt; if (acc >= 0.5) { const f = Math.round(frames / acc); fpsEl.textContent = f; frames = 0; acc = 0;
-      /* 自動畫質：開場 3 秒後，平均低於 40 FPS 就先降解析度，再不夠就關陰影 */
+    const p = player.getLocalPosition(), m = Math.hypot(mx, mz); let px = p.x, pz = p.z;
+    if (m > .05) { mx /= Math.max(1, m); mz /= Math.max(1, m); const nx = px + mx * 9 * dt, nz = pz + mz * 9 * dt; if (!blocked(nx, pz)) px = nx; if (!blocked(px, nz)) pz = nz; heading = Math.atan2(mx, mz) * 180 / Math.PI; walk += dt * 10; } else walk *= .85;
+    player.setLocalPosition(px, H(px, pz), pz); player.setLocalEulerAngles(0, heading, 0);
+    const sw = Math.sin(walk) * (m > .05 ? 35 : 0); legL.setLocalEulerAngles(sw, 0, 0); legR.setLocalEulerAngles(-sw, 0, 0); armL.setLocalEulerAngles(-sw, 0, 0); armR.setLocalEulerAngles(sw, 0, 0); body.setLocalPosition(0, Math.abs(Math.sin(walk)) * .08, 0);
+    camPos.lerp(camPos, new pc.Vec3(px, H(px, pz) + 11, pz + 15), Math.min(1, dt * 4)); cam.setLocalPosition(camPos); cam.lookAt(px, H(px, pz) + 1.8, pz);
+    frames++; acc += dt; if (acc >= .5) { const f = Math.round(frames / acc); fpsEl.textContent = f; frames = 0; acc = 0;
       if (t > 3) { lowRun = f < 40 ? lowRun + 1 : 0; if (lowRun >= 4) { lowRun = 0; if (bR.classList.contains('on')) { bR.click(); note('自動降低解析度'); } else if (sun.light.castShadows) { bS.click(); note('自動關閉陰影'); } } }
       const dc = app.stats && app.stats.drawCalls ? app.stats.drawCalls.total : null; if (dc != null) dcEl.textContent = dc; }
   });
-
-  document.getElementById('info').textContent = `PlayCanvas ${pc.version}・${app.graphicsDevice.isWebGL2 ? 'WebGL 2' : 'WebGL 1'}`;
+  const fpsEl = document.getElementById('fps');
+  document.getElementById('info').textContent = `PlayCanvas ${pc.version}・${dev.isWebGL2 ? 'WebGL 2' : 'WebGL 1'}`;
   bS.onclick = () => { sun.light.castShadows = !sun.light.castShadows; bS.classList.toggle('on', sun.light.castShadows); };
-  bR.onclick = () => { const hi = !bR.classList.contains('on'); app.graphicsDevice.maxPixelRatio = hi ? hiDpi() : 1; app.resizeCanvas(); bR.classList.toggle('on', hi); };
+  bR.onclick = () => { const hi = !bR.classList.contains('on'); dev.maxPixelRatio = hi ? hiDpi() : 1; app.resizeCanvas(); bR.classList.toggle('on', hi); };
   app.start();
 }
+
 </script>
 </body>
 </html>

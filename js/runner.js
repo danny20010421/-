@@ -89,8 +89,6 @@
     for (const o of G.objs) {
       if (o.drift) o.lane = Math.max(-.9, Math.min(.9, o.drift.base + Math.sin(G.t * o.drift.sp + o.drift.ph) * o.drift.amp));
       if (o.k === 'shell') o.at -= o.vel * dt;
-      if (o.k === 'barrel' && !o.glow && !o.fired && !o.gone && !G.fly) { const dz = o.at - G.dist; if (dz < 26 && dz > 14) { o.fired = true; o.flash = .35; G.objs.push({ k: 'shell', lane: Math.max(-.9, Math.min(.9, G.x)), w: .2, at: o.at - 1, vel: 13 }); SFX.play('punch'); warn('⚠ 寶箱射出砲彈了！快閃開！'); } }
-      if (o.flash > 0) o.flash -= dt;
       if (o.k === 'ship' && !o.fired && G.dist >= 1200 && !G.fly) { const dz = o.at - G.dist; if (dz < 35 && dz > 18) { o.fired = true; G.objs.push({ k: 'shell', lane: Math.max(-.9, Math.min(.9, G.x)), w: .22, at: o.at - 1.5, vel: 16 }); SFX.play('punch'); warn('⚠ 軍艦開砲了！快左右閃開！'); } }
     }
     if (!G.fly) for (const o of G.objs) { if (o.gone) continue; const dz = o.at - G.dist; if (dz < 1.2 && dz > -1.2 && Math.abs(o.lane - G.x) < (o.w + .34) / 2) {
@@ -98,6 +96,7 @@
     else if (o.k === 'arrow') { o.gone = true; const to = G.dist + 300; G.fly = { from: G.dist, to, t: 0, dur: 2.2 }; G.safe = [to - 5, to + 25]; G.objs = G.objs.filter(x => !(x.at >= to - 5 && x.at <= to + 25 && !['coin', 'arrow'].includes(x.k))); SFX.play('rare'); milestone('箭頭加速！飛越 300 公尺！'); }
       else if (o.k === 'shell') { if (G.inv <= 0) { o.gone = true; G.inv = 1.4; hurt(1, '被軍艦的砲彈擊中了！'); } }
     else if (o.k === 'barrel' && o.glow) { o.gone = true; SFX.play('rare'); if (G.hearts < 3) { G.hearts = Math.min(3, G.hearts + 1); milestone('發光的寶箱！生命 +1'); } else { G.coins += 10; milestone('發光的寶箱！生命已滿，改得錢幣 +10'); } for (let i = 0; i < 18; i++) G.fx.push({ x: laneX(G.x), y: boatY() - 20, vx: (Math.random() - .5) * 260, vy: -120 - Math.random() * 200, life: .9, c: i % 2 ? '#ffe27a' : '#fff6c8' }); }
+    else if (o.k === 'barrel') { if (G.inv <= 0) { o.gone = true; G.inv = 1.4; G.v *= .5; for (let i = 0; i < 14; i++) G.fx.push({ x: laneX(G.x), y: boatY() - 20, vx: (Math.random() - .5) * 240, vy: -80 - Math.random() * 160, life: .8, c: i % 2 ? '#8a5a2e' : '#c8a060' }); hurt(1, '撞上了寶箱！扣 1 命'); } }
     else if (o.k === 'king') { if (G.inv <= 0) { G.inv = 1.4; G.v *= .5; hurt(.5, '被海怪咬了一口！扣半顆心'); } }
       else if (o.soft) { if (!o.hitOnce) { o.hitOnce = true; G.v *= .45; SFX.play('water'); toast('被漩渦捲住了，速度下降！'); } }
       else if (G.inv <= 0) { G.inv = 1.6; G.v *= .4; o.gone = o.k !== 'ship'; const side = Math.random() < .5 ? -1 : 1; G.shots.push({ t: 0, sx: side < 0 ? -40 : W + 40, sy: boatY() - H * .45 }); SFX.play('punch'); toast('撞上了！敵人的砲彈飛過來了！', 'warn'); } } }
@@ -166,7 +165,7 @@
         cx.save(); cx.globalCompositeOperation = 'lighter'; cx.fillStyle = 'rgba(255,240,170,.9)'; for (let i = 0; i < 5; i++) { const a = G.t * 1.5 + i * 1.26, rr = s2 * (.45 + .1 * Math.sin(G.t * 3 + i)); cx.beginPath(); cx.arc(Math.cos(a) * rr, -ih * .4 + Math.sin(a) * rr * .5, 2 + (i % 2) * 1.5, 0, 6.29); cx.fill(); } cx.restore(); }
       cx.strokeStyle = 'rgba(255,255,255,.5)'; cx.lineWidth = 2; cx.beginPath(); cx.ellipse(0, 0, s2 * .45, s2 * .12, 0, 0, 6.29); cx.stroke();
       if (o.glow) { cx.filter = 'brightness(1.35) saturate(1.25)'; cx.shadowColor = 'rgba(255,220,90,.95)'; cx.shadowBlur = 22 + Math.sin(G.t * 5) * 8; } cx.drawImage(IMG.chest, -s2 / 2, -ih * .82 + bob, s2, ih); cx.filter = 'none'; cx.shadowBlur = 0;
-      if (o.flash > 0) { cx.fillStyle = `rgba(255,170,60,${o.flash * 2})`; cx.beginPath(); cx.arc(0, -ih * .45, s2 * .35, 0, 6.29); cx.fill(); } }
+      }
     else if (o.k === 'barrel') { cx.fillStyle = '#8a5a2e'; cx.fillRect(-w * .35, -w * .5, w * .7, w * .6); cx.fillStyle = '#3a3a3a'; cx.fillRect(-w * .37, -w * .38, w * .74, w * .08); cx.fillRect(-w * .37, -w * .12, w * .74, w * .08); cx.fillStyle = '#c8322b'; cx.font = `${w * .3}px sans-serif`; cx.textAlign = 'center'; cx.fillText('☠', 0, -w * .18); }
     else if (o.k === 'whirl' && ready('vortex')) { const s2 = w * 2.6; cx.rotate(-G.t * 1.8); cx.globalAlpha = .92; cx.drawImage(IMG.vortex, -s2 / 2, -s2 / 2, s2, s2); cx.globalAlpha = 1; }
     else if (o.k === 'whirl') { cx.rotate(G.t * 3); cx.strokeStyle = 'rgba(220,245,255,.8)'; cx.lineWidth = 3; for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(0, 0, w * (.2 + i * .15), i, i + 4); cx.stroke(); } }

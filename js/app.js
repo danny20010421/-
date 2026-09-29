@@ -48,6 +48,7 @@ function updateDots() {
     const set = (sel, on) => document.querySelectorAll(sel).forEach(el => el.classList.toggle('has-dot', !!on));
     set('#gachaBtnMap,#gachaBtnWorld,[data-dock=hub]', hub); set('#treasureBtnMap', tr); set('#trainBtnMap', (d.training || []).some(t => Date.now() >= t.end)); set('[data-dock=crew],#swapChar', crew); set('#hubTabs [data-hub=bounty]', typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
     set('.m-menu', hub || tr);
+    set('[data-lb=gacha]', hub); set('[data-lb=treasure]', tr); set('[data-lb=train]', (d.training || []).some(x => Date.now() >= x.end)); set('[data-lb=crew]', crew); set('[data-lb=bounty]', typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
   } catch (e) { }
 }
 function coins() { updateDots(); ['coinTop', 'coinWorld', 'coinGacha'].forEach(i => { const el = $(i); if (el) el.textContent = SAVE.data.tokens; }); document.querySelectorAll('.berryVal').forEach(el => el.textContent = (SAVE.data.berry || 0).toLocaleString()); document.querySelectorAll('.coinVal').forEach(el => el.textContent = SAVE.data.tokens); }
@@ -671,8 +672,8 @@ function boot() {
   document.addEventListener('click', e => { if (e.target.closest('.btn-primary,.btn-gold,.btn-ghost,.node,.char,.chipbtn,.cmd-btn,.icon-btn')) SFX.play('click'); });
   $('chBackBtn').onclick = () => openModes();
   $('wBackBtn').onclick = () => openChart(CH && CH.id);
-  ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => $(i).onclick = () => openGacha());
-  ['bagBtnMap', 'bagBtnWorld', 'bagBtnGacha'].forEach(i => $(i).onclick = openBag);
+  ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => { const b = $(i); if (b) b.onclick = () => openGacha(); });
+  ['bagBtnMap', 'bagBtnWorld', 'bagBtnGacha'].forEach(i => { const b = $(i); if (b) b.onclick = openBag; });
   $('gBackBtn').onclick = () => { if (gachaReturn === 'worldScreen') { showScreen('worldScreen'); coins(); } else if (gachaReturn === 'modeScreen') openModes(); else if (gachaReturn === 'towerScreen') openTower(); else openChart(); };
   $('pull1').onclick = () => pull(1); $('pull10').onclick = () => pull(10); $('mCrank').onclick = () => pull(1);
   $('gResOk').onclick = () => $('gResult').classList.remove('show');
