@@ -21,6 +21,10 @@
     const rb = (d.runner || {}).best || 0; if (rb >= 500) give('run500'); if (rb >= 2000) give('run2000'); if (rb >= 5000) give('run5000');
     if ((d.treasure || {}).done) give('laughtale');
     const th = d.throne || {}; if ((th.runs || []).length || th.best) give('void1'); if ((th.best || 0) >= 1000000) give('void1m');
+    /* 圖鑑套組與收集里程碑（NPC 不計） */
+    if (typeof setsDone === 'function') setsDone().forEach(S => give(S.title));
+    const obt = CHARACTER_ORDER.filter(id => !(CHAR_OBTAIN[id] || {}).npcOnly), gotN = obt.filter(owned).length;
+    if (gotN >= 5) give('col5'); if (gotN >= 10) give('col10'); if (gotN >= 15) give('col15'); if (obt.length && gotN >= obt.length) give('colAll');
     if (got.length) { SAVE.save(); if (!silent) got.forEach((id, i) => setTimeout(() => { SFX.play('rare'); toast(`獲得稱號「${titleName(id)}」！可在玩家資料中更換`, 'gold'); }, i * 900)); }
     return got;
   }

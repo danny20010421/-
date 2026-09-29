@@ -1,6 +1,6 @@
 /* 勇者之塔：120 層，每 10 層一位 BOSS，每層都有獎勵 */
 (function () {
-  const TIER = ['east', 'alabasta', 'skypiea', 'enies', 'dark', 'fishman', 'wano', 'giant'];
+  const TIER = ['east', 'alabasta', 'skypiea', 'enies', 'fishman', 'wano', 'dark', 'giant'];
   const state = () => { SAVE.data.tower = SAVE.data.tower || { floor: 1, best: 0 }; return SAVE.data.tower; };
   const isBoss = f => f % 10 === 0;
   /* 一般樓層：把全部角色打亂成一輪輪出場，相鄰兩層不重複，同一位角色約隔一整輪才會再出現 */

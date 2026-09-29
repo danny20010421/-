@@ -37,7 +37,7 @@ function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.c
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
-  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
+  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
   const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
@@ -118,7 +118,7 @@ function statusChips(c) {
   if (st.healBlock > 0) chip('禁止回復 ' + st.healBlock, 'bad');
   if (st.lives > 0) chip('剩餘 ' + st.lives + ' 命', 'good');
   if (st.defDownTurns > 0) chip('防禦下降 ' + st.defDownTurns, 'bad');
-  if (battle && battle.eruption && battle.eruption.owner.hp > 0) chip(battle.eruption.owner === c ? '火山噴發・回復' : (battle.team.includes(battle.eruption.owner) !== battle.team.includes(c) ? '熔岩灼燒 -10%' : ''), battle.eruption.owner === c ? 'good' : 'bad');
+  if (battle && battle.eruption && battle.eruption.owner.hp > 0) chip(battle.eruption.owner === c ? '火山噴發・回復' : (battle.team.includes(battle.eruption.owner) !== battle.team.includes(c) ? `熔岩灼燒 -${Math.round((battle.eruption.ratio || 0.1) * 100)}%` : ''), battle.eruption.owner === c ? 'good' : 'bad');
   if (st.immunePermanent) chip('永久免疫', 'good'); else if (st.immune > 0) chip('免疫異常 ' + st.immune, 'good');
   if (st.regen > 0) chip('回復 ' + st.regen, 'good');
   if (st.fullRestoreTurns > 0) chip('回滿 ' + st.fullRestoreTurns, 'good');
@@ -256,6 +256,7 @@ async function executeAction(side, idx) {
   wrap.classList.remove('cast');
   if (Math.random() * 100 > skill.accuracy) { log(`${actor.name} 的招式落空`); floatText(T, 'MISS', 'miss'); await wait(420); return; }
   const blocked = actor.status.skillNullify > 0; if (blocked) log(`${actor.name} 的附加效果被封印，只保留傷害`);
+  if (target.status.invuln > 0 && skill.type === 'attack') { log(`🛡️ ${actor.name} 的攻擊對 ${target.name} 無效！`); floatText(T, '無效', 'miss'); renderHUD(); await wait(600); return; }
   if (target.status.dodge > 0 && skill.type === 'attack') { target.status.dodge--; log(`${target.name} 閃避了攻擊`); floatText(T, '閃避', 'miss'); renderHUD(); await wait(600); return; }
   const reflected = target.status.reflect > 0 && skill.type === 'attack';
   const result = computeSkillOutcome(actor, target, skill, blocked);

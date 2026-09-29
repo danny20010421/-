@@ -1,6 +1,13 @@
 /* 懸賞處：懸賞召喚、懸賞任務、道具商店、海軍本部（販賣角色） */
-const CHAR_RARITY = { kid: 'SR', law: 'SSR', imu: 'SSR', akainu: 'SSR', marine: 'R', mayor: 'R', lucci: 'SR', hody: 'SR', luffy0: 'R', kaido: 'SSR', luffy: 'SSR', zoro: 'R', sanji: 'R', robin: 'SR', shirahoshi: 'SR', crocodile: 'SR', enel: 'SR', yamato: 'SSR', blackbeard: 'SSR', loki: 'SSR' };
-const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, perLv: 80 } };
+/* 稀有度：UR 彩虹、SSR 金、SR 紫、R 藍。召喚時依稀有度加權（見 js/app.js 的 CHAR_RATE_BY_RARITY） */
+const CHAR_RARITY = { luffy: 'UR', kaido: 'UR', blackbeard: 'UR', akainu: 'UR', loki: 'UR', imu: 'UR',
+  yamato: 'SSR', lucci: 'SSR', crocodile: 'SSR', enel: 'SSR', law: 'SSR', kid: 'SSR', shirahoshi: 'SSR', moria: 'SSR', hancock: 'SSR',
+  mihawk: 'UR', buggy: 'UR', robin: 'SR', hody: 'SR', luffy0: 'R', zoro: 'R', sanji: 'R', marine: 'R', mayor: 'R' };
+const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, UR: 40000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, UR: 30000, perLv: 80 } };
+/* 重複抽到的船員：存在 SAVE.data.dupes，可在海軍本部換成貝里（以 LV 20 計價） */
+const dupeN = id => ((SAVE.data.dupes || {})[id] || 0);
+function dupeValue(id) { const r = CHAR_RARITY[id] || 'R', V = SELL_VALUE.berry; return V[r] + GACHA_CHAR_LV * V.perLv; }
+function sellDupes(id, n) { const have = dupeN(id); n = Math.min(have, n); if (!n) return; SAVE.data.dupes[id] = have - n; const val = dupeValue(id) * n; SAVE.save(); addBerry(val); SFX.play('coin'); toast(`賣出 ${CHARACTERS[id].name} 重複卡 ×${n}，獲得 ${val.toLocaleString()} 貝里`, 'gold'); renderNavy(); }
 const BOUNTY_POOL = [
   { id: 'win3', text: '擊敗 3 名敵人', stat: 'wins', goal: 3, berry: 1500 },
   { id: 'win6', text: '擊敗 6 名敵人', stat: 'wins', goal: 6, berry: 3200, tokens: 1 },
@@ -67,7 +74,7 @@ function sellValue(id, mode) { const r = CHAR_RARITY[id] || 'R', lv = crewLv(id)
 function renderNavy() {
   const ids = CHARACTER_ORDER.filter(owned);
   if (!ids.includes(navyPick)) navyPick = ids.find(id => !inLineup(id)) || ids[0];
-  $('navyList').innerHTML = ids.map(id => { const c = CHARACTERS[id], r = CHAR_RARITY[id] || 'R'; return `<button class="char ${id === navyPick ? 'on' : ''}" data-id="${id}"><img src="${c.image}" alt="" loading="lazy"><span class="c-lv" style="--c:${TIERS[tierOf(crewLv(id))].color}">LV ${crewLv(id)}</span><span class="rar c-rar r-${r}">${r}</span>${inLineup(id) ? '<span class="c-tags"><span class="c-team">陣容中</span></span>' : ''}<span class="c-name">${c.name}</span></button>`; }).join('');
+  $('navyList').innerHTML = ids.map(id => { const c = CHARACTERS[id], r = CHAR_RARITY[id] || 'R'; return `<button class="char ${id === navyPick ? 'on' : ''}" data-id="${id}"><img src="${c.image}" alt="" loading="lazy"><span class="c-lv" style="--c:${TIERS[tierOf(crewLv(id))].color}">LV ${crewLv(id)}</span><span class="rar c-rar r-${r}">${r}</span>${inLineup(id) || dupeN(id) ? `<span class="c-tags">${inLineup(id) ? '<span class="c-team">陣容中</span>' : ''}${dupeN(id) ? `<span class="c-badge">重複 ×${dupeN(id)}</span>` : ''}</span>` : ''}<span class="c-name">${c.name}</span></button>`; }).join('');
   $('navyList').querySelectorAll('.char').forEach(b => b.onclick = () => { navyPick = b.dataset.id; renderNavy(); });
   const id = navyPick, c = CHARACTERS[id]; if (!id) { $('navyDetail').innerHTML = ''; return; }
   const targets = ids.filter(x => x !== id && crewLv(x) < MAX_LV); if (!targets.includes(navyTarget)) navyTarget = targets[0] || null;
@@ -75,6 +82,7 @@ function renderNavy() {
   const reason = onlyOne ? '這是你唯一的船員，不能販賣。' : (window.isTraining && isTraining(id)) ? '這位船員正在訓練營，訓練結束或中止後才能販賣。' : lastInLineup ? '這位船員正在出戰陣容中，不能販賣。請先到角色背包讓他下陣。' : '';
   $('navyDetail').innerHTML = `<img src="${c.avatar}" alt=""><div class="nv-main">
     <h3>${c.name}<small>LV ${crewLv(id)}・稀有度 ${CHAR_RARITY[id] || 'R'}</small></h3>
+    ${dupeN(id) ? `<div class="nv-dupe"><b>重複卡 ×${dupeN(id)}</b><span>每張 ${dupeValue(id).toLocaleString()} 貝里，賣掉不影響船隊裡的 ${c.name}</span><div><button class="btn-gold sm" data-dupe="1">賣 1 張</button>${dupeN(id) > 1 ? `<button class="btn-ghost sm" data-dupe="all">全部賣出</button>` : ''}</div></div>` : ''}
     <p class="nv-warn">販賣後船員會離開船隊，<b>無法反悔</b>。之後只能再從懸賞召喚或擊敗 BOSS 取得。</p>
     <div class="nv-opts" role="radiogroup" aria-label="換取的獎勵">
       <label class="${navyMode === 'berry' ? 'on' : ''}"><input type="radio" name="nvm" value="berry" ${navyMode === 'berry' ? 'checked' : ''}><b><i class="berry-ico">B</i>${sellValue(id, 'berry').toLocaleString()}</b><small>換成貝里</small></label>
@@ -84,6 +92,7 @@ function renderNavy() {
     ${reason ? `<p class="nv-block">${reason}</p>` : ''}
     <button class="btn-primary big" id="nvSell" ${reason ? 'disabled' : ''}>交給海軍本部</button>
   </div>`;
+  $('navyDetail').querySelectorAll('[data-dupe]').forEach(b => b.onclick = () => sellDupes(id, b.dataset.dupe === 'all' ? dupeN(id) : 1));
   $('navyDetail').querySelectorAll('input[name=nvm]').forEach(r => r.onchange = () => { navyMode = r.value; renderNavy(); });
   const tg = $('nvTarget'); if (tg) tg.onchange = () => { navyTarget = tg.value; };
   const sb = $('nvSell'); if (sb) sb.onclick = () => {

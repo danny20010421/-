@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlayCanvas 測試：風車村</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#8fc7ea;font-family:system-ui,"Noto Sans TC",sans-serif;touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%}
+  #hud{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top,0px));padding:8px 12px;border-radius:10px;background:rgba(6,18,30,.72);color:#e8f0f8;font-size:13px;line-height:1.6;pointer-events:auto}
+  #hud b{color:#ffd26c;font-size:18px}
+  #hud button{margin:4px 4px 0 0;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:#1f4a6a;color:#fff;font-size:12px}
+  #hud button.on{background:#c9973a;color:#231400}
+  #tip{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:rgba(6,18,30,.6);color:#fff;font-size:13px;white-space:nowrap}
+  #err{position:fixed;inset:0;display:none;place-items:center;background:#0a1a2e;color:#fff;padding:24px;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">FPS <b id="fps">--</b>・繪製 <span id="dc">--</span><br><span id="info">載入引擎中…</span><br>
+  <button id="bShadow" class="on">陰影</button><button id="bRes" class="on">高解析</button><button id="bBack">回遊戲</button></div>
+<div id="tip">WASD／方向鍵移動・手機：按住畫面拖曳移動</div>
+<div id="err"></div>
+<script>
+/* PlayCanvas 階段一測試：只用引擎內建幾何形狀重現「風車村」，比較手機上的幀率與畫面感受。
+   引擎先載入固定版本，失敗時改用同一主版本的最新版。正式採用後會把引擎檔放進 repository 自己託管。 */
+(function load(urls) {
+  const s = document.createElement('script'); s.src = urls[0];
+  s.onload = start; s.onerror = () => urls.length > 1 ? load(urls.slice(1)) : fail('無法載入 PlayCanvas 引擎，請確認網路連線。');
+  document.head.appendChild(s);
+})(['https://cdn.jsdelivr.net/npm/playcanvas@1.62.0/build/playcanvas.min.js', 'https://cdn.jsdelivr.net/npm/playcanvas@1/build/playcanvas.min.js']);
+function fail(msg) { const e = document.getElementById('err'); e.style.display = 'grid'; e.textContent = msg; }
+document.getElementById('bBack').onclick = () => { location.href = './'; };
+
+function start() {
+  try { build(); } catch (e) { fail('測試場景發生錯誤：' + e.message); console.error(e); }
+}
+function build() {
+  const canvas = document.getElementById('c');
+  const app = new pc.Application(canvas, { mouse: new pc.Mouse(canvas), touch: new pc.TouchDevice(canvas), keyboard: new pc.Keyboard(window) });
+  app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW); app.setCanvasResolution(pc.RESOLUTION_AUTO);
+  const hiDpi = () => Math.min(window.devicePixelRatio || 1, 2);
+  app.graphicsDevice.maxPixelRatio = hiDpi();
+  window.addEventListener('resize', () => app.resizeCanvas());
+
+  /* 天空、霧、環境光 */
+  const SKY = new pc.Color(0.56, 0.78, 0.92);
+  app.scene.ambientLight = new pc.Color(0.42, 0.46, 0.52);
+  app.scene.fog = pc.FOG_LINEAR; app.scene.fogColor = SKY; app.scene.fogStart = 60; app.scene.fogEnd = 190;
+  app.scene.gammaCorrection = pc.GAMMA_SRGB; app.scene.toneMapping = pc.TONEMAP_ACES;
+
+  const mats = {};
+  function mat(hex, opt) {
+    const k = hex + JSON.stringify(opt || {}); if (mats[k]) return mats[k];
+    const m = new pc.StandardMaterial(); const c = new pc.Color().fromString(hex); m.diffuse = c;
+    m.useMetalness = true; m.metalness = (opt && opt.metal) || 0; m.gloss = (opt && opt.gloss) ?? 0.25;
+    if (opt && opt.opacity) { m.opacity = opt.opacity; m.blendType = pc.BLEND_NORMAL; m.depthWrite = false; }
+    m.update(); return (mats[k] = m);
+  }
+  function box(parent, type, pos, scale, color, opt) {
+    const e = new pc.Entity(); e.addComponent('render', { type, material: mat(color, opt), castShadows: !(opt && opt.noShadow), receiveShadows: true });
+    e.setLocalPosition(pos[0], pos[1], pos[2]); e.setLocalScale(scale[0], scale[1], scale[2]);
+    if (opt && opt.rot) e.setLocalEulerAngles(opt.rot[0], opt.rot[1], opt.rot[2]);
+    (parent || app.root).addChild(e); return e;
+  }
+
+  /* 太陽光（即時陰影） */
+  const sun = new pc.Entity('sun');
+  sun.addComponent('light', { type: 'directional', color: new pc.Color(1, 0.95, 0.85), intensity: 1.35, castShadows: true, shadowDistance: 70, shadowResolution: 2048, shadowBias: 0.3, normalOffsetBias: 0.05, numCascades: 1 });
+  sun.setEulerAngles(48, 35, 0); app.root.addChild(sun);
+
+  /* 海、沙灘、島 */
+  const sea = box(null, 'plane', [0, -0.35, 0], [600, 1, 600], '#2f7fb8', { gloss: 0.85, noShadow: true });
+  box(null, 'cylinder', [0, -0.6, 0], [92, 1, 92], '#e9d6a0', { noShadow: true });
+  box(null, 'cylinder', [0, -0.3, 0], [80, 1, 80], '#79b65a', { noShadow: true });
+  /* 麥田與小路 */
+  for (let i = 0; i < 6; i++) box(null, 'box', [-26 + (i % 3) * 7, 0.25, -18 + Math.floor(i / 3) * 7], [6, 0.5, 6], i % 2 ? '#e6c35a' : '#d9b44a');
+  [[0, 20, 6, 30], [14, 6, 28, 4], [-10, -2, 4, 22]].forEach(([x, z, w, d]) => box(null, 'box', [x, 0.02, z], [w, 0.05, d], '#c9a877', { noShadow: true }));
+
+  /* 風車（葉片會轉） */
+  const mill = new pc.Entity(); mill.setLocalPosition(-14, 0, -26); app.root.addChild(mill);
+  box(mill, 'cylinder', [0, 5, 0], [5, 10, 5], '#f1eadb'); box(mill, 'cone', [0, 11.4, 0], [6.4, 3, 6.4], '#b5553a');
+  const hub = new pc.Entity(); hub.setLocalPosition(0, 8.6, 2.8); mill.addChild(hub);
+  box(hub, 'cylinder', [0, 0, 0], [0.8, 0.8, 0.8], '#6b4a2a', { rot: [90, 0, 0] });
+  for (let i = 0; i < 4; i++) { const arm = new pc.Entity(); arm.setLocalEulerAngles(0, 0, i * 90); hub.addChild(arm); box(arm, 'box', [0, 3.6, 0.2], [1.3, 6.4, 0.12], '#efe6d0'); box(arm, 'box', [0, 3.6, 0.1], [0.18, 7, 0.2], '#7a5530'); }
+
+  /* 房子、酒館、碼頭 */
+  const house = (x, z, w, d, wall, roof, ry) => { const g = new pc.Entity(); g.setLocalPosition(x, 0, z); g.setLocalEulerAngles(0, ry || 0, 0); app.root.addChild(g);
+    box(g, 'box', [0, 1.6, 0], [w, 3.2, d], wall); const r = box(g, 'cone', [0, 4.2, 0], [w * 0.95, 2.2, d * 1.05], roof, { rot: [0, 45, 0] }); r.setLocalScale(w * 1.3, 2.2, d * 1.3);
+    box(g, 'box', [0, 1, d / 2 + 0.01], [1.1, 2, 0.1], '#5a3a1e'); box(g, 'box', [w / 3, 2.1, d / 2 + 0.01], [0.9, 0.8, 0.08], '#9fd4f0', { gloss: 0.9 }); return g; };
+  house(-8, 36, 7, 5, '#f4e3c2', '#c0503a', 0);
+  house(16, 22, 5, 5, '#efe9df', '#3f7fb8', -20); house(-26, 14, 5, 4, '#f0dcc0', '#8a5a30', 15); house(24, -4, 6, 5, '#e8e0d0', '#c0503a', -40); house(-30, -4, 4.5, 4.5, '#f4e3c2', '#4f8a4a', 30);
+  const dock = new pc.Entity(); dock.setLocalPosition(40, 0, 40); dock.setLocalEulerAngles(0, 45, 0); app.root.addChild(dock);
+  box(dock, 'box', [0, 0.3, 6], [3, 0.3, 14], '#8a6238'); for (let i = 0; i < 4; i++) { box(dock, 'cylinder', [-1.4, -0.2, i * 4], [0.35, 1.4, 0.35], '#5a3a1e'); box(dock, 'cylinder', [1.4, -0.2, i * 4], [0.35, 1.4, 0.35], '#5a3a1e'); }
+  const boat = new pc.Entity(); boat.setLocalPosition(3.5, -0.1, 12); dock.addChild(boat); box(boat, 'box', [0, 0.2, 0], [1.6, 0.6, 3.6], '#9a6a3a'); box(boat, 'cylinder', [0, 1.6, 0.4], [0.12, 2.6, 0.12], '#6b4a2a'); box(boat, 'box', [0, 1.8, 0.2], [0.05, 1.6, 1.2], '#f4efe2', { noShadow: true });
+
+  /* 樹與岩石（隨機但固定種子） */
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 46; i++) { const a = rnd() * 6.283, r = 18 + rnd() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.hypot(x - 0, z - 20) < 6 || Math.hypot(x + 14, z + 26) < 8) continue;
+    const s = 0.8 + rnd() * 0.7; box(null, 'cylinder', [x, 1.2 * s, z], [0.45 * s, 2.4 * s, 0.45 * s], '#6b4a2a'); box(null, 'sphere', [x, 3.1 * s, z], [2.6 * s, 2.3 * s, 2.6 * s], rnd() < .5 ? '#4f9a44' : '#5fae4e'); }
+  for (let i = 0; i < 14; i++) { const a = rnd() * 6.283, r = 38 + rnd() * 5; box(null, 'sphere', [Math.cos(a) * r, 0.2, Math.sin(a) * r], [2 + rnd() * 2, 1.2 + rnd(), 2 + rnd() * 2], '#8f8a80'); }
+
+  /* 玩家（膠囊＋草帽） */
+  const player = new pc.Entity(); player.setLocalPosition(6, 0, 30); app.root.addChild(player);
+  box(player, 'capsule', [0, 1.1, 0], [0.9, 2.2, 0.9], '#c0392b'); box(player, 'box', [0, 0.45, 0], [0.9, 0.9, 0.75], '#3f6fb0');
+  box(player, 'sphere', [0, 2.35, 0], [0.75, 0.75, 0.75], '#f2c9a0'); box(player, 'cylinder', [0, 2.72, 0], [1.5, 0.06, 1.5], '#e6c35a'); box(player, 'cylinder', [0, 2.86, 0], [0.8, 0.28, 0.8], '#e6c35a'); box(player, 'cylinder', [0, 2.8, 0], [0.82, 0.08, 0.82], '#b0302a');
+
+  /* 相機（第三人稱跟隨） */
+  const cam = new pc.Entity('cam'); cam.addComponent('camera', { clearColor: SKY, fov: 55, farClip: 400 }); app.root.addChild(cam);
+
+  /* 操作：鍵盤＋手機拖曳 */
+  const kb = app.keyboard; let drag = null, dragV = { x: 0, y: 0 };
+  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y, m = Math.hypot(dx, dy); const k = Math.min(1, m / 60); dragV = m > 6 ? { x: dx / m * k, y: dy / m * k } : { x: 0, y: 0 }; });
+  const up = () => { drag = null; dragV = { x: 0, y: 0 }; }; canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+
+  const bS = document.getElementById('bShadow'), bR = document.getElementById('bRes');
+  let t = 0, frames = 0, acc = 0, heading = 0, lowRun = 0;
+  const dcEl = document.getElementById('dc'), note = m => { const e = document.getElementById('tip'); e.textContent = m; setTimeout(() => { e.textContent = 'WASD／方向鍵移動・手機：按住畫面拖曳移動'; }, 2500); };
+  const fpsEl = document.getElementById('fps');
+  app.on('update', dt => {
+    t += dt; hub.setLocalEulerAngles(0, 0, t * 40);
+    boat.setLocalPosition(3.5, -0.1 + Math.sin(t * 1.6) * 0.08, 12); boat.setLocalEulerAngles(Math.sin(t * 1.3) * 3, 0, Math.sin(t) * 4);
+    let mx = (kb.isPressed(pc.KEY_D) || kb.isPressed(pc.KEY_RIGHT) ? 1 : 0) - (kb.isPressed(pc.KEY_A) || kb.isPressed(pc.KEY_LEFT) ? 1 : 0) + dragV.x;
+    let mz = (kb.isPressed(pc.KEY_S) || kb.isPressed(pc.KEY_DOWN) ? 1 : 0) - (kb.isPressed(pc.KEY_W) || kb.isPressed(pc.KEY_UP) ? 1 : 0) + dragV.y;
+    const p = player.getLocalPosition(), m = Math.hypot(mx, mz);
+    if (m > 0.05) { mx /= Math.max(1, m); mz /= Math.max(1, m); let nx = p.x + mx * 11 * dt, nz = p.z + mz * 11 * dt; const r = Math.hypot(nx, nz); if (r > 39) { nx *= 39 / r; nz *= 39 / r; }
+      heading = Math.atan2(mx, mz) * 180 / Math.PI; player.setLocalPosition(nx, Math.abs(Math.sin(t * 12)) * 0.12, nz); }
+    player.setLocalEulerAngles(0, heading, 0);
+    const q = player.getLocalPosition(); cam.setLocalPosition(q.x, q.y + 13, q.z + 17); cam.lookAt(q.x, q.y + 1.5, q.z);
+    frames++; acc += dt; if (acc >= 0.5) { const f = Math.round(frames / acc); fpsEl.textContent = f; frames = 0; acc = 0;
+      /* 自動畫質：開場 3 秒後，平均低於 40 FPS 就先降解析度，再不夠就關陰影 */
+      if (t > 3) { lowRun = f < 40 ? lowRun + 1 : 0; if (lowRun >= 4) { lowRun = 0; if (bR.classList.contains('on')) { bR.click(); note('自動降低解析度'); } else if (sun.light.castShadows) { bS.click(); note('自動關閉陰影'); } } }
+      const dc = app.stats && app.stats.drawCalls ? app.stats.drawCalls.total : null; if (dc != null) dcEl.textContent = dc; }
+  });
+
+  document.getElementById('info').textContent = `PlayCanvas ${pc.version}・${app.graphicsDevice.isWebGL2 ? 'WebGL 2' : 'WebGL 1'}`;
+  bS.onclick = () => { sun.light.castShadows = !sun.light.castShadows; bS.classList.toggle('on', sun.light.castShadows); };
+  bR.onclick = () => { const hi = !bR.classList.contains('on'); app.graphicsDevice.maxPixelRatio = hi ? hiDpi() : 1; app.resizeCanvas(); bR.classList.toggle('on', hi); };
+  app.start();
+}
+</script>
+</body>
+</html>

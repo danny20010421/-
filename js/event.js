@@ -38,7 +38,7 @@
     const E = st(), pane = $('evPane'); if (!pane) return;
     if (E.__msg) { toast(E.__msg, 'gold'); delete E.__msg; SAVE.save(); }
     const card = s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), pct = Math.min(100, n / P().need * 100);
-      return `<div class="ev-shard" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b>SSR ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}・單抽機率 ${Math.round(s.rate * 1000) / 10}%</small></div>
+      return `<div class="ev-shard" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b><span class="rar c-rar r-${(typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[s.char]) || 'SSR'}">${(typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[s.char]) || 'SSR'}</span> ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}・單抽機率 ${Math.round(s.rate * 1000) / 10}%</small></div>
         ${own ? '<span class="ev-owned">已擁有</span>' : `<button class="btn-gold sm" data-synth="${s.char}" ${n >= P().need ? '' : 'disabled'}>合成</button>`}</div>`; };
     const cost1 = E.tickets >= 1 ? '1 張抽獎券' : `${P().tokenCost} 枚寶藏幣`, cost10 = E.tickets >= 10 ? '10 張抽獎券' : `${P().tokenCost * 10} 枚寶藏幣`;
     pane.innerHTML = `<div class="ev-banner"><img src="${P().banner}" alt="${P().name}"></div>
@@ -58,7 +58,7 @@
   function synth(id) {
     const E = st(); if (E.shards[id] < P().need || owned(id)) return;
     E.shards[id] -= P().need; addCrew(id, GAME_SETTINGS.charLv || 20); SAVE.save(); SFX.play('rare');
-    toast(`合成成功！SSR ${CHARACTERS[id].name} 加入角色背包`, 'gold'); render(); if (typeof renderCrewShards === 'function') renderCrewShards();
+    toast(`合成成功！${CHAR_RARITY[id] || 'SSR'} ${CHARACTERS[id].name} 加入角色背包`, 'gold'); render(); if (typeof renderCrewShards === 'function') renderCrewShards();
   }
   window.eventSynth = synth;
 
@@ -99,7 +99,7 @@
     ov.classList.remove('show'); setTimeout(() => ov.remove(), 300);
   }
   function particles(ov, kind, col) {
-    for (let i = 0; i < 26; i++) { const p = document.createElement('i'); p.className = 'ev-pt'; p.textContent = kind === 'hancock' ? '❤' : '🦇'; p.style.color = col; ov.appendChild(p);
+    for (let i = 0; i < 26; i++) { const p = document.createElement('i'); p.className = 'ev-pt'; p.textContent = ({ hancock: '❤', moria: '🦇', mihawk: '⚔', buggy: '🎪' })[kind] || '✦'; p.style.color = col; ov.appendChild(p);
       const a = Math.random() * 6.28, d = 160 + Math.random() * 320; p.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(1.3) rotate(${(Math.random() - .5) * 180}deg)`, opacity: 0 }], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).onfinish = () => p.remove(); }
   }
 
@@ -132,7 +132,7 @@
       return `<section class="sd-group"><h4>${pl.name}</h4>${pl.shards.map(s => { const c = CHARACTERS[s.char], n = E.shards[s.char], own = owned(s.char), ok = n >= pl.need && !own, pct = Math.min(100, n / pl.need * 100);
         return `<article class="sd-card ${ok ? 'ready' : ''} ${own ? 'own' : ''}" style="--c:${s.color}">
           <img class="sd-icon" src="${s.icon}" alt="">
-          <div class="sd-head"><span class="sd-rar">SSR</span><b>${c.name}</b><small>${c.title}</small></div>
+          <div class="sd-head"><span class="sd-rar">${(typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[s.char]) || 'SSR'}</span><b>${c.name}</b><small>${c.title}</small></div>
           <div class="sd-prog"><div class="sd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${pl.need}" aria-valuenow="${Math.min(n, pl.need)}"><i style="width:${pct}%"></i></div><span><b>${n}</b> / ${pl.need}</span></div>
           ${own ? '<span class="sd-state">✓ 已擁有</span>' : `<button class="sd-btn ${ok ? 'btn-gold' : ''}" data-synth="${s.char}" ${ok ? '' : 'disabled'}>${ok ? '合成角色' : `還差 ${pl.need - n} 片`}</button>`}
         </article>`; }).join('')}</section>`; }).join('');

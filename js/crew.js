@@ -1,9 +1,11 @@
 /* 角色背包：我的船員（只列已獲得）、角色圖鑑、訓練營 */
 (function () {
-  const RAR_COLOR = { R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
+  const RAR_COLOR = { R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a', UR: '#ff7ad9' };
   const rarOf = id => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'R';
   const noOf = id => 'No.' + (CHARACTERS[id].noText || String(CHARACTERS[id].no || 0).padStart(3, '0'));
   const ownedIds = () => CHARACTER_ORDER.filter(owned);
+  /* 神秘剪影（原創通用人形） */
+  const MYSTERY_SIL = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"><g fill="#111"><ellipse cx="150" cy="92" rx="96" ry="20"/><path d="M104 92q4-50 46-52q42 2 46 52z"/><circle cx="150" cy="122" r="44"/><path d="M78 400l8-150q4-74 64-86q60 12 64 86l8 150z"/><path d="M84 190q-44 40-52 120l26 6q10-56 38-86zM216 190q44 40 52 120l-26 6q-10-56-38-86z"/></g></svg>');
   let crewTab = 'crew', trainPick = null, revealAll = false;
 
   /* ---------- 訓練營資料 ---------- */
@@ -129,9 +131,15 @@
   let codexPick = null;
   function renderCodex() {
     const all = CHARACTER_ORDER, got = all.filter(owned).length; if (!codexPick) codexPick = all[0];
-    $('cxCodexNote').innerHTML = `收集進度 <b>${got}/${all.length}</b><span class="cx-cbar"><i style="width:${got / all.length * 100}%"></i></span>`;
-    $('cxCodexGrid').innerHTML = all.map(id => card(id, { codex: true, on: id === codexPick })).join('');
-    $('cxCodexGrid').querySelectorAll('.char').forEach(b => b.onclick = () => { codexPick = b.dataset.id; renderCodex(); if (innerWidth <= 860) $('cxCodexDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    const BN = { hp: '體力', atk: '傷害', def: '防禦', spd: '速度' };
+    $('cxCodexNote').innerHTML = `收集進度 <b>${got}/${all.length}</b><span class="cx-cbar"><i style="width:${got / all.length * 100}%"></i></span>` + (typeof COLLECTION_SETS !== 'undefined' ? `<div class="cx-sets">${COLLECTION_SETS.map(S => { const n = S.members.filter(owned).length, done = n === S.members.length; return `<span class="cx-set ${done ? 'done' : ''}" title="${S.members.map(id => CHARACTERS[id].name + (owned(id) ? ' ✓' : '')).join('、')}"><b>${S.name}</b> ${n}/${S.members.length}<small>${Object.entries(S.bonus).map(([k, v]) => `全隊${BN[k]} +${v}%`).join('・')}</small></span>`; }).join('')}</div>` : '');
+    /* 預留編號：依編號插入「？？？」神秘剪影 */
+    const RES = (typeof RESERVED_NOS !== 'undefined' ? RESERVED_NOS : []).filter(r => !all.some(id => CHARACTERS[id].no === r.no));
+    const slots = [...all.map(id => ({ no: CHARACTERS[id].no || 0, id })), ...RES.map(r => ({ no: r.no, res: r }))].sort((a, b) => a.no - b.no);
+    $('cxCodexGrid').innerHTML = slots.map(x => x.id ? card(x.id, { codex: true, on: x.id === codexPick }) : `<button class="char sil reserved ${codexPick === 'res' + x.no ? 'on' : ''}" data-res="${x.no}" aria-label="No.${String(x.no).padStart(3, '0')} 尚未登場"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">No.${String(x.no).padStart(3, '0')}</span><span class="c-name">？？？</span></button>`).join('');
+    $('cxCodexGrid').querySelectorAll('[data-res]').forEach(b => b.onclick = () => { codexPick = 'res' + b.dataset.res; renderCodex(); if (innerWidth <= 860) $('cxCodexDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    if (String(codexPick).startsWith('res')) { const r = RES.find(x => 'res' + x.no === codexPick); if (r) { $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:#8a93a6"><div class="cx-art sil reserved"><img src="${MYSTERY_SIL}" alt=""><span class="res-q big" aria-hidden="true">？</span><span class="cx-no">No.${String(r.no).padStart(3, '0')}</span></div><div class="cx-head"><h3>？？？<small>${r.group}</small></h3><p class="cx-desc">這個編號的船員還沒有登場。<br>也許在下一段航程中，就會在某座島上遇見。</p><div class="cx-src"><b>取得方式</b><span>尚未公開</span></div></div></div>`; return; } codexPick = all[0]; }
+    $('cxCodexGrid').querySelectorAll('.char[data-id]').forEach(b => b.onclick = () => { codexPick = b.dataset.id; renderCodex(); if (innerWidth <= 860) $('cxCodexDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     const id = codexPick, c = CHARACTERS[id], own = owned(id);
     $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:${RAR_COLOR[rarOf(id)]}">
         <div class="cx-art ${own || revealAll ? '' : 'sil'}"><img src="${c.image}" alt=""><span class="rar c-rar r-${rarOf(id)}">${rarOf(id)}</span><span class="cx-no">${noOf(id)}</span></div>
