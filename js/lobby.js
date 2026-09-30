@@ -12,12 +12,12 @@
     const ch = nextChapter() || CHAPTERS[CHAPTERS.length - 1];
     if (!$('lbBg').getAttribute('src')) $('lbBg').src = 'assets/ui/lobby_bg.webp?v=43';
     /* 中央船長 */
-    const hero = $('lbHeroImg'); if (hero.dataset.id !== pid) { hero.dataset.id = pid; hero.classList.remove('in'); hero.onload = () => hero.classList.add('in'); hero.src = c.image; if (hero.complete && hero.naturalWidth) requestAnimationFrame(() => hero.classList.add('in')); }
+    const hero = $('lbHeroImg'); if (hero.dataset.id !== pid + '|' + charArt(pid)) { hero.dataset.id = pid + '|' + charArt(pid); hero.classList.remove('in'); hero.onload = () => hero.classList.add('in'); hero.src = charArt(pid); if (hero.complete && hero.naturalWidth) requestAnimationFrame(() => hero.classList.add('in')); }
     $('lobby').style.setProperty('--hero', (typeof RAR_COLOR !== 'undefined' && RAR_COLOR[r]) || '#ffcf5a');
     $('lbPlate').innerHTML = `<span class="rar c-rar r-${r}">${r}</span><b>${c.name}</b><small>${c.title || ''}・LV ${crewLv(pid)}</small><span class="lbp-types">${c.types.map(t => `<i style="--tc:${TYPE_COLORS[t] || '#999'}">${t}</i>`).join('')}</span><button class="lbp-swap" id="lbSwap">更換船長</button>`;
     $('lbSwap').onclick = () => openCrew('crew');
     /* 出戰陣容 */
-    $('lbTeam').innerHTML = '<small>出戰陣容</small>' + ((d.lineup || []).length ? '' : '<button class="lbt-empty" id="lbTeamSet">尚未編組，點這裡安排出戰船員 ›</button>') + (d.lineup || []).map(id => `<button class="lbt-av" data-id="${id}" title="${CHARACTERS[id].name}"><img src="${CHARACTERS[id].avatar}" alt="${CHARACTERS[id].name}"><em>LV ${crewLv(id)}</em></button>`).join('');
+    $('lbTeam').innerHTML = '<small>出戰陣容</small>' + ((d.lineup || []).length ? '' : '<button class="lbt-empty" id="lbTeamSet">尚未編組，點這裡安排出戰船員 ›</button>') + (d.lineup || []).map(id => `<button class="lbt-av" data-id="${id}" title="${CHARACTERS[id].name}"><img src="${charArt(id, 'avatar')}" alt="${CHARACTERS[id].name}"><em>LV ${crewLv(id)}</em></button>`).join('');
     $('lbTeam').querySelectorAll('.lbt-av,#lbTeamSet').forEach(b => b.onclick = () => openCrew('crew'));
     /* 公告 */
     try { const n = loadNews()[0]; $('lbNewsTitle').textContent = n ? n.title : '目前沒有公告'; } catch (e) { $('lbNewsTitle').textContent = ''; }

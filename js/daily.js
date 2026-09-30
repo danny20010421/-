@@ -71,6 +71,7 @@
   function onLobby() {
     /* 新版本加入的「通關獎勵角色」，已通關的玩家直接補發 */
     try { Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward && SAVE.data.chapters[o.reward] && SAVE.data.chapters[o.reward].cleared && !owned(cid)) { addCrew(cid, 10); setTimeout(() => toast(`通關獎勵補發：${CHARACTERS[cid].name} 加入了你的船隊！`, 'gold'), 1200); } }); } catch (e) { }
+    try { grantSkins().forEach(k => setTimeout(() => toast(`獲得皮膚「${SKINS[k].name}」！可在角色背包裝備`, 'gold'), 1400)); } catch (e) { }
     const n = dailySweep(); if (n) setTimeout(() => toast(`每日補給：掃蕩卷 ×${n}`, 'gold'), 600);
     if (canClaim() && !openLogin._shownDay) { openLogin._shownDay = today(); setTimeout(() => { if (currentScreen === 'modeScreen' && !document.querySelector('.dl-wrap')) openLogin(true); }, 900); }
     const d = SAVE.data, last = d.lastExport || 0, played = (d.pulls || 0) + CHAPTERS.filter(c => d.chapters[c.id].step > 0).length;

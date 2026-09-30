@@ -123,7 +123,7 @@ function openNewsEditor() {
 /* ---------- 船員與培養 ---------- */
 function owned(id) { return !!(SAVE.data.roster || {})[id]; }
 function crewLv(id) { return owned(id) ? SAVE.data.roster[id].lv : 1; }
-function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); if (window.checkTitles) setTimeout(() => checkTitles(false), 1200); return true; }
+function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); if (typeof grantSkins === 'function') grantSkins().forEach(k => setTimeout(() => toast(`獲得皮膚「${SKINS[k].name}」！可在角色背包裝備`, 'gold'), 1600)); if (window.checkTitles) setTimeout(() => checkTitles(false), 1200); return true; }
 /* 圖鑑套組：已集滿的套組與全隊加成（各項合計上限 SET_BONUS_CAP %） */
 function setsDone() { return (typeof COLLECTION_SETS !== 'undefined' ? COLLECTION_SETS : []).filter(S => S.members.every(owned)); }
 /* 已開通的羈絆中，出戰陣容有 need 位以上成員者才生效 */
@@ -322,6 +322,9 @@ function worldState() {
   st.talked = st.talked || [];
   if (!st.roster || st.roster.some(id => STARTERS.includes(id) || CH.npcs.some(n => n.id === id) || id === CH.boss || (CH.exclude || []).includes(id))) { const pool = CHARACTER_ORDER.filter(id => id !== CH.boss && id !== pid && !STARTERS.includes(id) && !CH.npcs.some(n => n.id === id) && !(CH.exclude || []).includes(id)); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[pool[i], pool[j]] = [pool[j], pool[i]]; } st.roster = pool.slice(0, 3); SAVE.save(); }
   if (step && step.type === 'gauntlet' && st.roster.filter(id => !st.defeated.includes(id)).length < step.count) { st.defeated = []; SAVE.save(); }
+  /* 舊存檔修正：擊敗任務還沒完成、島上卻已經沒有敵人時，重新讓敵人出現 */
+  if (step && step.type === 'defeat' && st.defeated.length < step.count && st.roster.every(id => st.defeated.includes(id))) { st.defeated = []; SAVE.save(); }
+  if (step && !['defeat', 'gauntlet', 'keys'].includes(step.type) && st.defeated.length) { st.defeated = []; SAVE.save(); }
   if (step && step.type === 'keys' && st.roster.filter(id => !st.defeated.includes(id)).length < step.count - (st.keys || 0)) { st.defeated = []; SAVE.save(); }
   const enemies = st.roster.map((id, i) => ({ id, x: SPOTS()[i][0], z: SPOTS()[i][1], boss: false, lv: enemyLvFor(false) })).filter(e => !st.defeated.includes(e.id));
   if (step && CH.boss && step.type !== 'stealth') enemies.push({ id: CH.boss, x: CH.bossPos[0], z: CH.bossPos[1], boss: true, lv: enemyLvFor(true) });
@@ -403,7 +406,7 @@ function renderQuest() {
 function completeStep() {
   const st = chState(), idx = st.step, s = CH.steps[idx];
   if (!st.rewarded.includes(idx)) { st.rewarded.push(idx); addBerry(80 * ((CHAPTER_DIFFICULTY[CH.id] || {}).order || 1)); addTokens(s.reward, s.title); gainExp(SAVE.data.player, (s.reward || 1) * 50 + ENEMY_LEVEL[CH.id] * 4); }
-  st.step++; st.talked = []; st.keys = 0; SAVE.save(); track('steps'); SFX.play('quest'); stepStarted(); CHAIN = null;
+  st.step++; st.talked = []; st.keys = 0; st.defeated = []; SAVE.save(); track('steps'); SFX.play('quest'); stepStarted(); CHAIN = null;
   if (s.unlockBoss) setTimeout(() => toast('BOSS 的屏障解除了', 'gold'), 500);
   const nx = CH.steps[st.step];
   if (nx && nx.type === 'defeat' && st.defeated.length >= nx.count) { setTimeout(completeStep, 600); }
@@ -518,7 +521,8 @@ function onBattleEnd(r) {
     if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward === CH.id && !owned(cid)) { addCrew(cid, 10); msgs.push(`<b>${CHARACTERS[cid].name}</b> 加入了角色背包！（LV 10）`); } }); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = first ? (ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst) : (ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat), again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
     if (s && s.type === 'duel' && r.enemyId === s.enemy) { const b = SAVE.data.tokens; completeStep(); msgs.push(`⚔ 對決勝利！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); if (s.joins && !owned(s.joins)) { addCrew(s.joins, s.joinLv || 20); msgs.push(`<b>${CHARACTERS[s.joins].name}</b> 加入了你的船隊！`); } if (s.after) setTimeout(() => say(s.after), 900); return { message: msgs.join('<br>') }; }
-    if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
+    /* 只有「擊敗／連戰／奪鑰」任務進行中的戰鬥才會讓敵人消失；提前打倒的敵人會留在原地，避免任務卡住 */
+    if (s && ['defeat', 'gauntlet', 'keys'].includes(s.type) && !st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
     if (s && s.type === 'keys') { st.keys = (st.keys || 0) + 1; SAVE.save(); if (st.keys >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`🔑 集齊 ${s.count} 把${s.item || '鑰匙'}！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); if (s.lines) setTimeout(() => say(s.lines.slice(-1)), 900); } else msgs.push(`🔑 搶到第 ${st.keys} 把${s.item || '鑰匙'}！（${st.keys}/${s.count}）`); }
     if (s && s.type === 'defeat') { if (st.defeated.length >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); } else msgs.push(`任務進度：${st.defeated.length}/${s.count}`); }
   }

@@ -190,3 +190,35 @@ button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-hi
 #runnerScreen,#runnerScreen *{touch-action:none!important;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #runnerScreen{overscroll-behavior:none}
 @media (max-width:860px){input,select,textarea{font-size:16px!important}}
+
+/* 13. 立繪變身：鏡像（--mx）、巨大化時不遮住資訊、鏡頭後拉（--cam） */
+.b-arena{transform:scale(var(--cam,1));transform-origin:50% 100%;transition:transform .9s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.b-arena .fighter{pointer-events:auto}
+.fighter{--mx:1}
+.fighter img{transform:scale(var(--sc)) scaleX(var(--mx));transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.fighter.R img{transform:scale(var(--sc)) scaleX(calc(-1 * var(--mx)))}
+@keyframes idle{50%{transform:scale(var(--sc)) scaleX(var(--mx)) translateY(-10px)}}
+@keyframes idleR{50%{transform:scale(var(--sc)) scaleX(calc(-1 * var(--mx))) translateY(-10px)}}
+.fighter.down img{transform:scale(var(--sc)) scaleX(var(--mx)) rotate(-8deg) translateY(6%)}
+.fighter.R.down img{transform:scale(var(--sc)) scaleX(calc(-1 * var(--mx))) rotate(-8deg) translateY(6%)}
+/* 圖層：我方立繪在前、對手在後（變身巨大化也維持這個順序） */
+.b-arena .fighter.L{z-index:3}
+.b-arena .fighter.R{z-index:2}
+.fighter.huge img{filter:drop-shadow(0 0 24px rgba(120,160,255,.45))}
+
+/* 14. 對戰圖層：背景 → 立繪（對手在後、我方在前）→ 特效 → 傷害數字與提示 → 資訊列與操作面板 */
+#battleScreen .b-bg{z-index:0}
+#battleScreen .b-vignette{z-index:1}
+#battleScreen .b-arena{z-index:2}
+#battleScreen .fighter.R{z-index:1}
+#battleScreen .fighter.L{z-index:2}
+#battleScreen .b-fx{z-index:3}
+#battleScreen .b-canvas{z-index:4}
+#battleScreen .b-dmg,#battleScreen .b-banner,#battleScreen .b-ticker,#battleScreen .b-typebar{z-index:8}
+#battleScreen .b-yourturn{z-index:9}
+#battleScreen .b-top{z-index:10}
+#battleScreen .b-cmd{z-index:12}
+
+/* 14. 皮膚：尚未推出的以「？」顯示 */
+.sb-skin.soon{opacity:.75}
+.sb-q{width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;border-radius:10px;border:1px dashed rgba(200,210,230,.45);background:linear-gradient(180deg,#1a2436,#0c1422);font:900 22px/1 var(--serif);color:rgba(220,228,240,.8)}

@@ -47,7 +47,7 @@ function startBattle(opts) {
   const ch = CHAPTERS.find(c => c.id === chapterId);
   $('bBg').style.backgroundImage = `url("${opts.bg || (ch ? ch.art : '')}")`; battle.voidDamage = 0; const vd = $('voidDmg'); if (vd) { vd.hidden = !opts.throne; vd.querySelector('b').textContent = '0'; }
   $('bLogList').innerHTML = ''; $('bResult').classList.remove('show'); closeDrawers(); $('bFL').classList.remove('down', 'hit'); $('bFR').classList.remove('down', 'hit');
-  ['L', 'R'].forEach(s => { const c = s === 'L' ? p : e; $('bImg' + s).src = c.image; $('bAv' + s).src = c.avatar; $('bName' + s).textContent = c.name; $('bTitle' + s).textContent = c.title; $('bTypes' + s).innerHTML = c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join(''); $('bF' + s).style.setProperty('--sc', c.scale || .9); });
+  ['L', 'R'].forEach(s => { const c = s === 'L' ? p : e; $('bImg' + s).src = c.image; $('bAv' + s).src = c.avatar; $('bName' + s).textContent = c.name; $('bTitle' + s).textContent = c.title; $('bTypes' + s).innerHTML = c.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join(''); applyVisual(c); });
   $('bPlateR').classList.toggle('boss', !!isBoss);
   $('bLvR').textContent = (isBoss ? 'BOSS ' : '') + 'LV ' + e.level; $('bLvL').textContent = 'LV ' + p.level;
   renderHUD(true); renderSkills(); renderBag(); renderTeam();
@@ -73,7 +73,7 @@ function doSwitch(i) {
   const b = battle, f = b.team[i]; b.pi = i; b.player = f;
   $('bImgL').src = f.image; $('bAvL').src = f.avatar; $('bNameL').textContent = f.name; $('bTitleL').textContent = f.title; $('bLvL').textContent = 'LV ' + f.level;
   $('bTypesL').innerHTML = f.types.map(t => `<span class="type" style="--t:${TYPE_COLORS[t] || '#888'}">${t}</span>`).join('');
-  const el = $('bFL'); el.style.setProperty('--sc', f.scale || .9); el.classList.remove('down', 'hit', 'enter'); void el.offsetWidth; el.classList.add('enter');
+  const el = $('bFL'); applyVisual(f); el.classList.remove('down', 'hit', 'enter'); void el.offsetWidth; el.classList.add('enter');
   log(`${f.name} 上場了！`, 'me'); banner(f.name + ' 出戰', 'me'); SFX.play('whoosh');
   renderHUD(true); renderSkills(); renderTeam();
 }
@@ -280,7 +280,12 @@ async function executeAction(side, idx) {
   if (result.damage > 0) triggerImpact(T, BATTLE_ANIM[skill.anima] || 'red', result.damage > target.maxHp * .25);
   renderHUD(); renderSkills(); await wait(640);
 }
-function refreshFighterImage(f) { if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
+/* 立繪視覺：--sc＝基礎大小 × 變身倍率，--mx＝是否鏡像；角色因技能變大（例如莫莉亞）時，整個戰場鏡頭後拉 */
+function applyVisual(f) { if (!battle || !f) return; if (f.baseScale == null) f.baseScale = f.scale || .9; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return;
+  const el = $('bF' + side); el.style.setProperty('--sc', (f.scale || .9) * (f.battleScale || 1) * (f.visMul || 1)); el.style.setProperty('--mx', f.mirror ? -1 : 1); el.classList.toggle('huge', (f.visMul || 1) > 1.3);
+  const g = Math.max(...[battle.player, battle.enemy].filter(Boolean).map(x => (x.scale || .9) / (x.baseScale || x.scale || .9)));
+  $('bArena').style.setProperty('--cam', Math.max(.55, Math.min(1, 1 / (1 + (g - 1) * .75)))); }
+function refreshFighterImage(f) { applyVisual(f); if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
 function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }
 function checkBattleEnd() {
   const b = battle;
