@@ -1,0 +1,192 @@
+/* ===== v44 介面修整 ===== */
+
+/* 1. 圓形按鈕：SVG 圖示正中央（所有裝置一致） */
+.ico-btn{display:inline-grid!important;place-items:center!important;padding:0!important;line-height:0!important;font-size:0!important;text-indent:0!important;flex:0 0 auto}
+.ico-btn .ico-svg{width:22px;height:22px;display:block;margin:0;overflow:visible;grid-area:1/1}
+.ico-btn.sm .ico-svg,.ico-btn[data-ico=close] .ico-svg{width:18px;height:18px}
+.ico-btn[data-ico=back] .ico-svg{transform:translateX(-1px)}
+@media (max-width:760px){.ico-btn .ico-svg{width:20px;height:20px}}
+.snd.off .ico-svg{opacity:.45}
+.snd.off::after{content:"";position:absolute;left:50%;top:50%;margin:-1px 0 0 -12px;width:24px;height:2px;background:currentColor;transform:rotate(-45deg);border-radius:2px}
+.ico-btn{position:relative}
+.ico-btn.has-dot::after,.m-menu.has-dot::after{top:2px!important;right:2px!important}
+
+/* 2. 道具圖示與文字的間距（經驗書、背包、商店） */
+.exp-row{grid-template-columns:54px minmax(0,1fr) auto!important;column-gap:12px!important}
+.exp-row .ico{margin:0!important;justify-self:center}
+.exp-row .er-name{min-width:0;padding-left:2px}
+.exp-row .er-name b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bagItem,#shopList>*{column-gap:12px}
+.bagItem .ico,#shopList .ico{flex:0 0 auto;margin-right:2px}
+
+/* 3. 我的船員（桌機）：三欄等高、右欄標題固定 */
+@media (min-width:861px){
+  #charModal .sb{grid-template-columns:minmax(250px,290px) minmax(0,1fr) minmax(340px,410px);height:min(66vh,640px);min-height:0;align-items:stretch}
+  #charModal .sb-left,#charModal .sb-right{max-height:none;height:100%;min-height:0}
+  #charModal .sb-left{display:flex;flex-direction:column;gap:10px}
+  #charModal .sb-slots,#charModal .sb-bench{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  #charModal .sb-bench{align-content:start}
+  #charModal .sb-stage{height:100%;min-height:0;justify-content:flex-end;padding-bottom:14px}
+  #charModal .sb-stage img{max-height:calc(100% - 90px);margin-bottom:22px}
+  #charModal .sb-acts{position:relative;z-index:2;display:flex;align-items:center;gap:10px}
+  #charModal .sb-right{padding-top:0;gap:10px}
+  #charModal .sb-head{position:sticky;top:0;z-index:3;margin:0 -14px;padding:14px 14px 8px;background:linear-gradient(180deg,#152a52 70%,rgba(21,42,82,0));display:flex;align-items:center;gap:10px}
+  #charModal .sb-head h3{margin:0;display:flex;flex-direction:column;line-height:1.2}
+  #charModal .sb-head h3 small{font-size:12px;color:var(--muted);font-weight:500}
+}
+
+/* 4. 角色背包（手機）：整個視窗全螢幕，只有一個捲動區；圖鑑詳細資料用全螢幕面板開啟 */
+@media (max-width:860px){
+  #charModal{padding:0!important;align-items:stretch!important}
+  #charModal .modal-card{width:100%!important;max-width:100%!important;height:100vh;height:100dvh;max-height:none!important;margin:0!important;border-radius:0!important;display:flex;flex-direction:column;overflow:hidden!important;padding:calc(10px + var(--safeT)) 12px 0!important}
+  #charModal .modal-card>header{flex:0 0 auto;margin-bottom:6px}
+  #charModal .cx-tabs{flex:0 0 auto;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #charModal .cx-pane:not(.hidden){flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:calc(24px + var(--safeB))}
+  #charModal .modal-card>footer{flex:0 0 auto;margin:0 -12px;padding:10px 12px calc(10px + var(--safeB));background:rgba(5,12,26,.95)}
+  #charModal .cx-body{display:block}
+  #charModal #cxCodexGrid{max-height:none!important;overflow:visible!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px}
+  #charModal #cxCodexGrid .char .c-name{font-size:11px}
+  #cxCodexDetail{display:none}
+  #cxCodexDetail.open{display:block;position:fixed;inset:0;z-index:90;max-height:none;border-radius:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:linear-gradient(180deg,#0f2244,#08142a);padding:calc(8px + var(--safeT)) 14px calc(28px + var(--safeB));animation:cxIn .22s ease-out}
+  .cx-close{position:sticky;top:0;z-index:2;display:inline-flex;align-items:center;gap:4px;margin:0 0 10px;padding:8px 14px;border-radius:99px;border:1px solid rgba(232,193,112,.5);background:rgba(8,20,42,.92);color:#ffe7a8;font-weight:700}
+  .cx-sets{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:380px){#charModal #cxCodexGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@keyframes cxIn{from{transform:translateY(24px);opacity:0}}
+
+/* 5. 羈絆卡 */
+.cx-bondtip{display:block;width:100%;margin-bottom:6px;font-size:12px;color:var(--muted)}
+.cx-set{gap:2px;min-width:0}
+.cx-set b{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.cx-set b em{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.1);color:#cbd6e6;white-space:nowrap}
+.cx-set>span{font-size:11px;color:#cbd6e6}
+.cx-set.done b em{background:rgba(255,207,90,.2);color:#ffe7a8}
+.cx-set.live{border-color:#6fe0a0!important;background:rgba(80,200,140,.14)!important;box-shadow:0 0 12px rgba(111,224,160,.25)}
+.cx-set.live b em{background:#2fae6a;color:#fff}
+
+/* 6. 高級懸賞 */
+.bounty.premium{border-color:#ffcf5a!important;background:linear-gradient(135deg,rgba(255,207,90,.16),rgba(255,120,80,.08))!important;box-shadow:0 0 18px rgba(255,207,90,.25)}
+.bounty.premium .bt-poster span{color:#ffcf5a;letter-spacing:.06em}
+
+/* 7. 不死鳥變身 */
+.morph{animation:morphIn .6s ease-out}
+@keyframes morphIn{0%{filter:brightness(3) saturate(0);transform:scale(.9)}100%{filter:none;transform:none}}
+.cx-setbox{width:100%;margin-top:8px}
+.cx-setbox>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);font-weight:700;font-size:13px}
+.cx-setbox>summary::-webkit-details-marker{display:none}
+.cx-setbox>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s}
+.cx-setbox[open]>summary::after{transform:rotate(-135deg)}
+
+/* 8. 解讀石碑 */
+.tr-puzzle{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:14px;background:rgba(3,8,20,.75);backdrop-filter:blur(3px)}
+.trp-card{width:min(460px,100%);max-height:100%;overflow:auto;padding:16px 18px 18px;border-radius:18px;background:linear-gradient(180deg,#1b2a44,#0c1628);border:1px solid rgba(232,193,112,.5);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.trp-card header{display:flex;align-items:center;justify-content:space-between;gap:8px}.trp-card h3{margin:0;font:900 18px var(--serif);text-align:left}
+.trp-tip{font-size:13px;color:#cbd6e6;margin:8px 0 12px}
+.trp-stone{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:14px;border-radius:12px;background:linear-gradient(180deg,#3a3f48,#23272e);box-shadow:inset 0 2px 8px rgba(0,0,0,.6);margin-bottom:14px}
+.trp-slot{width:44px;height:44px;display:grid;place-items:center;border-radius:8px;background:rgba(0,0,0,.35);border:1px dashed rgba(255,255,255,.18);color:#9fd8ff}
+.trp-slot svg{width:28px;height:28px}
+.trp-slot.shown{color:#ffe7a8;border-style:solid;border-color:#ffcf5a;box-shadow:0 0 12px rgba(255,207,90,.5)}
+.trp-slot.ok{color:#6fe0a0;border-style:solid;border-color:#6fe0a0}.trp-slot.bad{border-color:#ff5a6a;background:rgba(255,80,90,.2)}
+.trp-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.trp-g{aspect-ratio:1;display:grid;place-items:center;border-radius:12px;border:1px solid rgba(232,193,112,.45);background:linear-gradient(180deg,#4a4f58,#2c3038);color:#e8dcc0;transition:transform .12s,box-shadow .12s,color .12s}
+.trp-g svg{width:58%;height:58%}
+.trp-g.lit,.trp-g.tap{color:#fff4c8;background:linear-gradient(180deg,#8a6a2a,#5a4418);box-shadow:0 0 18px rgba(255,207,90,.7);transform:scale(1.06)}
+.trp-msg{margin:12px 0 8px;font-weight:700;color:#ffe7a8;min-height:1.4em}
+
+/* 9. 手機登入頁：公告預設收合成一條細長標籤，不再擋住背景 */
+@media (max-width:760px){
+  #loginScreen .news-board.collapsed{position:absolute!important;top:calc(70px + var(--safeT))!important;bottom:auto!important;width:auto!important;left:auto!important;right:12px!important;margin:0!important;transform:none!important;padding:8px 14px!important;border-radius:99px!important}
+  #loginScreen .news-board:not(.collapsed){position:absolute!important;top:calc(70px + var(--safeT))!important;bottom:auto!important;margin:0!important;transform:none!important;left:12px!important;right:auto!important;width:calc(100% - 24px)!important;max-width:none!important;box-sizing:border-box}
+  #loginScreen .news-board.collapsed::before{display:none}
+  #loginScreen .news-board.collapsed header{border:0!important;padding:0!important;margin:0!important;display:flex;align-items:center;gap:8px}
+  #loginScreen .news-board.collapsed h2{font-size:15px!important;margin:0!important;letter-spacing:.06em}
+  #loginScreen .news-board.collapsed time{display:none}
+  #loginScreen .news-board.collapsed .nt-count{font-size:12px}
+  #loginScreen .news-board:not(.collapsed){max-height:58vh;max-height:58dvh;overflow:auto;left:12px!important;right:12px!important;width:auto!important}
+}
+
+/* 10. 七日登入、備份提醒、掃蕩、保底 */
+.lb-login{position:relative;display:flex;align-items:center;gap:10px;padding:10px 12px;text-align:left;border:1px solid #ffcf5a;border-radius:14px;background:linear-gradient(135deg,rgba(255,207,90,.22),rgba(10,20,44,.7));color:#fff;box-shadow:0 0 14px rgba(255,207,90,.25)}
+.lb-login i{font-style:normal;font-size:22px}.lb-login span{display:flex;flex-direction:column}.lb-login small{font-size:12px;color:#ffe7a8}
+.lb-backup{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(120,30,30,.75);border:1px solid #ff8a7a;font-size:12.5px;line-height:1.5}
+.lb-backup[hidden]{display:none}
+.dl-wrap{position:fixed;inset:0;z-index:96;display:grid;place-items:center;padding:14px;background:rgba(3,8,20,.72);backdrop-filter:blur(3px)}
+.dl-card{width:min(560px,100%);max-height:100%;overflow:auto;padding:16px 18px 18px;border-radius:18px;background:linear-gradient(180deg,#1b2a4a,#0c1628);border:1px solid rgba(232,193,112,.55);text-align:center}
+.dl-card header{display:flex;align-items:center;justify-content:space-between}.dl-card h3{margin:0;font:900 20px var(--serif)}
+.dl-sub{font-size:13px;color:#cbd6e6;margin:6px 0 12px}
+.dl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.dl-day{position:relative;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;min-height:86px;padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)}
+.dl-day small{font-size:11px;color:#cbd6e6}.dl-day b{font-size:13px;line-height:1.35}
+.dl-day i{font-style:normal;font-size:10.5px;padding:1px 8px;border-radius:99px;background:rgba(255,255,255,.12)}
+.dl-day.big{grid-column:span 1;background:linear-gradient(135deg,rgba(255,207,90,.25),rgba(255,120,80,.12));border-color:#ffcf5a}
+.dl-day.got{opacity:.55}.dl-day.got i{background:#2fae6a;color:#fff}
+.dl-day.now{border-color:#ffcf5a;box-shadow:0 0 16px rgba(255,207,90,.5);animation:dlPulse 1.4s ease-in-out infinite}.dl-day.now i{background:#e0304a;color:#fff}
+@keyframes dlPulse{50%{transform:translateY(-2px)}}
+@media (max-width:460px){.dl-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.arc-sweep{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(111,184,255,.1);border:1px solid rgba(111,184,255,.35);font-size:13px}
+.arc-sweep span{margin-right:auto}.arc-sweep b{color:#9fd4ff}
+.pity-note{display:block;font-size:12px;font-weight:600;color:#ffe7a8;margin-top:2px}
+
+/* 11. 道具插圖、七日登入圖示、掃蕩列 */
+img.ico-img{object-fit:contain;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.exp-row img.ico-img,.bagItem img.ico-img{width:48px;height:48px}
+.lb-login .lbl-ico{width:52px;height:52px;object-fit:contain;flex:0 0 auto;margin:-6px 0;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));animation:lblBob 2.4s ease-in-out infinite}
+@keyframes lblBob{50%{transform:translateY(-3px) rotate(-3deg)}}
+.arc-sweep .sw-ico{width:40px;height:30px;object-fit:contain;flex:0 0 auto}
+.arc-sweep span{display:flex;flex-direction:column;line-height:1.3}.arc-sweep small{font-size:11px;color:#cbd6e6}
+.arc-sweep button[disabled]{opacity:.45;cursor:not-allowed}
+.dl-hero{display:block;width:110px;height:110px;object-fit:contain;margin:-6px auto 2px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+
+/* 12. 公告吉祥物：摩甘茲 */
+.news-mascot{display:flex;align-items:center;gap:12px;margin:0 0 10px;padding:8px 12px;border-radius:14px;background:linear-gradient(90deg,rgba(255,238,200,.14),rgba(255,255,255,.03));border:1px solid rgba(232,193,112,.35)}
+.news-mascot img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #e8c170;flex:0 0 auto;animation:lblBob 3s ease-in-out infinite}
+.news-mascot p{margin:0;display:flex;flex-direction:column;gap:2px;font-size:13px}.news-mascot b{color:#ffe7a8}.news-mascot span{color:#dfe6ef}
+.rar.r-N,.c-rar.r-N{background:#8a96a4;color:#fff}
+
+/* 12. 大廳主按鈕：一整條金框（左深藍＝模式選擇、右金色＝關卡挑戰），點擊區域依斜邊切齊 */
+.lb-play{align-items:flex-end}
+.lbp-bar{position:relative;width:clamp(340px,34vw,520px);aspect-ratio:2118/395;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+.lbp-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.lbp-bar .lb-modes,.lbp-bar .lb-go{position:absolute;top:6%;bottom:6%;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;min-width:0;display:flex;flex-direction:column;justify-content:center;transition:filter .15s,transform .15s;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lbp-bar .lb-modes{left:4%;width:33.5%;clip-path:polygon(0 0,100% 0,80% 100%,0 100%);align-items:center;text-align:center;color:#f5f0e0;padding-right:5%}
+.lbp-bar .lb-go{left:31%;right:3.5%;clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);align-items:center;text-align:center;color:#2a1600;padding-left:6%;overflow:visible}
+.lbp-bar .lb-go::after{display:none}
+.lbp-bar .lb-modes span{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.lbp-bar .lb-modes b{font:900 clamp(14px,1.45vw,20px)/1.1 var(--serif);letter-spacing:.08em;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.lbp-bar .lb-modes small{font-size:clamp(9px,.72vw,11px);color:#c9d6ea;margin-top:3px;white-space:nowrap}
+.lbp-bar .lb-go b{font:900 clamp(20px,2.3vw,32px)/1.05 var(--serif);letter-spacing:.14em;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.lbp-bar .lb-go small{font-size:clamp(10px,.85vw,13px);font-weight:700;opacity:.85;margin-top:3px;white-space:nowrap}
+.lbp-bar .lb-modes:hover,.lbp-bar .lb-go:hover{filter:brightness(1.18)}
+.lbp-bar .lb-modes:active,.lbp-bar .lb-go:active{transform:scale(.97)}
+.lbp-bar .lb-modes:focus-visible,.lbp-bar .lb-go:focus-visible{outline:none;filter:brightness(1.3) drop-shadow(0 0 6px #fff)}
+@media (max-width:760px){
+  .lb-play{justify-content:center}
+  .lbp-bar{width:min(100%,520px)}
+  .lbp-bar .lb-modes small{display:none}
+  .lbp-bar .lb-modes b{font-size:clamp(13px,4vw,17px)}
+  .lbp-bar .lb-go b{font-size:clamp(18px,6vw,26px)}
+  .lbp-bar .lb-go small{font-size:clamp(9.5px,2.8vw,12px)}
+}
+.q-side{margin:6px 0 0;padding:6px 10px;border-radius:8px;background:rgba(160,110,255,.16);border:1px dashed rgba(190,150,255,.6);font-size:12.5px}.q-side em{font-style:normal;font-weight:800;color:#d8c2ff;margin-right:6px}
+/* 名牌抬高到主按鈕列上方，避免重疊 */
+@media (min-width:761px){.lb-plate{bottom:calc(100px + var(--safeB))!important}}
+/* 手機橫式、矮螢幕：精簡大廳 */
+@media (min-width:761px) and (max-height:540px){
+  #modeScreen .topbar{padding-top:calc(4px + var(--safeT));padding-bottom:4px}
+  .lb-left,.lb-right{top:calc(54px + var(--safeT));width:clamp(170px,22vw,220px);gap:6px}
+  .lb-news,.lb-team,.lb-backup{display:none!important}
+  .lb-login,.lb-bounty{padding:6px 10px}.lb-login .lbl-ico{width:34px;height:34px;margin:-4px 0}
+  .lb-event{aspect-ratio:2.4/1}.lb-tiles{gap:5px}.lb-tiles button{padding:5px 4px;flex-direction:row;justify-content:center;gap:5px}.lb-tiles i{font-size:15px}.lb-tiles b{font-size:11.5px}
+  .lb-dock{bottom:calc(8px + var(--safeB));gap:5px}.lb-dock button{width:50px;padding:4px 2px}.lb-dock i{font-size:15px}.lb-dock b{font-size:10.5px}
+  .lb-play{bottom:calc(8px + var(--safeB))}.lbp-bar{width:clamp(260px,34vw,340px)}
+  .lb-hero{height:84%}
+  .lb-plate{bottom:calc(74px + var(--safeB))!important;padding:3px 10px}.lb-plate b{font-size:16px}.lb-plate small{font-size:11px}
+}
+@media (min-width:761px) and (max-height:540px){.lbp-bar .lb-modes small{display:none}}
+
+/* 12. iOS 防縮放：奪寶大冒險全區禁止觸控縮放與長按選單；輸入框至少 16px，避免點選時自動放大 */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#runnerScreen,#runnerScreen *{touch-action:none!important;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#runnerScreen{overscroll-behavior:none}
+@media (max-width:860px){input,select,textarea{font-size:16px!important}}
