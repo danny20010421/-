@@ -282,9 +282,16 @@ async function executeAction(side, idx) {
 }
 /* 立繪視覺：--sc＝基礎大小 × 變身倍率，--mx＝是否鏡像；角色因技能變大（例如莫莉亞）時，整個戰場鏡頭後拉 */
 function applyVisual(f) { if (!battle || !f) return; if (f.baseScale == null) f.baseScale = f.scale || .9; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return;
-  const el = $('bF' + side); el.style.setProperty('--sc', (f.scale || .9) * (f.battleScale || 1) * (f.visMul || 1)); el.style.setProperty('--mx', f.mirror ? -1 : 1); el.classList.toggle('huge', (f.visMul || 1) > 1.3);
-  const g = Math.max(...[battle.player, battle.enemy].filter(Boolean).map(x => (x.scale || .9) / (x.baseScale || x.scale || .9)));
-  $('bArena').style.setProperty('--cam', Math.max(.55, Math.min(1, 1 / (1 + (g - 1) * .75)))); }
+  const el = $('bF' + side); el.style.setProperty('--sc', (f.scale || .9) * (f.battleScale || 1) * (f.visMul || 1)); /* 面向：立繪的頭與眼神朝左（faceLeft）就鏡像，讓角色面對敵人；變身圖可再指定 mirror */
+  el.style.setProperty('--mx', (f.faceLeft ? -1 : 1) * (f.mirror ? -1 : 1)); el.classList.toggle('huge', (f.visMul || 1) > 1.3);
+  updateCamera(); }
+/* 鏡頭：依雙方立繪的視覺大小自動拉遠，並把兩人的站位拉開，避免貼在一起 */
+function updateCamera() { if (!battle) return; const vs = x => x ? ((x.scale || .9) * (x.battleScale || 1) * (x.visMul || 1)) / .9 : 1;
+  const big = Math.max(vs(battle.player), vs(battle.enemy)), cam = big <= 1.12 ? 1 : Math.max(.5, Math.min(1, 1.08 / Math.pow(big, .85)));
+  const A = $('bArena'), ar = A.getBoundingClientRect(), sk = $('bSkills'), panel = sk ? (sk.closest('.b-cmd') || sk).getBoundingClientRect() : null;
+  /* 以「地面」（下方操作面板的上緣）為中心拉遠，角色縮小後仍站在看得見的地面上 */
+  if (panel && ar.height) A.style.transformOrigin = `50% ${Math.max(0, Math.min(ar.height, panel.top - ar.top)).toFixed(0)}px`;
+  A.style.setProperty('--cam', cam.toFixed(3)); A.style.setProperty('--spread', ((1 - cam) / .5).toFixed(3)); }
 function refreshFighterImage(f) { applyVisual(f); if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
 function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }
 function checkBattleEnd() {
