@@ -79,6 +79,7 @@
   };
   const RGLOW = { N: '#9fb3c4', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a' };
   window.itemIcon = function (it) {
+    if (it.img) return `<img class="ico ico2 ico-img r-${it.rarity}" src="${it.img}" alt="" draggable="false">`; /* 有專屬插圖的道具直接用圖片 */
     const id = 'ic' + (uid++), fn = DRAW[it.icon] || DRAW.potion;
     return `<svg class="ico ico2 r-${it.rarity}" viewBox="0 0 64 64" style="--g:${RGLOW[it.rarity] || '#9fb3c4'}" aria-hidden="true">${fn(it.color || '#6fd08c', it.rarity, id)}</svg>`;
   };

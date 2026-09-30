@@ -7,7 +7,9 @@
   function collect() {
     const L = [], seen = new Set();
     const push = (u, group) => { if (!u || u.startsWith('data:')) return; const abs = new URL(u, location.href).href; if (seen.has(abs)) return; seen.add(abs); L.push({ url: abs, group }); };
-    try { Object.values(CHARACTERS).forEach(c => { push(c.image, '角色立繪'); push(c.avatar, '角色頭像'); if (c.ultimateBg) push(c.ultimateBg, '角色立繪'); }); } catch (e) { }
+    /* 效能：只預先下載「已擁有角色」的立繪；其他角色只先下載小頭像，立繪等到需要時才載入 */
+    let own = []; try { const d = JSON.parse(localStorage.getItem(SAVE.key) || 'null'); own = Object.keys((d && d.roster) || {}); } catch (e) { }
+    try { Object.values(CHARACTERS).forEach(c => { push(c.avatar, '角色頭像'); if (own.includes(c.id)) { push(c.image, '角色立繪'); if (c.ultimateBg) push(c.ultimateBg, '角色立繪'); } }); } catch (e) { }
     try { CHAPTERS.forEach(c => push(c.art, '篇章封面')); } catch (e) { }
     try { Object.values(SKINS).forEach(s => { push(s.image, '角色皮膚'); push(s.avatar, '角色皮膚'); }); } catch (e) { }
     for (const sh of document.styleSheets) { let rules; try { rules = sh.cssRules; } catch (e) { continue; } const base = sh.href || location.href;

@@ -7,12 +7,12 @@
 
   function renderLobby() {
     if (!$('lobby')) return;
-    const d = SAVE.data, pid = d.player && CHARACTERS[d.player] ? d.player : (d.lineup || [])[0] || CHARACTER_ORDER[0], c = CHARACTERS[pid], r = rarOf(pid);
+    const d = SAVE.data, pid = [(d.lineup || [])[0], d.player].find(x => x && CHARACTERS[x] && owned(x)) || CHARACTER_ORDER[0], c = CHARACTERS[pid], r = rarOf(pid);
     /* 背景：目前進行中的島嶼 */
     const ch = nextChapter() || CHAPTERS[CHAPTERS.length - 1];
     if (!$('lbBg').getAttribute('src')) $('lbBg').src = 'assets/ui/lobby_bg.webp?v=43';
     /* 中央船長 */
-    const hero = $('lbHeroImg'); if (hero.dataset.id !== pid) { hero.dataset.id = pid; hero.classList.remove('in'); hero.src = c.image; hero.onload = () => hero.classList.add('in'); }
+    const hero = $('lbHeroImg'); if (hero.dataset.id !== pid) { hero.dataset.id = pid; hero.classList.remove('in'); hero.onload = () => hero.classList.add('in'); hero.src = c.image; if (hero.complete && hero.naturalWidth) requestAnimationFrame(() => hero.classList.add('in')); }
     $('lobby').style.setProperty('--hero', (typeof RAR_COLOR !== 'undefined' && RAR_COLOR[r]) || '#ffcf5a');
     $('lbPlate').innerHTML = `<span class="rar c-rar r-${r}">${r}</span><b>${c.name}</b><small>${c.title || ''}・LV ${crewLv(pid)}</small><span class="lbp-types">${c.types.map(t => `<i style="--tc:${TYPE_COLORS[t] || '#999'}">${t}</i>`).join('')}</span><button class="lbp-swap" id="lbSwap">更換船長</button>`;
     $('lbSwap').onclick = () => openCrew('crew');
@@ -25,8 +25,9 @@
     if (typeof bounties === 'function') { const B = bounties(), done = B.filter(b => b.prog >= b.goal).length; $('lbBountyTxt').textContent = `${done}/${B.length} 完成`; $('lbBountyBar').style.width = (B.length ? done / B.length * 100 : 0) + '%'; $('lbBounty').classList.toggle('has-dot', B.some(b => b.prog >= b.goal && !b.claimed)); }
     /* 主要按鈕：下一座島 */
     const st = ch && d.chapters[ch.id];
-    $('lbGoSub').textContent = nextChapter() ? `${ch.name}・任務 ${Math.min(st ? st.step : 0, ch.steps.length)}/${ch.steps.length}` : '八座島嶼已全數通關';
+    $('lbGoSub').textContent = nextChapter() ? `${ch.name}・任務 ${Math.min(st ? st.step : 0, ch.steps.length)}/${ch.steps.length}` : `${CHAPTERS.length} 座島嶼已全數通關`;
     renderEvent();
+    const L = SAVE.data.login || { day: 0 }, lc = typeof loginClaimable === 'function' && loginClaimable(); $('lbLoginTxt').textContent = lc ? `第 ${L.day + 1} 天獎勵可領取` : `今天已領取・明天第 ${(L.day % 7) + 1} 天`; $('lbLogin').classList.toggle('has-dot', !!lc);
     if (!evTimer) evTimer = setInterval(() => { if (currentScreen === 'modeScreen' && (typeof EVENT_POOLS !== 'undefined') && EVENT_POOLS.length > 1) { evIdx = (evIdx + 1) % EVENT_POOLS.length; renderEvent(true); } }, 5000);
   }
   function renderEvent(anim) {
@@ -43,6 +44,8 @@
     treasure: () => openTreasure(), bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
   };
 
+  /* 跨過午夜時，大廳的懸賞進度自動換成新的一天 */
+  let lastDay = null; setInterval(() => { const d = typeof today === 'function' ? today() : ''; if (lastDay && d !== lastDay && currentScreen === 'modeScreen') renderLobby(); lastDay = d; }, 30000);
   window.renderLobby = renderLobby;
   window.addEventListener('DOMContentLoaded', () => {
     if (!$('lobby')) return;
@@ -60,6 +63,8 @@
     /* 每次回到大廳時更新 */
     /* 關閉船員／背包等視窗後，大廳立即反映變更（例如更換船長） */
     const cm = window.closeModal; if (typeof cm === 'function') window.closeModal = function () { const r = cm.apply(this, arguments); if (currentScreen === 'modeScreen') renderLobby(); return r; };
+    /* 存檔一有變動（更換先鋒、上下陣、升級）就立即更新大廳 */
+    let rq = 0; const sv = SAVE.save.bind(SAVE); SAVE.save = function () { const r = sv.apply(this, arguments); if (currentScreen === 'modeScreen' && !rq) rq = requestAnimationFrame(() => { rq = 0; renderLobby(); }); return r; };
     const om = window.openModes; if (om) window.openModes = function () { const r = om.apply(this, arguments); renderLobby(); return r; };
   });
 })();

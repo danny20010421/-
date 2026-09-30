@@ -227,6 +227,9 @@
       window.addEventListener('keydown', e => { if (currentScreen !== 'runnerScreen' || e.repeat) return; const k = e.key.toLowerCase(); if (k === 'arrowleft' || k === 'a') { e.preventDefault(); stroke('L'); } if (k === 'arrowright' || k === 'd') { e.preventDefault(); stroke('R'); } });
       const tap = (el, s) => el.addEventListener('pointerdown', e => { e.preventDefault(); stroke(s); });
       tap($('rnL'), 'L'); tap($('rnR'), 'R');
+      /* iOS：快速連點會被 Safari 當成「雙擊放大」，這裡直接擋掉觸控的預設行為（不影響划槳判定） */
+      [$('rnL'), $('rnR'), cv].forEach(el => { el.addEventListener('touchstart', e => e.preventDefault(), { passive: false }); el.addEventListener('touchend', e => e.preventDefault(), { passive: false }); });
+      $('runnerScreen').addEventListener('touchmove', e => { if (e.touches.length > 1 || e.target === cv) e.preventDefault(); }, { passive: false });
       cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); stroke(e.clientX - r.left < r.width / 2 ? 'L' : 'R'); });
       $('rnBack').onclick = () => { if (G && G.started && !G.over) { confirmBox('結束航行？', '這次航行的距離與金幣會照常結算。', '結束', () => end()); } else openModes(); };
     }

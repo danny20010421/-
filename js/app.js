@@ -8,6 +8,8 @@ const SAVE = {
   data: null,
   load() {
     let d = null; try { d = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { }
+    /* 主存檔讀不出來時，改用自動備份 */
+    if (!d) { try { d = JSON.parse(localStorage.getItem(this.key + '_backup') || 'null'); if (d) setTimeout(() => { if (typeof toast === 'function') toast('主存檔損毀，已從自動備份還原', 'gold'); }, 1500); } catch (e) { } }
     if (!d) d = { tokens: GAME_SETTINGS.startTokens, inventory: { potion_s: 2, pp_s: 1 }, chapters: {}, player: 'luffy', pulls: 0, pity: 0 };
     CHAPTERS.forEach(c => { d.chapters[c.id] = Object.assign({ step: 0, collected: [], defeated: [], talked: [], roster: null, cleared: false, rewarded: [] }, d.chapters[c.id] || {}); if (d.chapters[c.id].step > c.steps.length) d.chapters[c.id].step = c.steps.length; });
     d.berry = d.berry || 0; d.roster = d.roster || {}; if (!Array.isArray(d.lineup)) d.lineup = d.player && d.roster[d.player] ? [d.player] : []; d.lineup = d.lineup.filter(id => d.roster[id]).slice(0, GAME_SETTINGS.lineupMax); if (d.lineup.length) d.player = d.lineup[0]; d.inventory = d.inventory || {};
@@ -15,9 +17,21 @@ const SAVE = {
     if (d.player && !d.roster[d.player]) d.player = Object.keys(d.roster)[0] || 'luffy';
     this.data = d; return d;
   },
-  save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { } }
+  save() {
+    try { const s = JSON.stringify(this.data); localStorage.setItem(this.key, s); this._fail = 0;
+      /* 每 10 分鐘在另一個位置留一份備份，主存檔損毀時可從備份還原 */
+      const now = Date.now(); if (!this._bk || now - this._bk > 600000) { this._bk = now; localStorage.setItem(this.key + '_backup', s); localStorage.setItem(this.key + '_backup_at', String(now)); }
+    } catch (e) { if (!this._fail) { this._fail = 1; setTimeout(() => { if (typeof toast === 'function') toast('⚠ 存檔失敗：瀏覽器儲存空間不足或被封鎖，請到選單匯出存檔備份', 'red'); }, 0); } }
+  }
 };
 const DAILY_KEY = 'op_rpg_daily_characters_v1';
+/* 管理後台：輸入密碼才能開啟（本次開啟遊戲期間只需輸入一次） */
+let adminOk = false;
+function adminGate() {
+  if (adminOk) { openAdmin(); return; }
+  const v = prompt('請輸入管理後台密碼'); if (v === null) return;
+  if (v.trim() === ['0', '4', '2', '1'].join('')) { adminOk = true; openAdmin(); } else toast('密碼錯誤');
+}
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
 /* ---------- 共用 UI ---------- */
@@ -69,7 +83,7 @@ const ICONS = {
   book: '<rect x="14" y="10" width="36" height="44" rx="3" fill="var(--c)"/><rect x="18" y="10" width="4" height="44" fill="#000" opacity=".25"/><rect x="26" y="20" width="18" height="4" rx="2" fill="#fff" opacity=".7"/><rect x="26" y="28" width="14" height="3" rx="1.5" fill="#fff" opacity=".5"/><path d="M32 38l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1z" fill="#ffe7a0"/>',
   feather: '<path d="M46 8C28 12 16 30 18 52l6-4c2-18 10-30 22-40z" fill="var(--c)"/><path d="M18 52L40 18" stroke="#b8433a" stroke-width="2"/><path d="M22 40l-6-2M26 32l-8-4M30 25l-6-5" stroke="#fff" stroke-width="2" opacity=".5"/>'
 };
-function itemIcon(it) { return `<svg class="ico" viewBox="0 0 64 64" style="--c:${it.color}">${ICONS[it.icon] || ICONS.potion}</svg>`; }
+function itemIcon(it) { if (it.img) return `<img class="ico ico-img" src="${it.img}" alt="" draggable="false">`; return `<svg class="ico" viewBox="0 0 64 64" style="--c:${it.color}">${ICONS[it.icon] || ICONS.potion}</svg>`; }
 
 /* ---------- 登入與公告 ---------- */
 const NEWS_KEY = 'op_rpg_news_v2';
@@ -112,8 +126,11 @@ function crewLv(id) { return owned(id) ? SAVE.data.roster[id].lv : 1; }
 function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); if (window.checkTitles) setTimeout(() => checkTitles(false), 1200); return true; }
 /* 圖鑑套組：已集滿的套組與全隊加成（各項合計上限 SET_BONUS_CAP %） */
 function setsDone() { return (typeof COLLECTION_SETS !== 'undefined' ? COLLECTION_SETS : []).filter(S => S.members.every(owned)); }
-function setBonus() { const b = { hp: 0, atk: 0, def: 0, spd: 0 }; setsDone().forEach(S => Object.entries(S.bonus).forEach(([k, v]) => { b[k] = Math.min(SET_BONUS_CAP, (b[k] || 0) + v); })); return b; }
-function applySetBonus(f) { const b = setBonus(); if (b.hp) { f.maxHp = Math.round(f.maxHp * (1 + b.hp / 100)); f.hp = f.maxHp; } if (b.atk) f.dmgMul = (f.dmgMul || 1) * (1 + b.atk / 100); if (b.def) f.def = Math.round((f.def || 0) * (1 + b.def / 100)); if (b.spd) f.baseSpeed = Math.round(f.baseSpeed * (1 + b.spd / 100)); return f; }
+/* 已開通的羈絆中，出戰陣容有 need 位以上成員者才生效 */
+const setNeed = S => Math.min(S.need || S.members.length, S.members.length);
+function setsActive(team) { team = team || SAVE.data.lineup || []; return setsDone().filter(S => S.members.filter(id => team.includes(id)).length >= setNeed(S)); }
+function setBonus(team) { const b = { hp: 0, atk: 0, def: 0, spd: 0 }; setsActive(team).forEach(S => Object.entries(S.bonus).forEach(([k, v]) => { b[k] = Math.min(SET_BONUS_CAP, (b[k] || 0) + v); })); return b; }
+function applySetBonus(f, team) { const b = setBonus(team); if (b.hp) { f.maxHp = Math.round(f.maxHp * (1 + b.hp / 100)); f.hp = f.maxHp; } if (b.atk) f.dmgMul = (f.dmgMul || 1) * (1 + b.atk / 100); if (b.def) f.def = Math.round((f.def || 0) * (1 + b.def / 100)); if (b.spd) f.baseSpeed = Math.round(f.baseSpeed * (1 + b.spd / 100)); return f; }
 /* 增加經驗，回傳升級資訊 */
 /* noShare：經驗書、海軍本部傳承只給指定角色；戰鬥與任務則分享給未上陣的船員 */
 function gainExp(id, n, silent, noShare) {
@@ -210,7 +227,8 @@ function loginInfo() { if (window.refreshAvatar) refreshAvatar(); const d = SAVE
 function startGame() { if (!Object.keys(SAVE.data.roster).length) openStarter(); else openModes(); }
 
 /* ---------- 篇章海圖 ---------- */
-const NODE_POS_WIDE = [[8, 74], [20, 40], [32, 72], [44, 34], [56, 68], [68, 30], [80, 64], [92, 32]], NODE_POS_TALL = [[28, 94], [72, 81.5], [28, 69], [72, 56.5], [28, 44], [72, 31.5], [28, 19], [72, 6.5]];
+/* 海圖節點：依篇章數量自動排列 */
+const NODE_POS_WIDE = CHAPTERS.map((_, i, a) => [7 + i * 86 / Math.max(1, a.length - 1), i % 2 ? 36 : 72]), NODE_POS_TALL = CHAPTERS.map((_, i, a) => [i % 2 ? 72 : 28, 94 - i * 88 / Math.max(1, a.length - 1)]);
 let NODE_POS = NODE_POS_WIDE;
 let selChapter = null;
 function chapterUnlocked(i) { if (i === 0 || GAME_SETTINGS.unlockAll) return true; const own = SAVE.data.chapters[CHAPTERS[i].id]; if (own && (own.cleared || own.step > 0)) return true; /* 篇章順序調整後，已玩過的篇章仍可進入 */ const pc = CHAPTERS[i - 1], ps = SAVE.data.chapters[pc.id]; return ps.cleared || (!pc.boss && ps.step >= pc.steps.length - 1); }
@@ -243,9 +261,10 @@ function selectChapter(id) {
       ${c.rhythm ? `<p class="arc-rhythm">${c.rhythm}</p>` : ''}
       <div class="arc-boss">${boss ? `<img src="${boss.avatar}" alt="">` : '<span class="boss-unk" aria-hidden="true">?</span>'}<div><small>篇章 BOSS・LV ${ENEMY_LEVEL[id] + BOSS_LEVEL_BONUS}</small><b>${c.bossTitle}</b></div><span class="arc-lv">敵人 LV ${ENEMY_LEVEL[id]}</span></div>
       <div class="arc-prog"><div class="bar"><i style="width:${done / total * 100}%"></i></div><span>${un ? (st.cleared ? '已完成' : `任務 ${done}/${total}：${next}`) : `完成「${CHAPTERS[i - 1].name}」後解鎖`}</span></div>
-      <div class="arc-actions">${un ? `<button class="btn-primary big" id="sailBtn">${st.cleared ? '再次登島' : st.step ? '繼續冒險' : '出航'}</button>${st.cleared ? '<button class="btn-ghost" id="replayBtn">重玩劇情</button>' : ''}` : '<button class="btn-primary big" disabled>尚未解鎖</button>'}</div>
+      <div class="arc-actions">${un ? `<button class="btn-primary big" id="sailBtn">${st.cleared ? '再次登島' : st.step ? '繼續冒險' : '出航'}</button>${st.cleared ? '<button class="btn-ghost" id="replayBtn">重玩劇情</button>' : ''}${st.cleared ? (() => { const n = typeof sweepCost === 'function' ? sweepCost(id) : 1, h = (SAVE.data.inventory || {}).sweep || 0; return `<div class="arc-sweep"><img src="${ITEMS.sweep.img}" alt="" class="sw-ico"><span>掃蕩卷 <b>${h}</b><small>本篇 ${n} 場戰鬥，掃蕩一次需要 ${n} 張</small></span><button class="btn-gold sm" data-sweep="1" ${h < n ? 'disabled' : ''}>掃蕩 1 次</button><button class="btn-ghost sm" data-sweep="3" ${h < n * 3 ? 'disabled' : ''}>掃蕩 3 次</button></div>`; })() : ''}` : '<button class="btn-primary big" disabled>尚未解鎖</button>'}</div>
     </div>`;
   const sail = $('sailBtn'); if (sail) sail.onclick = () => enterChapter(id);
+  document.querySelectorAll('#arcCard [data-sweep]').forEach(b => b.onclick = () => sweepChapter(id, +b.dataset.sweep));
   const rp = $('replayBtn'); if (rp) rp.onclick = () => confirmBox('重玩劇情？', '任務進度會從頭開始，敵人重新出現。已領過的寶藏幣不會重複發放。', '重玩', () => { Object.assign(st, { step: 0, collected: [], defeated: [], talked: [], roster: null }); SAVE.save(); enterChapter(id); });
   const card = $('arcCard'); card.classList.remove('swap'); void card.offsetWidth; card.classList.add('swap');
 }
@@ -255,9 +274,10 @@ let WORLD = null, CH = null, TIMED = null, CHAIN = null;
 const ENEMY_SPOTS = [[-32, -24], [30, -30], [-8, -18], [-46, 22], [44, 18]];
 const SPOTS = () => (CH && CH.layout && CH.layout.spots) || ENEMY_SPOTS;
 /* v41 新增任務後的存檔轉換：已經走過插入點的進度往後移，已通關的篇章維持完成狀態 */
-const STEP_INSERTS = { enies: { after: 4, n: 1 }, wano: { after: 6, n: 2 } };
-function chState() { const st = SAVE.data.chapters[CH.id], m = STEP_INSERTS[CH.id];
+const STEP_INSERTS = { enies: { after: 4, n: 1 }, wano: { after: 6, n: 2 } }, STEP_INSERTS49 = { east: { after: 5, n: 3 }, dark: { after: 6, n: 1 } };
+function chState() { const st = SAVE.data.chapters[CH.id], m = STEP_INSERTS[CH.id], m2 = STEP_INSERTS49[CH.id];
   if (st && m && !st.v41) { st.v41 = true; if (st.cleared) st.step = Math.max(st.step, CH.steps.length); else if (st.step > m.after) st.step += m.n; SAVE.save(); }
+  if (st && m2 && !st.v49) { st.v49 = true; if (st.cleared) st.step = Math.max(st.step, CH.steps.length); else if (st.step > m2.after) st.step += m2.n; SAVE.save(); }
   return st; }
 function curStep() { const st = chState(); return st.cleared && st.step >= CH.steps.length ? null : CH.steps[Math.min(st.step, CH.steps.length - 1)]; }
 /* 敵人等級：開啟等級同步時，陣容太強會讓敵人跟著變強 */
@@ -265,7 +285,7 @@ function enemyLvFor(boss) { const up = boss ? ((CHAPTER_DIFFICULTY[CH.id] || {})
 let RACE = null, ESC = false;
 function treasurePiece() { return (typeof TREASURE !== 'undefined') ? TREASURE.pieces.find(p => p.chapter === CH.id) : null; }
 function treasureFound() { SAVE.data.treasure = SAVE.data.treasure || { found: [], done: false }; return SAVE.data.treasure.found; }
-function huntActive() { const tp = treasurePiece(), st = chState(); return !!(tp && st.cleared && st.step >= CH.steps.length && !treasureFound().includes(tp.chapter)); }
+function huntActive() { return false; /* v45：歷史本文改在寶藏日誌裡「解讀石碑」取得 */ }
 function digKey() { const s = curStep(); if (s && s.type === 'dig') return CH.id + ':step' + chState().step; if (huntActive()) return CH.id + ':treasure'; return null; }
 function digInfo() { const s = curStep(); if (s && s.type === 'dig') return { center: s.area, radius: s.radius || 20 }; const tp = treasurePiece(); return tp ? { center: tp.center, radius: tp.radius || 22 } : null; }
 /* 藏寶點：第一次需要時才決定，避開建築與海面 */
@@ -309,7 +329,7 @@ function worldState() {
   const bossUnlocked = st.cleared || CH.steps.slice(0, st.step).some(s => s.unlockBoss);
   let target = null, beacon = null, guards = [], escort = null;
   if (step) {
-    if ((step.type === 'talk' || step.type === 'choice') && step.npc) target = { type: 'npc', ids: [step.npc] };
+    if ((step.type === 'talk' || step.type === 'choice' || step.type === 'duel') && step.npc) target = { type: 'npc', ids: [step.npc] };
     if (step.type === 'talkAll') target = { type: 'npc', ids: step.npcs.filter(id => !st.talked.includes(id)) };
     if (step.type === 'boss') target = { type: 'boss' };
     if (step.type === 'goto') { beacon = { x: step.pos[0], z: step.pos[1], r: step.r || 7, label: step.label }; target = { type: 'goto' }; }
@@ -375,7 +395,7 @@ function renderQuest() {
   if (s.type === 'race') prog = `<span class="q-count">${RACE ? RACE.idx : 0}/${s.points.length}</span>`;
   if (s.type === 'escort') prog = `<span class="q-count">${ESC ? '護送中' : '尚未開始'}</span>`;
   const timer = s.type === 'timedCollect' ? `<b class="q-timer">${Math.ceil(TIMED ? TIMED.left : s.seconds)} 秒</b>` : s.type === 'race' ? `<b class="q-timer">${Math.ceil(RACE ? RACE.left : s.seconds)} 秒</b>` : '';
-  const kind = { talk: '對話', talkAll: '打聽', goto: '前往', collect: '收集', timedCollect: '限時', defeat: '擊敗', gauntlet: '連戰', choice: '抉擇', boss: 'BOSS', race: '限時', stealth: '潛入', escort: '護送', dig: '探測', keys: '奪鑰' }[s.type];
+  const kind = { talk: '對話', talkAll: '打聽', goto: '前往', collect: '收集', timedCollect: '限時', defeat: '擊敗', gauntlet: '連戰', choice: '抉擇', boss: 'BOSS', race: '限時', stealth: '潛入', escort: '護送', dig: '探測', keys: '奪鑰', duel: '對決' }[s.type];
   $('questBox').innerHTML = `<h3><span><em class="q-kind k-${s.type}">${kind}</em>任務 ${st.step + 1}/${total}</span>${s.title}</h3><p>${s.desc} ${prog}</p>${timer}${s.type === 'dig' ? detector : ''}<div class="q-foot">${chestTag()}${s.reward ? `<small class="q-rew"><i class="coin-ico"></i>×${s.reward}</small>` : ''}${s.type !== 'dig' ? '<button class="q-go" id="qGo">➤ 自動前往</button>' : ''}</div>`;
   const q = $('questBox'); q.classList.remove('flash'); void q.offsetWidth; q.classList.add('flash');
   bindQuestMini();
@@ -437,14 +457,19 @@ function runChoice(s) {
   const ask = () => { const q = s.questions[qi]; say([[who, q.q]], null, q.options.map(o => ({ label: o.label, fn: () => { if (o.correct) { SFX.play('pickup'); say([[who, q.right]], () => { qi++; if (qi < s.questions.length) ask(); else if (s.after && s.after.length) say(s.after, completeStep); else completeStep(); }); } else { SFX.play('miss'); say([[who, q.wrong]], ask); } } }))); };
   if (s.lines && s.lines.length) say(s.lines, ask); else ask();
 }
+/* ===== 支線任務（chapter.sides）：主線走到指定任務之後，找指定 NPC 就能開始；完成一次後獎勵不再重複 ===== */
+let SIDE = null;
+function sideFor(npcId) { const st = chState(); return (CH.sides || []).find(S => (!npcId || S.npc === npcId) && !(st.sides || {})[S.id] && (st.cleared || CH.steps.findIndex(x => x.title === S.after) < st.step)); }
 function onInteract(n) {
   if (n.kind === 'chest') { openChest(n); return; }
   if (dialogOpen) return;
   const st = chState(), s = curStep();
+  { const S = sideFor(n.id); if (S && !(s && s.npc === n.id)) { say(S.ask || [], null, [{ label: `聽他說（${S.title}）`, fn: () => say(S.lines || [], () => { SIDE = S; beginFight({ id: S.enemy, boss: false, kind: 'enemy', duel: true }); }) }, { label: '下次再說', fn: () => { } }]); return; } }
   if (n.kind === 'npc') {
     if (s && s.type === 'escort' && s.npc === n.id && !ESC) { say(s.startLines || [], () => { ESC = true; refreshWorld(); toast(`護送開始：帶${n.name}到「${s.label}」`, 'gold'); }); return; }
     if (s && s.type === 'talk' && s.npc === n.id) { say(s.lines, completeStep); return; }
     if (s && s.type === 'choice' && s.npc === n.id) { runChoice(s); return; }
+    if (s && s.type === 'duel' && s.npc === n.id) { say(s.lines || [], () => beginFight({ id: s.enemy, boss: false, kind: 'enemy', duel: true })); return; }
     if (s && s.type === 'talkAll' && s.npcs.includes(n.id) && !st.talked.includes(n.id)) {
       say(s.lines[n.id], () => { st.talked.push(n.id); SAVE.save(); SFX.play('pickup'); if (s.npcs.every(id => st.talked.includes(id))) completeStep(); else { refreshWorld(); toast(`已打聽 ${s.npcs.filter(id => st.talked.includes(id)).length}/${s.npcs.length}`); } });
       return;
@@ -473,6 +498,9 @@ function onBattleEnd(r) {
   const st = chState(), s = curStep(), msgs = [];
   if (r.win) { track('wins'); if (r.isBoss) track('bossWins'); }
   if (r.win) { const elv = enemyLvFor(r.isBoss), amt = Math.round((30 + elv * 6) * (r.isBoss ? 3 : 1)), lead = SAVE.data.lineup[0] || SAVE.data.player; const ex = gainExp(lead, amt); SAVE.data.lineup.filter(id => id !== lead).forEach(id => gainExp(id, Math.round(amt * (1 - GAME_SETTINGS.shareExp)), true)); if (ex) msgs.push(expText(ex) + (SAVE.data.lineup.length > 1 ? '（陣容全員）' : '')); const bry = Math.round((40 + elv * 8) * (r.isBoss ? 4 : 1)); addBerry(bry); msgs.push(`貝里 +${bry.toLocaleString()}`); }
+  if (SIDE) { const S = SIDE; SIDE = null;
+    if (!r.win) return { message: `${S.title} 失敗了……整理好狀態，再去找他聽一次吧。` };
+    if (r.enemyId === S.enemy) { st.sides = st.sides || {}; const first = !st.sides[S.id]; st.sides[S.id] = true; if (first) { addTokens(S.reward || 0, S.title); addBerry(S.berry || 0); } SAVE.save(); renderQuest(); if (S.win) setTimeout(() => say(S.win), 900); msgs.push(`📜 ${S.title} 完成！${first ? `寶藏幣 +${S.reward || 0}、貝里 +${(S.berry || 0).toLocaleString()}` : ''}`); return { message: msgs.join('<br>') }; } }
   if (s && s.type === 'gauntlet' && !r.isBoss && CHAIN) {
     if (!r.win) { CHAIN = null; renderQuest(); return { message: '連戰中斷了。整理好狀態，再從第一場開始。' }; }
     CHAIN.wins.push(r.enemyId);
@@ -489,6 +517,7 @@ function onBattleEnd(r) {
   if (r.isBoss) {
     if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward === CH.id && !owned(cid)) { addCrew(cid, 10); msgs.push(`<b>${CHARACTERS[cid].name}</b> 加入了角色背包！（LV 10）`); } }); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = first ? (ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst) : (ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat), again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
+    if (s && s.type === 'duel' && r.enemyId === s.enemy) { const b = SAVE.data.tokens; completeStep(); msgs.push(`⚔ 對決勝利！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); if (s.joins && !owned(s.joins)) { addCrew(s.joins, s.joinLv || 20); msgs.push(`<b>${CHARACTERS[s.joins].name}</b> 加入了你的船隊！`); } if (s.after) setTimeout(() => say(s.after), 900); return { message: msgs.join('<br>') }; }
     if (!st.defeated.includes(r.enemyId)) st.defeated.push(r.enemyId); SAVE.save();
     if (s && s.type === 'keys') { st.keys = (st.keys || 0) + 1; SAVE.save(); if (st.keys >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`🔑 集齊 ${s.count} 把${s.item || '鑰匙'}！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); if (s.lines) setTimeout(() => say(s.lines.slice(-1)), 900); } else msgs.push(`🔑 搶到第 ${st.keys} 把${s.item || '鑰匙'}！（${st.keys}/${s.count}）`); }
     if (s && s.type === 'defeat') { if (st.defeated.length >= s.count) { const b = SAVE.data.tokens; completeStep(); msgs.push(`任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); } else msgs.push(`任務進度：${st.defeated.length}/${s.count}`); }
@@ -539,7 +568,7 @@ function hideDialog() { setDialogMin(false); dialogOpen = false; $('dialog').cla
 let gachaReturn = 'chapterScreen', gachaBusy = false;
 function openGacha(ret) {
   gachaReturn = typeof ret === 'string' ? ret : currentScreen === 'gachaScreen' ? gachaReturn : currentScreen; coins();
-  $('rateTable').innerHTML = '<caption>出現機率</caption>' + `<tr><th><span class="rar c-rar r-CHAR">船員</span></th><td>${+(GAME_SETTINGS.charRate * 100).toFixed(1)}%</td><td>UR ${CHAR_RATE_BY_RARITY.UR * 100}%・SSR ${CHAR_RATE_BY_RARITY.SSR * 100}%・SR ${CHAR_RATE_BY_RARITY.SR * 100}%（LV ${GACHA_CHAR_LV} 加入；重複可到海軍本部換貝里）</td></tr>` + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * (1 - GACHA_CHAR_RATE) * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join('');
+  $('rateTable').innerHTML = '<caption>出現機率</caption>' + `<tr><th><span class="rar c-rar r-CHAR">船員</span></th><td>${+(GAME_SETTINGS.charRate * 100).toFixed(1)}%</td><td>UR ${CHAR_RATE_BY_RARITY.UR * 100}%・SSR ${CHAR_RATE_BY_RARITY.SSR * 100}%・SR ${CHAR_RATE_BY_RARITY.SR * 100}%（LV ${GACHA_CHAR_LV} 加入；重複可到海軍本部換貝里）</td></tr>` + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * (1 - GACHA_CHAR_RATE) * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join(''); pityCaption();
   const caps = $('mCaps'); if (!caps.children.length) { const cols = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#f4f7f2']; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; let placed = 0, guard = 0; while (placed < 30 && guard++ < 4000) { const x = 8 + rnd() * 84, y = 40 + rnd() * 52; if (Math.hypot(x - 50, y - 50) > 40) continue; const s = document.createElement('i'); s.style.cssText = `--c:${cols[placed % cols.length]};left:${x - 7}%;top:${y - 7}%;--r:${Math.round(rnd() * 360)}deg;z-index:${Math.round(y)}`; caps.appendChild(s); placed++; } }
   updateGachaBtns(); showScreen('gachaScreen'); if (typeof switchHub === 'function') switchHub('summon');
 }
@@ -557,9 +586,14 @@ const gachaChars = () => CHARACTER_ORDER.filter(id => !NOT_IN_GACHA(id));
 const DUP_EXP = 6000;
 /* 船員出率（總和＝GACHA_CHAR_RATE）依稀有度加權；R 級（初始船員）不進召喚池 */
 const CHAR_RATE_BY_RARITY = { UR: 0.003, SSR: 0.009, SR: 0.018 };
-function rollChar() { const tot = Object.values(CHAR_RATE_BY_RARITY).reduce((a, b) => a + b, 0); let r = Math.random() * tot;
-  for (const k of ['UR', 'SSR', 'SR']) { r -= CHAR_RATE_BY_RARITY[k]; if (r < 0) { const pool = gachaChars().filter(id => CHAR_RARITY[id] === k); if (pool.length) return pool[Math.floor(Math.random() * pool.length)]; } }
-  const pool = gachaChars().filter(id => CHAR_RARITY[id] !== 'R'); return pool[Math.floor(Math.random() * pool.length)]; }
+/* 抽到角色時：先依稀有度決定等級，再以 60% 機率從「已擁有」中抽（重複角色，可到海軍本部賣），40% 從「尚未擁有」中抽；
+   某一邊沒有角色時自動改抽另一邊 */
+const CHAR_DUP_RATE = 0.6;
+function rollChar() { const tot = Object.values(CHAR_RATE_BY_RARITY).reduce((a, b) => a + b, 0); let r = Math.random() * tot, tier = null;
+  for (const k of ['UR', 'SSR', 'SR']) { r -= CHAR_RATE_BY_RARITY[k]; if (r < 0 && gachaChars().some(id => CHAR_RARITY[id] === k)) { tier = k; break; } }
+  const all = gachaChars().filter(id => tier ? CHAR_RARITY[id] === tier : CHAR_RARITY[id] !== 'R'), own = all.filter(owned), fresh = all.filter(id => !owned(id));
+  let pick = Math.random() < CHAR_DUP_RATE ? own : fresh; if (!pick.length) pick = own.length ? own : fresh; if (!pick.length) pick = all;
+  return pick[Math.floor(Math.random() * pick.length)]; }
 /* 機率為絕對值：船員 charRate＋N／R／SR／SSR 合計 100% */
 function rollOne(minR) {
   let r = Math.random();
@@ -603,12 +637,20 @@ function showResults(res, title) {
   $('gResult').classList.add('show'); gachaBusy = false; updateGachaBtns();
 }
 function grant(res) { res.forEach(x => { if (x.char) { if (owned(x.char)) { x.dup = true; SAVE.data.dupes = SAVE.data.dupes || {}; SAVE.data.dupes[x.char] = (SAVE.data.dupes[x.char] || 0) + 1; } else addCrew(x.char, x.lv); } else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
+function pityCaption() { const c = document.querySelector('#rateTable caption'); if (c) c.innerHTML = `出現機率<small class="pity-note">再 ${Math.max(1, (GAME_SETTINGS.gachaPity || 150) - (SAVE.data.pity || 0))} 抽必出 SR 以上（道具或角色）</small>`; }
 async function pull(n) {
   const cost = n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
   gachaBusy = true; SAVE.data.tokens -= cost; coins(); updateGachaBtns();
-  const res = []; for (let i = 0; i < n; i++) res.push(rollOne());
-  if (n === 10 && !res.some(x => ['SR', 'SSR'].includes(rarOf(x)))) res[9] = rollOne('SR');
-  grant(res); SAVE.data.pulls += n; SAVE.save();
+  const res = [], P = GAME_SETTINGS.gachaPity || 150; SAVE.data.pity = SAVE.data.pity || 0;
+  for (let i = 0; i < n; i++) {
+    let x = rollOne(); SAVE.data.pity++;
+    /* 保底：連續 150 抽沒有出 SR 以上的道具或角色，第 150 抽必定出（角色可能重複） */
+    if (SAVE.data.pity >= P && !(x.char || ['SR', 'SSR'].includes(rarOf(x)))) { x = Math.random() < .3 ? { char: rollChar(), lv: GAME_SETTINGS.charLv } : rollOne('SR'); x.pity = true; }
+    if (x.char || ['SR', 'SSR'].includes(rarOf(x))) SAVE.data.pity = 0;
+    res.push(x);
+  }
+  if (n === 10 && !res.some(x => x.char || ['SR', 'SSR'].includes(rarOf(x)))) res[9] = rollOne('SR');
+  grant(res); SAVE.data.pulls += n; SAVE.save(); pityCaption();
   const best = res.map(rarOf).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];
   await playMachine(best);
   showResults(res, n === 10 ? '十連結果' : res[0].char ? '新船員加入！' : '獲得道具');
@@ -666,7 +708,7 @@ function bindJoystick() {
 function boot() {
   SAVE.load(); renderNewsBoard(); loginInfo(); coins(); bindBattle(); bindJoystick();
   document.querySelectorAll('.modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.classList.remove('show')); });
-  $('startBtn').onclick = startGame; $('adminBtn').onclick = openAdmin; bindAdmin(); $('pullFree').onclick = pullFree; $('charConfirm').onclick = () => { if (crewMode === 'starter') confirmStarter(); };
+  $('startBtn').onclick = startGame; $('adminBtn').onclick = adminGate; bindAdmin(); $('pullFree').onclick = pullFree; $('charConfirm').onclick = () => { if (crewMode === 'starter') confirmStarter(); };
   $('newsOpenBtn').onclick = () => openNews(); $('newsMoreBtn').onclick = () => openNews(); $('newsEditBtn').onclick = openNewsEditor;
   $('soundBtn').onclick = toggleSound; document.querySelectorAll('[data-snd]').forEach(b => b.onclick = toggleSound); syncSound();
   document.addEventListener('click', e => { if (e.target.closest('.btn-primary,.btn-gold,.btn-ghost,.node,.char,.chipbtn,.cmd-btn,.icon-btn')) SFX.play('click'); });
@@ -733,7 +775,7 @@ window.addEventListener('DOMContentLoaded', boot);
 window.addEventListener('DOMContentLoaded', () => { if (window.__adminReset) setTimeout(() => toast('偵測到舊版本的後台設定，已自動停用並備份，遊戲改用最新的劇情與角色資料', 'warn'), 1200); });
 /* 公告板：可展開／收合（手機預設收合） */
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem(NEWS_OPEN_KEY); setNewsOpen(saved ? saved === '1' : innerWidth > 860);
+  const saved = localStorage.getItem(NEWS_OPEN_KEY); setNewsOpen(innerWidth <= 760 ? false : (saved ? saved === '1' : innerWidth > 860)) /* 手機一律先收合，點「船上告示」再展開 */;
   $('newsToggle').onclick = () => setNewsOpen(document.querySelector('.news-board').classList.contains('collapsed'));
   // 手機選單：把頂部列的文字按鈕收進「選單」
   document.querySelectorAll('.topbar-right').forEach(tr => {
@@ -753,3 +795,6 @@ document.addEventListener('visibilitychange', () => {
   else { if (WORLD && WORLD._wasRunning && currentScreen === 'worldScreen') { WORLD._wasRunning = false; WORLD.start(); } AUDIO.resume && AUDIO.resume(); }
 });
 let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setTimeout(() => { if (currentScreen === 'chapterScreen') openChart(selChapter); }, 200); });
+
+/* 任務欄底部顯示可進行的支線 */
+{ const _rq = renderQuest; renderQuest = function () { const r = _rq.apply(this, arguments); try { const S = sideFor(); const q = $('questBox'); if (S && q && !q.querySelector('.q-side')) { const nm = (CH.npcs.find(x => x.id === S.npc) || {}).name || ''; q.insertAdjacentHTML('beforeend', `<p class="q-side"><em>支線</em>${S.title.replace(/^支線：/, '')}・去找${nm}</p>`); } } catch (e) { } return r; }; }

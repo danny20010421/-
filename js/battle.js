@@ -37,7 +37,7 @@ function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.c
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
-  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
+  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f, spec.map(x => x.id)); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
   const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
@@ -170,7 +170,7 @@ function renderSkills() {
   $('bItemCount').textContent = `${left}/${GAME_SETTINGS.itemsPerBattle}`;
 }
 function renderBag() {
-  const inv = SAVE.data.inventory; const ids = Object.keys(ITEMS).filter(id => inv[id] > 0 && !ITEMS[id].effect.exp);
+  const inv = SAVE.data.inventory; const ids = Object.keys(ITEMS).filter(id => inv[id] > 0 && !ITEMS[id].effect.exp && !ITEMS[id].effect.sweep);
   const left = battle ? GAME_SETTINGS.itemsPerBattle - battle.itemsUsed : 0;
   $('bBagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<button class="bagItem r-${it.rarity}" data-id="${id}" ${left <= 0 ? 'disabled' : ''}>${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b></button>`; }).join('')
     : `<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到扭蛋機抽道具。</div>`;
@@ -212,7 +212,9 @@ function useItem(id) {
 async function resolveRound(pAct, eIdx) {
   let order;
   if (pAct.kind === 'item' || pAct.kind === 'switch') order = [['P', pAct], ['E', eIdx]];
-  else { const pf = effectiveSpeed(battle.player) >= effectiveSpeed(battle.enemy); order = pf ? [['P', pAct.idx], ['E', eIdx]] : [['E', eIdx], ['P', pAct.idx]]; }
+  else { const fs = (f, i) => !!(i >= 0 && f.skills[i] && f.skills[i].effect && f.skills[i].effect.firstStrike), pF = fs(battle.player, pAct.idx), eF = fs(battle.enemy, eIdx);
+    /* 「斬·年糕」等先制招式：本回合一定先出手（雙方都先制時比速度） */
+    const pf = pF !== eF ? pF : effectiveSpeed(battle.player) >= effectiveSpeed(battle.enemy); order = pf ? [['P', pAct.idx], ['E', eIdx]] : [['E', eIdx], ['P', pAct.idx]]; }
   for (let i = 0; i < 2; i++) {
     const [side, a] = order[i];
     if (side === 'P' && typeof a === 'object') { if (a.kind === 'switch') { doSwitch(a.to); await wait(650); } else await applyItem(a.id); } else await executeAction(side, a);
@@ -270,12 +272,19 @@ async function executeAction(side, idx) {
   }
   if (result.damage > 0) applyDamage(target, result.damage, T, result.meta);
   if (!blocked) applySkillEffects(actor, target, skill, result);
+  /* 反彈（自身仍會受傷）與不死鳥反擊 */
+  if (result.damage > 0 && skill.type === 'attack' && actor.hp > 0) {
+    if (target.status.thornTurns > 0) { const d = Math.max(1, Math.round(result.damage * (target.status.thornRatio || .5))); log(`🌵 ${target.name} 反彈了 ${d} 點傷害`); applyDamage(actor, d, S); floatText(S, '反彈', 'status'); }
+    if (target.hp > 0 && target.status.phoenix > 0 && Math.random() < (target.status.counterChance || 0)) { const d = calcAttackDamage(target, actor, { type: 'attack', power: 70, effect: {} }); log(`🐦 ${target.name} 立刻反擊！`); floatText(T, '反擊', 'status'); applyDamage(actor, d, S); triggerImpact(S, 'blue'); }
+  }
   if (result.damage > 0) triggerImpact(T, BATTLE_ANIM[skill.anima] || 'red', result.damage > target.maxHp * .25);
   renderHUD(); renderSkills(); await wait(640);
 }
+function refreshFighterImage(f) { if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
 function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }
 function checkBattleEnd() {
   const b = battle;
+  for (const [f] of [[b.enemy], [b.player]]) if (f.hp <= 0 && f.status.undyingTurns > 0) { f.status.undyingTurns = 0; f.hp = f.maxHp; f.status.dots = []; log(`🐦 ${f.name} 從青色的火焰中重生，體力全滿！`); renderHUD(true); }
   for (const [f, side] of [[b.enemy, 'R'], [b.player, 'L']]) { if (f.hp <= 0 && !f.status.dominated && f.status.lives > 0) { f.status.lives--; f.hp = f.maxHp; const st = f.status; st.freeze = 0; st.petrify = 0; st.skipAttack = 0; st.attackFail = 0; st.dots = []; log(`👑 ${f.name} 再次站了起來！（剩下 ${st.lives} 條命）`); banner('最初的20人', 'boss'); renderHUD(true); return false; } }
   if (b.enemy.hp <= 0 && b.isBoss && b.bossRevivesUsed < (battle.opts.revives ?? battle.difficulty.revives ?? GAME_SETTINGS.bossRevives)) {
     b.bossRevivesUsed++; b.enemy.hp = b.enemy.maxHp; const st = b.enemy.status; st.freeze = 0; st.petrify = 0; st.skipAttack = 0; st.attackFail = 0; st.dots = []; st.skillNullify = 0;

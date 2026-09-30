@@ -2,7 +2,7 @@
 /* 稀有度：UR 彩虹、SSR 金、SR 紫、R 藍。召喚時依稀有度加權（見 js/app.js 的 CHAR_RATE_BY_RARITY） */
 const CHAR_RARITY = { luffy: 'UR', kaido: 'UR', blackbeard: 'UR', akainu: 'UR', loki: 'UR', imu: 'UR',
   yamato: 'SSR', lucci: 'SSR', crocodile: 'SSR', enel: 'SSR', law: 'SSR', kid: 'SSR', shirahoshi: 'SSR', moria: 'SSR', hancock: 'SSR',
-  mihawk: 'UR', buggy: 'UR', robin: 'SR', hody: 'SR', luffy0: 'R', zoro: 'R', sanji: 'R', marine: 'R', mayor: 'R' };
+  mihawk: 'UR', buggy: 'UR', marco: 'SSR', ace: 'SR', franky: 'SR', garp_hc: 'SSR', garp_mf: 'SR', bigmom: 'SSR', magellan: 'SSR', catarina: 'SR', katakuri: 'SR', morgan: 'R', lordcoast: 'R', morgans: 'N', robin: 'SR', hody: 'SR', luffy0: 'R', zoro: 'R', sanji: 'R', marine: 'R', mayor: 'R' };
 const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, UR: 40000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, UR: 30000, perLv: 80 } };
 /* 重複抽到的船員：存在 SAVE.data.dupes，可在海軍本部換成貝里（以 LV 20 計價） */
 const dupeN = id => ((SAVE.data.dupes || {})[id] || 0);
@@ -22,6 +22,15 @@ const BOUNTY_POOL = [
   { id: 'tower3', text: '勇者之塔突破 3 層', stat: 'towerWins', goal: 3, berry: 2000, tokens: 1 },
   { id: 'chest1', text: '在島上打開 1 個寶箱', stat: 'chests', goal: 1, berry: 1500 }
 ];
+/* 高級懸賞：每天一張，難度較高，完成可得寶藏幣 ×5 */
+const BOUNTY_PREMIUM = [
+  { id: 'p_win15', text: '擊敗 15 名敵人', stat: 'wins', goal: 15, berry: 5000, tokens: 5, premium: true },
+  { id: 'p_boss2', text: '擊敗 2 名篇章 BOSS', stat: 'bossWins', goal: 2, berry: 5000, tokens: 5, premium: true },
+  { id: 'p_tower6', text: '勇者之塔突破 6 層', stat: 'towerWins', goal: 6, berry: 5000, tokens: 5, premium: true },
+  { id: 'p_ult5', text: '在戰鬥中發動 5 次奧義', stat: 'ults', goal: 5, berry: 5000, tokens: 5, premium: true },
+  { id: 'p_run3000', text: '奪寶大冒險累計航行 3000 公尺', stat: 'runDist', goal: 3000, berry: 5000, tokens: 5, premium: true }
+];
+const bountyDef = id => BOUNTY_POOL.find(b => b.id === id) || BOUNTY_PREMIUM.find(b => b.id === id);
 const TOKEN_PRICE = 2500;
 
 /* 統計：各種行為的累計次數，懸賞任務依此計算進度 */
@@ -33,7 +42,9 @@ function bounties() {
     const pool = BOUNTY_POOL.slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[pool[i], pool[j]] = [pool[j], pool[i]]; }
     d.bounty = { date: day, list: pool.slice(0, 4).map(b => ({ id: b.id, base: statOf(b.stat), claimed: false })) }; SAVE.save();
   }
-  return d.bounty.list.map(x => { const def = BOUNTY_POOL.find(b => b.id === x.id); return { ...def, ...x, prog: Math.min(def.goal, statOf(def.stat) - x.base) }; });
+  /* 每天（本地時間 00:00 換日）附上一張高級懸賞 */
+  if (!d.bounty.list.some(x => bountyDef(x.id) && bountyDef(x.id).premium)) { const p = BOUNTY_PREMIUM[Math.floor(Math.random() * BOUNTY_PREMIUM.length)]; d.bounty.list.push({ id: p.id, base: statOf(p.stat), claimed: false }); SAVE.save(); }
+  return d.bounty.list.filter(x => bountyDef(x.id)).map(x => { const def = bountyDef(x.id); return { ...def, ...x, prog: Math.min(def.goal, statOf(def.stat) - x.base) }; });
 }
 
 const COIN_STACK = '<svg class="coin-stack" viewBox="0 0 40 32" aria-hidden="true"><defs><linearGradient id="cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#f3c969"/><stop offset="1" stop-color="#b8801a"/></linearGradient></defs><g stroke="#6b4a0a" stroke-width="1.2"><ellipse cx="14" cy="26" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="14" cy="21" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="14" cy="16" rx="11" ry="4" fill="url(#cs)"/><ellipse cx="28" cy="24" rx="10" ry="3.6" fill="url(#cs)"/><ellipse cx="28" cy="19.5" rx="10" ry="3.6" fill="url(#cs)"/><circle cx="24" cy="10" r="7.5" fill="url(#cs)"/></g><text x="24" y="13.2" font-size="8" text-anchor="middle" fill="#6b4a0a" font-weight="900">฿</text></svg>';
@@ -48,16 +59,16 @@ function switchHub(tab) {
 }
 function renderBounty() {
   const list = bounties();
-  $('bountyList').innerHTML = list.map(b => { const done = b.prog >= b.goal; return `<article class="bounty ${b.claimed ? 'claimed' : done ? 'done' : ''}">
-    <div class="bt-poster"><span>WANTED</span><i class="bt-face" aria-hidden="true"></i><b>${b.claimed ? '已領取' : done ? '可領取' : `${b.prog}/${b.goal}`}</b></div>
+  $('bountyList').innerHTML = list.map(b => { const done = b.prog >= b.goal; return `<article class="bounty ${b.premium ? 'premium' : ''} ${b.claimed ? 'claimed' : done ? 'done' : ''}">
+    <div class="bt-poster"><span>${b.premium ? '高級懸賞' : 'WANTED'}</span><i class="bt-face" aria-hidden="true"></i><b>${b.claimed ? '已領取' : done ? '可領取' : `${b.prog}/${b.goal}`}</b></div>
     <div class="bt-body"><h4>${b.text}</h4><div class="bar"><i style="width:${b.prog / b.goal * 100}%"></i></div>
       <p class="bt-rew">${COIN_STACK}<b>${b.berry.toLocaleString()}</b>${b.tokens ? `<span class="bt-plus">＋</span><i class="coin-ico"></i><b>×${b.tokens}</b>` : ''}</p></div>
     <button class="btn-gold" data-claim="${b.id}" ${done && !b.claimed ? '' : 'disabled'}>${b.claimed ? '已領取' : '領取賞金'}</button></article>`; }).join('');
   $('bountyList').querySelectorAll('[data-claim]').forEach(btn => btn.onclick = () => {
-    const x = SAVE.data.bounty.list.find(y => y.id === btn.dataset.claim), def = BOUNTY_POOL.find(b => b.id === x.id); if (x.claimed) return;
+    const x = SAVE.data.bounty.list.find(y => y.id === btn.dataset.claim), def = bountyDef(x.id); if (x.claimed) return;
     x.claimed = true; SAVE.save(); if (window.eventBountyCheck) setTimeout(eventBountyCheck, 60); addBerry(def.berry); if (def.tokens) addTokens(def.tokens, '懸賞任務'); SFX.play('coin'); toast(`領到賞金 ${def.berry.toLocaleString()} 貝里`, 'gold'); renderBounty();
   });
-  $('bountyNote').textContent = `每天更換 4 張懸賞單，今天剩下 ${list.filter(b => !b.claimed).length} 張。`;
+  $('bountyNote').textContent = `每天 00:00 更換 4 張懸賞單＋1 張高級懸賞（寶藏幣 ×5），今天剩下 ${list.filter(b => !b.claimed).length} 張。`;
 }
 function renderShop() {
   const B = SAVE.data.berry || 0;

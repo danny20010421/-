@@ -6,7 +6,7 @@
   /* 一般樓層：把全部角色打亂成一輪輪出場，相鄰兩層不重複，同一位角色約隔一整輪才會再出現 */
   let SEQ = null;
   function buildSeq() {
-    const pool = CHARACTER_ORDER.filter(id => !TOWER.bosses.includes(id) || !['imu'].includes(id)).filter(id => id !== 'imu');
+    const pool = CHARACTER_ORDER.filter(id => !TOWER.bosses.includes(id) || !['imu'].includes(id)).filter(id => id !== 'imu' && !((CHAR_OBTAIN[id] || {}).npcOnly && id !== 'marine' && id !== 'mayor')); /* NPC 專屬角色（如摩甘茲）不會出現在勇者之塔 */
     let seed = 20260928; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const seq = []; while (seq.length < TOWER.floors) { const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } if (seq.length && a[0] === seq[seq.length - 1]) a.push(a.shift()); seq.push(...a); }
     return seq;

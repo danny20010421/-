@@ -4,9 +4,11 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rand(a,b){return a+Math.random()*(b-a)}
 function chance(p){return Math.random()<p}
 function weightedChoice(items){const total=items.reduce((s,it)=>s+it[0],0);let r=Math.random()*total;for(const [w,v] of items){r-=w;if(r<=0)return v}return items[0][1]}
+/* 稀有度體質：稀有度越高基礎越強，但差距不大（同階約 50%、相鄰階約 40～60%）；statScale 為個別角色的微調。 */
+function rarityScale(id){const r=(typeof CHAR_RARITY!=='undefined'&&CHAR_RARITY[id])||'SSR',R=(typeof GAME_SETTINGS!=='undefined'&&GAME_SETTINGS.rarityScale)||{};return (R[r]??1)*((CHARACTERS[id]&&CHARACTERS[id].statScale)||1)}
 function buildFighter(id,lv,skin){
   const base=deepClone(CHARACTERS[id]); const SK=(typeof SKINS!=='undefined'&&skin)?SKINS[skin]:null; if(SK&&SK.char===id){base.image=SK.image;base.avatar=SK.avatar;base.ultimateBg=SK.image;base.skinName=SK.name;}
-  lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; base.atk=L.atk; base.def=L.def;
+  lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; { const rs=rarityScale(id); base.maxHp=Math.round(base.maxHp*rs); base.dmgMul=base.dmgMul*rs; } base.atk=L.atk; base.def=L.def;
   base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=skillPP(s,lv,L.ppAdj);s.pp=s.maxPP} if(base.skinSkills&&base.skinSkills.includes(i)&&!(SK&&SK.char===id)){s.locked='skin';s.pp=0;s.maxPP=0}});
   base.hp=base.maxHp;
   base.buffs={atk:0,def:0,spd:0};
@@ -82,6 +84,13 @@ function copiedSkillDamage(actor,target,picked){
 const VOID_PCT_KEYS=['fixedLightHits','fixedLightHitsRange','randomPercentHits','chanceHalfHpCut','percentCurrentDmg','currentHpCut','maxHpCut','enemyCurrentHpCut','lostHpDamageMult','drainCurrentHpRange','drainMaxHp'];
 const isVoidPctSkill=ef=>!!ef&&VOID_PCT_KEYS.some(k=>ef[k]);
 function computeSkillOutcome(actor,target,skill,blockedEffects){
+ if(skill.effect&&skill.effect.randomSkillCast&&!skill.__cast){const RC=skill.effect.randomSkillCast,idx=RC.from[Math.floor(Math.random()*RC.from.length)],src=actor.skills[idx];if(src){const cs=deepClone(src);const r=computeSkillOutcome(actor,target,{...cs,__cast:true},blockedEffects);r.meta=r.meta||{};const m=rand(RC.mult[0],RC.mult[1]);if(r.damage>0&&!r.meta.execute)r.damage=Math.floor(r.damage*m);r.meta.castSkill=cs;log(`🌀 ${skill.name}：隨機施放「${cs.name}」（${m.toFixed(1)} 倍）！`);return r}}
+ /* 燒傷加成（對已燒傷的對手）與隨機吸血比例 */
+ if(!skill.__fire&&skill.effect&&(skill.effect.burnedBonusMult||skill.effect.lifestealRange)){const ef=skill.effect,was=(target.status.burn||0)>0;const r=computeSkillOutcome(actor,target,{...skill,__fire:true},blockedEffects);r.meta=r.meta||{};
+  if(was)r.meta.wasBurned=true;
+  if(was&&ef.burnedBonusMult&&r.damage>0&&!r.meta.execute){const m=Array.isArray(ef.burnedBonusMult)?rand(ef.burnedBonusMult[0],ef.burnedBonusMult[1]):ef.burnedBonusMult;r.damage=Math.floor(r.damage*m);log(`🔥 對手正在燒傷，傷害 ×${m.toFixed(2).replace(/\.?0+$/,'')}！`)}
+  if(ef.lifestealRange&&r.damage>0&&!r.meta.execute)r.meta.lifesteal=Math.floor(r.damage*rand(ef.lifestealRange[0],ef.lifestealRange[1]));
+  return r}
  /* G1：BOSS 被秒殺時改為受到 3 倍傷害。G2：比例傷害對 BOSS 一招最多 bossPctCap（15%）最大體力，且等級較低時依等級差降低 */
  if(!skill.__bossRule&&typeof battle!=='undefined'&&battle&&battle.isBoss&&target===battle.enemy&&!target.voidImmune){
   const r=computeSkillOutcome(actor,target,{...skill,__bossRule:true},blockedEffects);r.meta=r.meta||{};
@@ -162,7 +171,23 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.damageMultTurns){actor.status.damageMultTurns=ef.damageMultTurns; actor.status.damageMultValue=ef.damageMultValue||2}
  if(ef.executeBuffTurns){actor.status.executeBuffTurns=ef.executeBuffTurns; actor.status.executeBuffChance=ef.executeBuffChance||0; log(`☠️ ${actor.name} 進入秒殺威壓狀態！`)}
  if(ef.damageReductionTurns){actor.status.damageReductionTurns=ef.damageReductionTurns; actor.status.damageReductionValue=ef.damageReductionValue||0}
- if(ef.dodgeTurns){actor.status.dodge=Math.max(actor.status.dodge,ef.dodgeTurns);log(`🪽 ${actor.name} 將閃避下一次攻擊！`)}if(ef.invulnTurns){actor.status.invuln=Math.max(actor.status.invuln||0,ef.invulnTurns);log(`🛡️ ${actor.name} 接下來 ${ef.invulnTurns} 回合不受對手的攻擊！`)}if(ef.selfDot){actor.status.dots.push({turns:ef.selfDot[0],ratio:ef.selfDot[1],label:'副作用'});log(`💊 ${actor.name} 承受禁藥的副作用！`)}
+ if(ef.dodgeTurns){actor.status.dodge=Math.max(actor.status.dodge,ef.dodgeTurns);log(`🪽 ${actor.name} 將閃避下一次攻擊！`)}if(ef.thornTurns){actor.status.thornTurns=ef.thornTurns;actor.status.thornRatio=ef.thornRatio||0.5;log(`🌵 ${actor.name} 受到攻擊時會反彈 ${Math.round((ef.thornRatio||0.5)*100)}% 傷害！`)}
+ if(ef.undyingTurns){actor.status.undyingTurns=ef.undyingTurns;log(`🐦 ${actor.name} 被再生之炎守護著！`)}
+ if(ef.burnChanceRange&&chance(rand(ef.burnChanceRange[0],ef.burnChanceRange[1])))inflict(target,'burn',ef.burnTurns||2);
+ if(ef.burnStackIfBurned&&result&&result.meta&&result.meta.wasBurned&&target.status.burn>0&&!target.voidImmune){target.status.burn+=ef.burnStackIfBurned;log(`🔥 ${target.name} 的燒傷又加深了一層！`)}
+ if(ef.enemyDefDownChance&&!target.voidImmune&&!immuneTo(target)&&chance(ef.enemyDefDownChance[0])){const[, [a,b],turns]=ef.enemyDefDownChance,amt=a+Math.floor(Math.random()*(b-a+1));target.buffs.def=clamp(target.buffs.def-amt,-6,6);target.status.defDownTemp=(target.status.defDownTemp||0)+amt;target.status.defDownTurns=Math.max(target.status.defDownTurns||0,turns);log(`💥 ${target.name} 防禦 -${amt}！`)}
+ if(ef.enemyAtkDownChance&&!target.voidImmune&&!immuneTo(target)){const[[a,b],amt,turns]=ef.enemyAtkDownChance;if(chance(rand(a,b))){target.buffs.atk=clamp(target.buffs.atk-amt,-6,6);target.status.atkDownTemp=(target.status.atkDownTemp||0)+amt;target.status.atkDownTurns=turns;log(`🦶 ${target.name} 攻擊 -${amt}！`)}}
+ if(ef.phoenixForm){const PF=ef.phoenixForm;actor.status.phoenix=PF.turns;actor.status.phoenixRegen=PF.regen;actor.status.counterChance=rand(PF.counter[0],PF.counter[1]);actor.status.damageReductionTurns=Math.max(actor.status.damageReductionTurns||0,PF.turns);actor.status.damageReductionValue=Math.max(actor.status.damageReductionValue||0,rand(PF.reduce[0],PF.reduce[1]));
+  if(!actor.status.phoenixSpd){actor.buffs.spd=clamp(actor.buffs.spd+PF.spd,-6,6);actor.status.phoenixSpd=PF.spd}
+  if(PF.image){if(!actor.baseImage)actor.baseImage=actor.image;actor.image=PF.image;if(typeof refreshFighterImage==='function')refreshFighterImage(actor)}
+  log(`🐦 ${actor.name} 化為不死鳥！受到的傷害 -${Math.round(actor.status.damageReductionValue*100)}%，反擊機率 ${Math.round(actor.status.counterChance*100)}%`)}
+ if(result&&result.meta&&result.meta.castSkill&&!skill.__castApplied){const cs=result.meta.castSkill;applySkillEffects(actor,target,{...cs,__castApplied:true},{damage:result.damage,meta:{...result.meta,castSkill:null}})}
+ if(ef.bonusCurHpCut&&target.hp>0&&chance(ef.bonusCurHpCut[0])){if(target.voidImmune)log(`👑 ${target.name} 不受比例傷害影響！`);else{let d=Math.max(1,Math.floor(target.hp*ef.bonusCurHpCut[1]));if(battle.isBoss&&target===battle.enemy)d=Math.min(d,Math.floor(target.maxHp*(GAME_SETTINGS.bossPctCap??0.15)));target.hp=Math.max(0,target.hp-d);showDamage(target===battle.player?'L':'R',d,'#ffcf5a');log(`💥 追加扣除 ${target.name} ${d} 體力！`)}}
+ if(ef.damageReductionRange){actor.status.damageReductionTurns=Math.max(actor.status.damageReductionTurns||0,ef.damageReductionTurns||2);actor.status.damageReductionValue=rand(ef.damageReductionRange[0],ef.damageReductionRange[1]);log(`🛡️ ${actor.name} 受到的傷害 -${Math.round(actor.status.damageReductionValue*100)}%`)}
+ if(ef.dotChance&&ef.dotSequenceIfHit&&!target.voidImmune&&chance(ef.dotChance)){target.status.dots.push({turns:ef.dotSequenceIfHit.length,sequence:ef.dotSequenceIfHit,label:'劇毒',index:0});log(`☠️ ${target.name} 中了劇毒！`)}
+ if(ef.copyEnemyBuffs){let n=0;['atk','def','spd'].forEach(k=>{if(target.buffs[k]>0){actor.buffs[k]=clamp(actor.buffs[k]+target.buffs[k],-6,6);n+=target.buffs[k]}});log(n?`🦊 ${actor.name} 複製了對手的能力提升！`:`🦊 對手沒有可以複製的能力提升`)}
+ if(ef.formImage){const FI=ef.formImage;actor.status.formTurns=FI.turns||3;if(!actor.baseImage)actor.baseImage=actor.image;actor.image=FI.image;if(typeof refreshFighterImage==='function')refreshFighterImage(actor);log(`🐉 ${actor.name} 化為${FI.label||'另一種型態'}！`)}
+ if(ef.invulnTurns){actor.status.invuln=Math.max(actor.status.invuln||0,ef.invulnTurns);log(`🛡️ ${actor.name} 接下來 ${ef.invulnTurns} 回合不受對手的攻擊！`)}if(ef.selfDot){actor.status.dots.push({turns:ef.selfDot[0],ratio:ef.selfDot[1],label:'副作用'});log(`💊 ${actor.name} 承受禁藥的副作用！`)}
  if(ef.decoys){actor.status.decoys=(actor.status.decoys||0)+ef.decoys;log(`🎖️ ${ef.decoys} 名海軍小兵趕到，擋在 ${actor.name} 前面！`)}
  if(ef.eruption){if(battle.eruption&&battle.eruption.owner.hp>0)log('🌋 火山已經在噴發中。');else{battle.eruption={owner:actor,ratio:ef.eruptionRatio||0.10,left:ef.eruptionTurns||0};log(`🌋 ${actor.name} 引發火山噴發！整個戰場陷入熔岩之中！`)}}
  if(ef.perHitBurn&&result&&result.meta&&result.meta.hitCount){const p=1-Math.pow(1-ef.perHitBurn,result.meta.hitCount);if(chance(p)&&inflict(target,'burn',3))log(`🔥 流星火山的熔岩讓 ${target.name} 燒傷了！`)}if(ef.reflectTurns){actor.status.reflect=ef.reflectTurns; actor.status.reflectMultiplier=ef.reflectMultiplier||1; actor.status.reflectNegative=!!ef.reflectNegative; log(`🛡️ ${actor.name} 展開反彈護盾！`)}
@@ -221,6 +246,12 @@ function applyReflectedNegativeEffects(skill,source,dest){
 }
 function applyDamage(target,amount,side,opts){let final=amount;if(target.status.armorBreak>0)final=Math.round(final*(1+(GAME_SETTINGS.armorBreak??0.05)));if(target.status.weak>0)final=Math.floor(final*rand(target.status.weakMin||1.2,target.status.weakMax||1.5));if(target.status.damageReductionTurns>0)final=Math.max(1,Math.floor(final*(1-target.status.damageReductionValue)));if(target.status.decoys>0&&final>0){target.status.decoys--;log(`🎖️ 海軍小兵替 ${target.name} 擋下了攻擊！（剩 ${target.status.decoys} 名）`);showFx('BLOCK');renderHUD();return}let absorbed=0;if(target.status.shield>0&&!(opts&&opts.ignoreShield)){absorbed=Math.min(target.status.shield,final);target.status.shield-=absorbed;final-=absorbed;if(absorbed>0)log(`🛡️ 護盾吸收了 ${absorbed} 點傷害！`)}if(final>0){target.hp=Math.max(target.voidImmune?1:0,target.hp-final);showDamage(side,final,side==='L'?'#ff8888':'#8fe8ff');if(target.voidImmune)battle.voidDamage=(battle.voidDamage||0)+final}if(target.hp>0&&target.status.clutchHealCharges>0&&target.hp/target.maxHp<=(target.status.clutchHealThreshold||0.10)){target.status.clutchHealCharges--;const heal=target.maxHp-target.hp;target.hp=target.maxHp;showHeal(side,heal);log(`🌺 ${target.name} 觸發巨大人形保護，瞬間回滿血！`)}if(absorbed>0&&final<=0)showFx('BLOCK');renderHUD()}
 function endTurnStatus(c){
+ if(c.status.formTurns>0){c.status.formTurns--;if(c.status.formTurns<=0&&c.baseImage&&!(c.status.phoenix>0)){c.image=c.baseImage;if(typeof refreshFighterImage==='function')refreshFighterImage(c);log(`${c.name} 恢復了原本的樣子。`)}}
+ if(c.status.thornTurns>0)c.status.thornTurns--;
+ if(c.status.undyingTurns>0)c.status.undyingTurns--;
+ if(c.status.atkDownTurns>0){c.status.atkDownTurns--;if(c.status.atkDownTurns<=0&&c.status.atkDownTemp){c.buffs.atk=clamp(c.buffs.atk+c.status.atkDownTemp,-6,6);c.status.atkDownTemp=0;log(`${c.name} 的攻擊恢復了。`)}}
+ if(c.status.phoenix>0&&c.hp>0){const g=c.status.phoenixRegen||[0.05,0.1],h=Math.max(1,Math.floor(c.maxHp*rand(g[0],g[1])));if(healOk(c)){c.hp=Math.min(c.maxHp,c.hp+h);showHeal(c===battle.player?'L':'R',h);log(`🐦 再生之炎回復了 ${h} 體力`)}
+  c.status.phoenix--;if(c.status.phoenix<=0){c.status.counterChance=0;if(c.status.phoenixSpd){c.buffs.spd=clamp(c.buffs.spd-c.status.phoenixSpd,-6,6);c.status.phoenixSpd=0}if(c.baseImage){c.image=c.baseImage;if(typeof refreshFighterImage==='function')refreshFighterImage(c)}log(`🐦 ${c.name} 的不死鳥型態結束了。`)}}
  if(c.status.invuln>0)c.status.invuln--;
  if(c===battle.enemy&&battle.eruption&&battle.eruption.left>0){battle.eruption.left--;if(battle.eruption.left<=0){battle.eruption=null;log('🌋 火山噴發結束，熔岩冷卻了。')}}
  const side=c===battle.player?'L':'R';

@@ -20,7 +20,7 @@
   }
   window.eventState = st;
   /* 懸賞任務全部領取後 +2 抽 */
-  window.eventBountyCheck = function () { try { const today = new Date().toDateString(), list = bounties(); if (!list.length || !list.every(b => b.claimed)) return; let n = 0; POOLS().forEach(pl => { const E = st(pl); if (E.bountyDay !== today) { E.bountyDay = today; E.tickets += pl.bountyBonus; n = pl.bountyBonus; } }); if (n) { SAVE.save(); toast(`完成全部每日懸賞！活動抽獎券 +${n}`, 'gold'); } } catch (e) { } };
+  window.eventBountyCheck = function () { try { const today = new Date().toDateString(), list = bounties().filter(b => !b.premium); if (!list.length || !list.every(b => b.claimed)) return; let n = 0; POOLS().forEach(pl => { const E = st(pl); if (E.bountyDay !== today) { E.bountyDay = today; E.tickets += pl.bountyBonus; n = pl.bountyBonus; } }); if (n) { SAVE.save(); toast(`完成全部每日懸賞！活動抽獎券 +${n}`, 'gold'); } } catch (e) { } };
 
   function rollItem() { const order = ['N', 'R', 'SR', 'SSR'], tot = order.reduce((t, k) => t + RARITY[k].rate, 0); let r = Math.random() * tot, rar = 'N'; for (const k of order) { r -= RARITY[k].rate; if (r < 0) { rar = k; break; } } const pool = Object.keys(ITEMS).filter(k => ITEMS[k].rarity === rar); return { item: pool[Math.floor(Math.random() * pool.length)] || 'potion_s', rar }; }
   function amount() { let r = Math.random(); for (const [n, p] of P().amount) { if ((r -= p) < 0) return n; } return P().amount[0][0]; }
