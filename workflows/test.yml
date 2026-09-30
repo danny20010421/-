@@ -1,0 +1,16 @@
+# 每次推送都自動檢查：資料一致性＋桌機／手機冒煙測試。失敗時 GitHub 會寄信通知。
+name: 自動測試
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: 資料一致性檢查
+        run: node tests/check-data.mjs
+      - name: 安裝瀏覽器
+        run: npm install --no-save playwright@1 && npx playwright install --with-deps chromium
+      - name: 冒煙測試（桌機＋手機）
+        run: node tests/smoke.mjs
