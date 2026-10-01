@@ -14,10 +14,10 @@
     /* 中央船長 */
     const hero = $('lbHeroImg'); if (hero.dataset.id !== pid + '|' + charArt(pid)) { hero.dataset.id = pid + '|' + charArt(pid); hero.classList.remove('in'); hero.onload = () => hero.classList.add('in'); hero.src = charArt(pid); if (hero.complete && hero.naturalWidth) requestAnimationFrame(() => hero.classList.add('in')); }
     $('lobby').style.setProperty('--hero', (typeof RAR_COLOR !== 'undefined' && RAR_COLOR[r]) || '#ffcf5a');
-    $('lbPlate').innerHTML = `<span class="rar c-rar r-${r}">${r}</span><b>${c.name}</b><small>${c.title || ''}・LV ${crewLv(pid)}</small><span class="lbp-types">${c.types.map(t => `<i style="--tc:${TYPE_COLORS[t] || '#999'}">${t}</i>`).join('')}</span><button class="lbp-swap" id="lbSwap">更換船長</button>`;
+    $('lbPlate').innerHTML = `<span class="rar c-rar r-${r}">${r}</span><b>${c.name}</b><small>${c.title || ''}・LV ${crewLv(pid)}</small><span class="lbp-types">${c.types.map(t => `<i style="--tc:${TYPE_COLORS[t] || '#999'}">${t}</i>`).join('')}</span><button class="lbp-swap" id="lbSwap">更換船長 ›</button>`;
     $('lbSwap').onclick = () => openCrew('crew');
     /* 出戰陣容 */
-    $('lbTeam').innerHTML = '<small>出戰陣容</small>' + ((d.lineup || []).length ? '' : '<button class="lbt-empty" id="lbTeamSet">尚未編組，點這裡安排出戰船員 ›</button>') + (d.lineup || []).map(id => `<button class="lbt-av" data-id="${id}" title="${CHARACTERS[id].name}"><img src="${charArt(id, 'avatar')}" alt="${CHARACTERS[id].name}"><em>LV ${crewLv(id)}</em></button>`).join('');
+    $('lbTeam').innerHTML = '<span class="lbt-h"><i aria-hidden="true">☸</i><b>出戰陣容</b><em class="lb-chev" aria-hidden="true">›</em></span>' + ((d.lineup || []).length ? '' : '<button class="lbt-empty" id="lbTeamSet">尚未編組，點這裡安排出戰船員 ›</button>') + (d.lineup || []).map(id => `<button class="lbt-av" data-id="${id}" title="${CHARACTERS[id].name}"><img src="${charArt(id, 'avatar')}" alt="${CHARACTERS[id].name}"><em>Lv.${crewLv(id)}</em></button>`).join('');
     $('lbTeam').querySelectorAll('.lbt-av,#lbTeamSet').forEach(b => b.onclick = () => openCrew('crew'));
     /* 公告 */
     try { const n = loadNews()[0]; $('lbNewsTitle').textContent = n ? n.title : '目前沒有公告'; } catch (e) { $('lbNewsTitle').textContent = ''; }
@@ -27,6 +27,7 @@
     const st = ch && d.chapters[ch.id];
     $('lbGoSub').textContent = nextChapter() ? `${ch.name}・任務 ${Math.min(st ? st.step : 0, ch.steps.length)}/${ch.steps.length}` : `${CHAPTERS.length} 座島嶼已全數通關`;
     renderEvent();
+    renderProfile();
     const L = SAVE.data.login || { day: 0 }, lc = typeof loginClaimable === 'function' && loginClaimable(); $('lbLoginTxt').textContent = lc ? `第 ${L.day + 1} 天獎勵可領取` : `今天已領取・明天第 ${(L.day % 7) + 1} 天`; $('lbLogin').classList.toggle('has-dot', !!lc);
     if (!evTimer) evTimer = setInterval(() => { if (currentScreen === 'modeScreen' && (typeof EVENT_POOLS !== 'undefined') && EVENT_POOLS.length > 1) { evIdx = (evIdx + 1) % EVENT_POOLS.length; renderEvent(true); } }, 5000);
   }
@@ -39,9 +40,22 @@
   }
   function openModesSheet(on) { const s = $('lbModes'); s.classList.toggle('show', on); s.setAttribute('aria-hidden', String(!on)); }
   function hub(tab) { openGacha('modeScreen'); if (tab && typeof switchHub === 'function') switchHub(tab); }
+  /* 航海等級：依戰鬥、任務、召喚、通關篇章與船員培養累積的航海經驗計算 */
+  function acctLevel() { const d = SAVE.data, st = d.stats || {}, cleared = CHAPTERS.filter(c => (d.chapters[c.id] || {}).cleared).length, crewLv_ = Object.values(d.roster || {}).reduce((a, r) => a + (r.lv || 1), 0);
+    const xp = (st.wins || 0) * 15 + (st.steps || 0) * 80 + (d.pulls || 0) * 4 + cleared * 600 + crewLv_ * 6, lv = Math.min(99, 1 + Math.floor(Math.sqrt(xp / 40))), base = 40 * (lv - 1) ** 2, next = 40 * lv ** 2;
+    return { lv, pct: lv >= 99 ? 1 : Math.max(0, Math.min(1, (xp - base) / (next - base))) }; }
+  function renderProfile() {
+    const chip = $('profileChip'); if (!chip || currentScreen !== 'modeScreen') return; const d = SAVE.data, p = d.profile || {}, pid = [(d.lineup || [])[0], d.player].find(x => x && CHARACTERS[x] && owned(x)) || CHARACTER_ORDER[0], A = acctLevel();
+    const title = (TITLES.find(t => t.id === p.title) || TITLES[0]).name, id = p.id || '';
+    chip.classList.add('lb-prof'); chip.innerHTML = `<span class="lbpf-av"><img src="${charArt(pid, 'avatar')}" alt=""><em>Lv.${A.lv}</em></span><span class="lbpf-txt"><b>${esc(p.name || '草帽新人')}<i aria-hidden="true">👑</i></b><small><em>${title}</em><span class="lbpf-id">ID ${id}<span class="lbpf-cp" role="button" tabindex="0" aria-label="複製 ID">⧉</span></span></small><span class="lbpf-xp"><i style="width:${(A.pct * 100).toFixed(1)}%"></i></span></span>`;
+    const cp = chip.querySelector('.lbpf-cp'); cp.onclick = e => { e.stopPropagation(); try { navigator.clipboard.writeText(String(id)); toast('已複製玩家 ID'); } catch (er) { toast('ID：' + id); } };
+    /* 貨幣旁的「＋」：貝里與寶藏幣都可以在道具商店補充 */
+    document.querySelectorAll('#modeScreen .topbar .coin').forEach(c => { if (!c.querySelector('.lb-plus')) { const b = document.createElement('button'); b.className = 'lb-plus'; b.setAttribute('aria-label', '前往商店'); b.textContent = '+'; b.onclick = e => { e.stopPropagation(); hub('shop'); }; c.appendChild(b); } });
+    const bell = $('lbBell'); if (bell) bell.classList.toggle('has-dot', typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
+  }
   const ACT = {
     gacha: () => hub('summon'), shop: () => hub('shop'), navy: () => hub('navy'), bounty: () => hub('bounty'),
-    treasure: () => openTreasure(), bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
+    treasure: () => openTreasure(), titles: () => openProfile(), friends: () => toast('好友功能敬請期待！'), settings: () => { const mm = document.querySelector('#modeScreen .m-menu'); if (mm) mm.click(); else toast('設定可以在右上角選單中找到'); }, bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
   };
 
   /* 跨過午夜時，大廳的懸賞進度自動換成新的一天 */
@@ -51,7 +65,7 @@
     if (!$('lobby')) return;
     document.querySelectorAll('[data-lb]').forEach(b => b.onclick = () => { const f = ACT[b.dataset.lb]; if (f) f(); });
     $('lbHero').onclick = () => openCrew('crew');
-    $('lbNews').onclick = () => openNews(); $('lbMail').onclick = () => openNews();
+    $('lbNews').onclick = () => openNews(); $('lbMail').onclick = () => openNews(); if ($('lbBell')) $('lbBell').onclick = () => hub('bounty');
     $('lbBounty').onclick = () => hub('bounty');
     $('lbGo').onclick = () => openChart();
     $('lbModesBtn').onclick = () => openModesSheet(true);

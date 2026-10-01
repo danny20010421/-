@@ -234,3 +234,36 @@ button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-hi
 .rn-rhythm.low{box-shadow:inset 0 0 0 1px #ff5a5a,0 0 14px rgba(255,80,80,.7);animation:rnLow .5s ease-in-out infinite alternate}
 .rn-rhythm.low i{background:linear-gradient(90deg,#ff3a3a,#ff7a5a)!important}
 @keyframes rnLow{to{box-shadow:inset 0 0 0 1px #ff5a5a,0 0 22px rgba(255,80,80,.95)}}
+
+/* 17. 限定皮膚選擇卷、百連、後台快速獲得 */
+.st-card{width:min(620px,100%)}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px}
+.st-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;border:1px solid rgba(255,122,217,.5);background:rgba(255,122,217,.08);color:#fff}
+.st-opt img{width:100%;aspect-ratio:3/4;object-fit:contain}
+.st-opt small{color:#cbd6e6;font-size:12px}
+.st-opt.own{opacity:.45}
+.st-opt:not(.own):hover{border-color:#ff7ad9;box-shadow:0 0 14px rgba(255,122,217,.45)}
+.bagItem [data-ticket]{margin-left:8px;flex:0 0 auto}
+.g-pulls{flex-wrap:wrap}
+.g-pulls .p100{background:linear-gradient(180deg,#8a4bd8,#5a2aa8)!important;color:#fff}
+.adm-get{display:inline-flex;gap:6px;align-items:center;margin:4px 6px 4px 0}
+.adm-get select{max-width:220px;padding:6px;border-radius:8px;background:#0e2036;color:#fff;border:1px solid rgba(255,255,255,.25)}
+
+/* 18. 手機橫向等矮螢幕（高度 ≤ 500）：操作面板壓成一條，讓出戰場空間給立繪 */
+@media (max-height:500px) and (orientation:landscape){
+  #battleScreen .b-cmd{display:flex!important;flex-direction:row!important;align-items:stretch;gap:6px!important;padding:4px 8px calc(4px + var(--safeB,0px))!important}
+  #battleScreen .b-team{display:flex;flex-direction:row;align-items:center;gap:3px;flex:0 0 auto}
+  #battleScreen .b-team>*{width:30px!important;height:30px!important}
+  #battleScreen .skills{flex:1 1 auto;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:none!important;gap:5px!important}
+  #battleScreen .skill{min-height:0!important;height:58px;padding:4px 6px!important}
+  #battleScreen .skill .sk-desc,#battleScreen .skill .sk-tags{display:none!important}
+  #battleScreen .skill .sk-name{font-size:12px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #battleScreen .skill .sk-top{font-size:10px}
+  #battleScreen .skill .sk-pp{height:10px;margin-top:2px}
+  #battleScreen .cmd-side{display:grid!important;grid-template-columns:repeat(3,auto);gap:3px!important;flex:0 0 auto}
+  #battleScreen .cmd-btn{min-height:0!important;height:27px;padding:0 8px!important;font-size:11px!important}
+  #battleScreen .cmd-btn small{display:none}
+  #battleScreen .b-top{padding-top:calc(4px + var(--safeT,0px))!important}
+  #battleScreen .b-arena{top:calc(70px + var(--safeT,0px))!important;bottom:calc(74px + var(--safeB,0px))!important}
+  #battleScreen .fighter{height:96%!important;bottom:0!important}
+}

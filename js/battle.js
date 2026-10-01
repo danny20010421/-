@@ -170,7 +170,7 @@ function renderSkills() {
   $('bItemCount').textContent = `${left}/${GAME_SETTINGS.itemsPerBattle}`;
 }
 function renderBag() {
-  const inv = SAVE.data.inventory; const ids = Object.keys(ITEMS).filter(id => inv[id] > 0 && !ITEMS[id].effect.exp && !ITEMS[id].effect.sweep);
+  const inv = SAVE.data.inventory; const ids = Object.keys(ITEMS).filter(id => inv[id] > 0 && !ITEMS[id].effect.exp && !ITEMS[id].effect.sweep && !ITEMS[id].effect.skinTicket);
   const left = battle ? GAME_SETTINGS.itemsPerBattle - battle.itemsUsed : 0;
   $('bBagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<button class="bagItem r-${it.rarity}" data-id="${id}" ${left <= 0 ? 'disabled' : ''}>${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b></button>`; }).join('')
     : `<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到扭蛋機抽道具。</div>`;

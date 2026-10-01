@@ -106,6 +106,9 @@ function renderAdmin(tab) {
       <button class="btn-ghost" data-t="export">匯出後台設定</button>
       <label class="btn-ghost filebtn">匯入後台設定<input type="file" accept="application/json" id="admImport"></label>
       <button class="btn-ghost" data-t="tokens">給自己 10 枚寶藏幣</button>
+      <button class="btn-ghost" data-t="tokens1000">獲得 1000 枚寶藏幣</button>
+      <span class="adm-get"><select id="admGetChar">${CHARACTER_ORDER.map(id => `<option value="${id}">${CHARACTERS[id].name}${owned(id) ? '（已擁有）' : ''}</option>`).join('')}</select><button class="btn-ghost" data-t="getChar">馬上獲得此角色</button></span>
+      <span class="adm-get"><select id="admGetSkin">${Object.entries(SKINS).filter(([k, s]) => !s.soon).map(([k, s]) => `<option value="${k}">${CHARACTERS[s.char].name}・${s.name}</option>`).join('')}</select><button class="btn-ghost" data-t="getSkin">馬上獲得此皮膚</button></span>
       <button class="btn-ghost" data-t="unlock">標記全部篇章已通關</button>
       <button class="btn-ghost" data-t="lvup">目前船長 +10 級</button>
       <button class="btn-ghost" data-t="allchars">獲得全部角色（LV 50）</button>
@@ -152,6 +155,9 @@ function saveAdmin() {
   const t = document.querySelector('#adminNav .on').dataset.tab; renderAdmin(t); $('adminStatus').textContent = '已儲存並套用'; $('adminStatus').className = 'astatus ok';
 }
 function adminTool(t) {
+  if (t === 'tokens1000') { SAVE.data.tokens += 1000; SAVE.save(); coins(); toast('獲得 1000 枚寶藏幣', 'gold'); return; }
+  if (t === 'getChar') { const id = $('admGetChar').value; if (owned(id)) { toast(`${CHARACTERS[id].name} 已經在船上了`); return; } addCrew(id, 50); toast(`${CHARACTERS[id].name} 加入了船隊（LV 50）`, 'gold'); renderAdmin('tools'); return; }
+  if (t === 'getSkin') { const k = $('admGetSkin').value, S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }; S.owned = S.owned || []; if (S.owned.includes(k)) { toast('已經擁有這款皮膚'); return; } S.owned.push(k); SAVE.save(); toast(`獲得皮膚「${SKINS[k].name}」`, 'gold'); return; }
   if (t === 'export') { const blob = new Blob([JSON.stringify(adminLoad(), null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'op_admin_config.json'; a.click(); }
   if (t === 'tokens') { addTokens(10, '後台發放'); }
   if (t === 'unlock') { CHAPTERS.forEach(c => SAVE.data.chapters[c.id].cleared = true); SAVE.save(); toast('全部篇章已標記通關'); }

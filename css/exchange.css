@@ -1,36 +1,115 @@
-/* ===== 摩甘茲的懸賞金交易所 ===== */
-.m-xc .mc-art{background:radial-gradient(circle at 70% 40%,rgba(255,240,200,.25),transparent 60%),url('../assets/chars/morgans.webp?v=49') center 18%/cover,#e9dfc8!important}
-.m-xc .mc-art::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(8,18,32,.55))}
-#exchangeScreen{background:radial-gradient(ellipse at 50% 0,#2a3b5a,#0b1426 70%);overflow:hidden}
+/* ===== 懸賞金交易所 v2（看盤 App 風格，紅漲綠跌） ===== */
+.m-xc .mc-art{background:linear-gradient(160deg,rgba(255,90,90,.35),transparent 50%),url('../assets/chars/morgans.webp?v=49') center 18%/cover,#13233d!important}
+.m-xc .mc-art::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(8,18,32,.6))}
+#exchangeScreen{background:radial-gradient(ellipse at 50% -10%,#1d2d4a,#070d1a 70%);overflow:hidden}
 .xc-title{margin:0 auto 0 8px;font:900 20px var(--serif)}
-.xc-body{position:absolute;inset:calc(64px + var(--safeT)) 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px clamp(10px,2vw,24px) calc(24px + var(--safeB))}
-.xc-intro{max-width:760px;margin:10px auto;display:flex;gap:18px;align-items:flex-start;padding:18px;border-radius:18px;background:linear-gradient(180deg,#f3ead2,#e2d4b0);color:#2b2216;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-.xc-intro img{width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #8a6a3a;flex:0 0 auto}
-.xc-intro h2{margin:0 0 6px;font:900 24px var(--serif)}.xc-intro p,.xc-intro li{line-height:1.7;font-size:14px}.xc-intro ul{padding-left:18px;margin:8px 0}
-.xc-best{color:#6a4a1a}
-.xc-top{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin:4px 0 10px;font-size:14px}
-.xc-top span{padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}
-.up{color:#5fe09a}.dn{color:#ff7a7a}
-.xc-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;max-width:1200px;margin:0 auto}
-.xc-paper{padding:14px;border-radius:14px;background:linear-gradient(180deg,#f2e9d0,#ddd0ae);color:#2b2216;box-shadow:0 8px 24px rgba(0,0,0,.35);font-family:var(--serif)}
-.xc-paper header{display:flex;align-items:center;gap:10px;border-bottom:3px double #5a4426;padding-bottom:8px;margin-bottom:8px}
-.xc-paper header img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid #5a4426}
-.xc-paper h3{margin:0;font:900 22px var(--serif);letter-spacing:.08em}.xc-paper small{font-family:var(--sans);font-size:12px;color:#6a5434}
-.xc-news{padding:10px 4px;border-bottom:1px dashed #9a845a}
-.xc-news p{margin:0 0 6px;font-size:16px;font-weight:900;line-height:1.45}
-.xc-news footer{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--sans);font-size:12px;color:#5a4a30}
-.xc-news footer .btn-ghost{color:#2b2216;border-color:#8a6a3a;background:rgba(255,255,255,.4)}
-.xc-news.true{background:rgba(60,170,100,.14)}.xc-news.true b{color:#1d7a44}
-.xc-news.fake{background:rgba(220,60,60,.12)}.xc-news.fake p{text-decoration:line-through;opacity:.75}.xc-news.fake b{color:#b42828}
-.xc-yday{margin-top:8px;font-family:var(--sans);font-size:13px}.xc-yday summary{cursor:pointer;font-weight:700}
-.xc-yday p{margin:4px 0}.xc-yday .fake{color:#b42828}.xc-yday .true{color:#1d7a44}
-.xc-market{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-content:start}
-.xc-stock{display:grid;grid-template-columns:48px minmax(0,1fr) 90px;grid-template-rows:auto auto;gap:6px 10px;align-items:center;padding:10px;border-radius:12px;background:rgba(10,22,44,.75);border:1px solid rgba(232,193,112,.35)}
-.xc-stock img{width:48px;height:48px;border-radius:10px;object-fit:cover}
-.xs-info{display:flex;flex-direction:column;min-width:0}.xs-info b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.xs-info span{font:900 18px/1.2 var(--num,sans-serif)}.xs-info em{font-style:normal;font-size:12px;margin-left:4px}.xs-info small{color:#cbd6e6;font-size:11.5px}
-.xc-spark{width:90px;height:26px}
-.xs-btn{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.xs-btn button{padding:6px 0}
-.xc-foot{display:flex;justify-content:center;margin:16px 0 8px}
-@media (max-width:860px){.xc-grid{grid-template-columns:1fr}.xc-intro{flex-direction:column;align-items:center;text-align:left}.xc-market{grid-template-columns:1fr}}
+.xc-body{position:absolute;inset:calc(60px + var(--safeT)) 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px clamp(8px,1.6vw,20px) calc(18px + var(--safeB))}
+.up{color:#ff5a5a!important}.dn{color:#3fd07a!important}
+.mk-top{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px}
+.mk-top>div{display:flex;flex-direction:column;justify-content:center;padding:6px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.mk-top small{font-size:11px;color:#9fb0c8}.mk-top b{font:800 18px/1.2 var(--num,system-ui)}.mk-top em{font-style:normal;font-size:12px}
+.mk-idx{min-width:150px}.mk-wallet{min-width:110px}
+.mk-st{flex-direction:row!important;align-items:center;gap:8px;margin-right:auto;color:#cbd6e6;font-size:13px}
+.mk-st i{width:9px;height:9px;border-radius:50%;background:#6a7a90}.mk-st.on i{background:#ff5a5a;box-shadow:0 0 0 4px rgba(255,90,90,.25);animation:mkLive 1.4s infinite}
+@keyframes mkLive{50%{box-shadow:0 0 0 7px rgba(255,90,90,.08)}}
+.mk-tabs{display:none;gap:4px;margin-bottom:8px}
+.mk-tabs button{flex:1;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#cbd6e6;font-weight:700}
+.mk-tabs button.on{background:#e8b64a;color:#2a1600;border-color:#e8b64a}
+.mk-grid{display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr) minmax(260px,330px);gap:10px;align-items:start}
+.mk-list,.mk-main,.mk-side>div{border-radius:14px;background:rgba(10,20,40,.72);border:1px solid rgba(255,255,255,.1)}
+.mk-list{padding:4px;max-height:calc(100dvh - 190px);overflow-y:auto}
+.mk-row{display:grid;grid-template-columns:34px minmax(0,1fr) 64px 76px;gap:8px;align-items:center;width:100%;padding:7px 8px;border:0;border-radius:10px;background:none;color:#f0f4fa;text-align:left}
+.mk-row+.mk-row{border-top:1px solid rgba(255,255,255,.05)}
+.mk-row:hover{background:rgba(255,255,255,.05)}.mk-row.on{background:rgba(232,182,74,.14);box-shadow:inset 3px 0 0 #e8b64a}
+.mk-emb{display:grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--ec);box-shadow:0 0 0 2px var(--ec),0 0 0 3px rgba(0,0,0,.4);flex:0 0 auto}
+.mk-emb img{width:100%;height:100%;object-fit:cover}.mk-emb b{font:900 15px var(--serif);color:#fff;text-shadow:0 1px 2px #000}
+.mk-nm{display:flex;flex-direction:column;min-width:0}.mk-nm b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mk-nm small{font-size:11px;color:#8fa0b8}
+.mk-spark{width:64px;height:22px;display:block}
+.mk-px{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}.mk-px b{font-size:14px}.mk-px small{font-size:11px}
+.mk-main{padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mk-head{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.mk-hn h3{margin:0;font:900 18px var(--serif)}.mk-hn h3 small{font:600 12px system-ui;color:#8fa0b8}
+.mk-big{display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}.mk-big b{font:900 30px/1.1 var(--num,system-ui)}.mk-big span{font-size:14px;font-weight:700}
+.mk-ohlc{display:grid;grid-template-columns:repeat(4,auto);gap:4px 14px;margin:0 0 0 auto;font-size:12px}
+.mk-ohlc dt{color:#8fa0b8}.mk-ohlc dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.mk-cv{position:relative;height:clamp(220px,38vh,380px);border-radius:10px;background:rgba(0,0,0,.25)}
+.mk-cv canvas{display:block}
+.mk-vt{position:absolute;right:8px;top:6px;display:flex;gap:4px;z-index:1}
+.mk-vt button{padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:#cbd6e6;font-size:12px}.mk-vt button.on{background:#e8b64a;color:#2a1600}
+.mk-trade{display:flex;flex-direction:column;gap:8px}
+.mk-closed{margin:0;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06);color:#cbd6e6;font-size:13px}
+.mk-qty{display:flex;align-items:center;gap:10px;font-size:13px}.mk-qty input{flex:1;accent-color:#e8b64a}.mk-qty b{min-width:44px;text-align:right;font-size:16px}
+.mk-est{margin:0;font-size:12px;color:#9fb0c8}
+.mk-bs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mk-bs button{display:flex;flex-direction:column;align-items:center;padding:12px 6px;border:0;border-radius:12px;font:900 20px var(--serif);color:#fff;letter-spacing:.2em}
+.mk-bs small{font:600 11px system-ui;letter-spacing:0;opacity:.85}
+.mk-buy{background:linear-gradient(180deg,#ff6a6a,#c8322b);box-shadow:0 6px 16px rgba(200,50,43,.4)}
+.mk-sell{background:linear-gradient(180deg,#4ad88a,#1f9a55);box-shadow:0 6px 16px rgba(31,154,85,.4)}
+.mk-bs button[disabled]{opacity:.35;box-shadow:none}
+.mk-mine{margin:0;font-size:13px;color:#cbd6e6}
+.mk-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.mk-side>div{padding:10px 12px}.mk-side h4{margin:0 0 6px;font-size:14px}
+.mk-hold table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.mk-hold th{color:#8fa0b8;font-weight:600;text-align:right;padding:3px}.mk-hold th:first-child,.mk-hold td:first-child{text-align:left}
+.mk-hold td{text-align:right;padding:5px 3px;border-top:1px solid rgba(255,255,255,.06);cursor:pointer}.mk-hold td small{font-size:10.5px}
+.mk-real{font-size:12.5px;color:#cbd6e6;margin:8px 0 4px}
+.mk-hold details{font-size:12px;color:#cbd6e6}.mk-hold details p{margin:3px 0}
+.mk-empty{font-size:12.5px;color:#8fa0b8;margin:4px 0}
+.mk-news{max-height:330px;overflow-y:auto}
+.mk-news p{margin:0;padding:6px 0;border-top:1px solid rgba(255,255,255,.06);font-size:12.5px;line-height:1.5;cursor:pointer;color:#e6ecf4!important}
+.mk-news p.up{box-shadow:inset 3px 0 0 #ff5a5a;padding-left:8px}.mk-news p.dn{box-shadow:inset 3px 0 0 #3fd07a;padding-left:8px}.mk-news p.clar{box-shadow:inset 3px 0 0 #e8b64a;padding-left:8px;color:#ffe7a8!important}
+.mk-news time{color:#8fa0b8;margin-right:6px;font-size:11px}
+.mk-note{max-width:1200px;margin:12px auto 0;font-size:11.5px;color:#7f90a8;text-align:center}
+.mk-banner{position:absolute;left:50%;top:calc(66px + var(--safeT));z-index:20;transform:translate(-50%,-140%);display:flex;gap:10px;align-items:center;max-width:min(680px,94vw);padding:10px 16px;border-radius:12px;background:rgba(10,20,40,.95);border:1px solid #e8b64a;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.8,.2,1);cursor:pointer;font-size:14px}
+.mk-banner.show{transform:translate(-50%,0)}
+.mk-banner b{flex:0 0 auto;padding:2px 8px;border-radius:6px;background:#e8b64a;color:#2a1600;font-size:12px}
+.mk-banner.up{border-color:#ff5a5a}.mk-banner.up b{background:#ff5a5a;color:#fff}.mk-banner.dn{border-color:#3fd07a}.mk-banner.dn b{background:#2fae6a;color:#fff}
+@media (max-width:1200px){.mk-grid{grid-template-columns:minmax(240px,300px) minmax(0,1fr)}.mk-side{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}}
+@media (max-width:860px){
+  .mk-tabs{display:flex}
+  .mk-grid{grid-template-columns:1fr}
+  .mk-grid>section{display:none}
+  .mk-grid.tab-market .mk-list,.mk-grid.tab-chart .mk-main{display:flex;flex-direction:column}
+  .mk-grid.tab-market .mk-list{display:block;max-height:none}
+  .mk-grid.tab-hold .mk-side,.mk-grid.tab-news .mk-side{display:flex}
+  .mk-grid.tab-hold .mk-news,.mk-grid.tab-news .mk-hold{display:none}
+  .mk-news{max-height:none}
+  .mk-top{display:grid;grid-template-columns:1fr 1fr}.mk-st{grid-column:1/-1;order:-1}
+  .mk-ohlc{margin:0;grid-template-columns:repeat(4,1fr);width:100%}
+  .mk-cv{height:min(300px,42dvh)}
+}
+/* v59：標誌、類股分類、手機操作 */
+.m-xc .mc-art{background:radial-gradient(circle at 50% 45%,rgba(255,220,140,.35),transparent 60%),url('../assets/ui/exchange_logo.webp?v=59') center 42%/58% no-repeat,linear-gradient(160deg,#1d3460,#0b1426)!important}
+.mk-logo{width:52px;height:52px;object-fit:contain;align-self:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.mk-top>.mk-logo{padding:0;border:0;background:none}
+.mk-cats{position:sticky;top:0;z-index:2;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px 2px 6px;background:rgba(10,20,40,.96)}
+.mk-cats::-webkit-scrollbar{display:none}
+.mk-cats button{flex:0 0 auto;padding:6px 11px;border-radius:99px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#cbd6e6;font-size:12.5px;font-weight:700;white-space:nowrap}
+.mk-cats button.on{background:#e8b64a;border-color:#e8b64a;color:#2a1600}
+.mk-etf{margin:2px 0 0;font-size:11.5px;color:#9fb0c8}
+.mk-row{min-height:52px}
+@media (max-width:860px){
+  .mk-logo{width:40px;height:40px;grid-row:span 2}
+  .mk-top{grid-template-columns:auto 1fr 1fr}.mk-st{grid-column:1/-1}
+  .mk-row{grid-template-columns:36px minmax(0,1fr) 56px 74px;padding:10px 8px}
+  .mk-tabs{position:sticky;top:0;z-index:5;background:rgba(7,13,26,.96);padding:4px 0}
+  .mk-tabs button{padding:10px 4px;font-size:14px}
+  .mk-cats{top:50px}
+  /* 交易區固定在畫面底部，滑桿與買賣按鈕隨手可按 */
+  .mk-grid.tab-chart .mk-trade{position:sticky;bottom:calc(-18px - var(--safeB));z-index:4;margin:0 -12px -12px;padding:10px 12px calc(12px + var(--safeB));background:linear-gradient(180deg,rgba(10,20,40,.9),#0a1428 30%);border-top:1px solid rgba(232,182,74,.35);border-radius:0 0 14px 14px}
+  .mk-qty input{height:28px}
+  .mk-bs button{padding:14px 6px;font-size:22px}
+  .mk-banner{top:calc(60px + var(--safeT));font-size:13px}
+}
+.xc-title{display:flex;align-items:center;gap:8px}.xc-logo{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+@media (max-width:860px){
+  .mk-top{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px}
+  .mk-top>div{padding:5px 8px}.mk-top b{font-size:15px}
+  .mk-st{grid-column:1/-1!important;font-size:12px}
+  .mk-idx,.mk-wallet{min-width:0!important}
+  .mk-cats{top:52px;margin-top:0}
+  .mk-list{padding-top:0}
+  .xc-logo{width:32px;height:32px}
+}
+@media (max-width:860px){.mk-grid.tab-market .mk-list{overflow:visible!important}}
+@media (max-width:860px){.mk-grid{grid-template-columns:minmax(0,1fr)!important}.mk-list,.mk-cats{min-width:0;max-width:100%}}

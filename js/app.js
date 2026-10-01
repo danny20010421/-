@@ -577,7 +577,7 @@ function openGacha(ret) {
   updateGachaBtns(); showScreen('gachaScreen'); if (typeof switchHub === 'function') switchHub('summon');
 }
 function updateGachaBtns() {
-  const t = SAVE.data.tokens; $('pull1').disabled = t < GACHA_COST.single || gachaBusy; $('pull10').disabled = t < GACHA_COST.ten || gachaBusy;
+  const t = SAVE.data.tokens; $('pull1').disabled = t < GACHA_COST.single || gachaBusy; $('pull10').disabled = t < GACHA_COST.ten || gachaBusy; if ($('pull100')) $('pull100').disabled = t < GACHA_COST.hundred || gachaBusy;
   const free = !SAVE.data.freeDraw && Object.keys(SAVE.data.roster).length > 0;
   $('freeBox').classList.toggle('hidden', !free); $('pullFree').disabled = gachaBusy;
   $('gEmpty').textContent = t < 1 && !free ? '寶藏幣不夠了。回到篇章推進劇情任務就能再拿到。' : '';
@@ -635,7 +635,7 @@ function showResults(res, title) {
   setTimeout(() => { if (res.some(r => r.char || ['SSR'].includes(rarOf(r)))) coinBurst($('gResBurst'), 40); }, 400);
   $('gResGrid').innerHTML = res.map((x, i) => {
     if (x.char) { const c = CHARACTERS[x.char]; return `<div class="g-cap r-SSR char" style="--d:${i * 90}ms"><span class="rar c-rar r-${CHAR_RARITY[x.char] || 'SSR'}">${CHAR_RARITY[x.char] || 'SSR'}</span><span class="c-tags"><span class="c-badge">${x.dup ? '重複' : '新船員'}</span></span><img src="${c.image}" alt=""><b>${c.name}</b><small>${x.dup ? '已擁有・重複卡可到海軍本部換貝里' : `LV ${x.lv}・${TIERS[tierOf(x.lv)].name}`}</small>${x.setCap ? `<button class="btn-gold sm" data-cap="${x.char}">加入陣容並設為先鋒</button>` : ''}</div>`; }
-    const it = ITEMS[x.item]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}</b><small>${it.desc}</small></div>`;
+    const it = ITEMS[x.item]; return `<div class="g-cap r-${it.rarity}" style="--d:${i * 90}ms"><span class="rar r-${it.rarity}">${it.rarity}</span>${itemIcon(it)}<b>${it.name}${x.count > 1 ? ` ×${x.count}` : ''}</b><small>${it.desc}</small></div>`;
   }).join('');
   $('gResGrid').querySelectorAll('[data-cap]').forEach(b => b.onclick = () => { SAVE.data.player = b.dataset.cap; lineupAdd(b.dataset.cap, true); b.textContent = '已設為先鋒'; b.disabled = true; toast(`${CHARACTERS[b.dataset.cap].name} 成為先鋒`, 'gold'); });
   $('gResult').classList.add('show'); gachaBusy = false; updateGachaBtns();
@@ -643,7 +643,7 @@ function showResults(res, title) {
 function grant(res) { res.forEach(x => { if (x.char) { if (owned(x.char)) { x.dup = true; SAVE.data.dupes = SAVE.data.dupes || {}; SAVE.data.dupes[x.char] = (SAVE.data.dupes[x.char] || 0) + 1; } else addCrew(x.char, x.lv); } else SAVE.data.inventory[x.item] = (SAVE.data.inventory[x.item] || 0) + 1; }); SAVE.save(); }
 function pityCaption() { const c = document.querySelector('#rateTable caption'); if (c) c.innerHTML = `出現機率<small class="pity-note">再 ${Math.max(1, (GAME_SETTINGS.gachaPity || 150) - (SAVE.data.pity || 0))} 抽必出 SR 以上（道具或角色）</small>`; }
 async function pull(n) {
-  const cost = n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
+  const cost = n === 100 ? GACHA_COST.hundred : n === 10 ? GACHA_COST.ten : GACHA_COST.single; if (gachaBusy || SAVE.data.tokens < cost) return;
   gachaBusy = true; SAVE.data.tokens -= cost; coins(); updateGachaBtns();
   const res = [], P = GAME_SETTINGS.gachaPity || 150; SAVE.data.pity = SAVE.data.pity || 0;
   for (let i = 0; i < n; i++) {
@@ -653,11 +653,13 @@ async function pull(n) {
     if (x.char || ['SR', 'SSR'].includes(rarOf(x))) SAVE.data.pity = 0;
     res.push(x);
   }
-  if (n === 10 && !res.some(x => x.char || ['SR', 'SSR'].includes(rarOf(x)))) res[9] = rollOne('SR');
+  /* 每 10 抽一組，每組保底 SR 以上 */
+  if (n >= 10) for (let g = 0; g < n; g += 10) { const grp = res.slice(g, g + 10); if (!grp.some(x => x.char || ['SR', 'SSR'].includes(rarOf(x)))) res[g + 9] = rollOne('SR'); }
   grant(res); SAVE.data.pulls += n; SAVE.save(); pityCaption();
   const best = res.map(rarOf).sort((a, b) => ['N', 'R', 'SR', 'SSR'].indexOf(b) - ['N', 'R', 'SR', 'SSR'].indexOf(a))[0];
   await playMachine(best);
-  showResults(res, n === 10 ? '十連結果' : res[0].char ? '新船員加入！' : '獲得道具');
+  if (n === 100) { const chars = res.filter(x => x.char), agg = {}; res.filter(x => x.item).forEach(x => { agg[x.item] = (agg[x.item] || 0) + 1; }); const items = Object.keys(agg).sort((a, b) => ['SSR', 'SR', 'R', 'N'].indexOf(ITEMS[a].rarity) - ['SSR', 'SR', 'R', 'N'].indexOf(ITEMS[b].rarity)).map(k => ({ item: k, count: agg[k] })); showResults([...chars, ...items], `百連結果・角色 ${chars.length} 位、道具 ${res.length - chars.length} 件`); }
+  else showResults(res, n === 10 ? '十連結果' : res[0].char ? '新船員加入！' : '獲得道具');
 }
 async function pullFree() {
   if (gachaBusy || SAVE.data.freeDraw) return; const pool = unownedChars(); if (!pool.length) return;
@@ -694,8 +696,16 @@ function spinCapsules(ms) {
 }
 function openBag() {
   const inv = SAVE.data.inventory, ids = Object.keys(ITEMS).filter(id => inv[id] > 0);
-  $('bagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<div class="bagItem static r-${it.rarity}">${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b></div>`; }).join('') : '<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到懸賞處抽道具。</div>';
+  $('bagList').innerHTML = ids.length ? ids.map(id => { const it = ITEMS[id]; return `<div class="bagItem static r-${it.rarity}">${itemIcon(it)}<span class="bi-name">${it.name}<small>${it.desc}</small></span><b>×${inv[id]}</b>${it.effect.skinTicket ? `<button class="btn-gold sm" data-ticket>使用</button>` : ''}</div>`; }).join('') : '<div class="bagEmpty">背包是空的。完成劇情任務拿到寶藏幣，就能到懸賞處抽道具。</div>';
+  $('bagList').querySelectorAll('[data-ticket]').forEach(b => b.onclick = openSkinTicket);
   openModal('bagModal');
+}
+/* 限定皮膚選擇卷：從 ticket 皮膚裡任選一款尚未擁有的 */
+function openSkinTicket() {
+  const S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }, list = Object.entries(SKINS).filter(([k, s]) => s.ticket);
+  const box = document.createElement('div'); box.className = 'dl-wrap'; box.innerHTML = `<div class="dl-card st-card"><header><h3>限定皮膚選擇卷</h3><button class="icon-btn sm" data-x aria-label="關閉">×</button></header><p class="dl-sub">選一款你喜歡的限定皮膚（擁有 ${SAVE.data.inventory.skin_ticket || 0} 張）。</p><div class="st-grid">${list.map(([k, s]) => { const own = S.owned.includes(k); return `<button class="st-opt ${own ? 'own' : ''}" data-k="${k}" ${own ? 'disabled' : ''}><img src="${s.image}" alt=""><b>${s.name}</b><small>${CHARACTERS[s.char].name}${own ? '・已擁有' : ''}</small></button>`; }).join('')}</div></div>`;
+  document.body.appendChild(box); if (window.fixIcons) fixIcons(box); box.querySelector('[data-x]').onclick = () => box.remove();
+  box.querySelectorAll('.st-opt[data-k]:not([disabled])').forEach(b => b.onclick = () => { const k = b.dataset.k, s = SKINS[k]; confirmBox(`選擇「${s.name}」？`, `會用掉 1 張選擇卷。${owned(s.char) ? '' : `（你還沒有${CHARACTERS[s.char].name}，取得角色後就能裝備）`}`, '選擇', () => { if (!(SAVE.data.inventory.skin_ticket > 0)) return; SAVE.data.inventory.skin_ticket--; S.owned.push(k); SAVE.save(); box.remove(); SFX.play('rare'); toast(`獲得限定皮膚「${s.name}」！`, 'gold'); openBag(); }); });
 }
 
 /* ---------- 搖桿 ---------- */
@@ -721,7 +731,7 @@ function boot() {
   ['gachaBtnMap', 'gachaBtnWorld'].forEach(i => { const b = $(i); if (b) b.onclick = () => openGacha(); });
   ['bagBtnMap', 'bagBtnWorld', 'bagBtnGacha'].forEach(i => { const b = $(i); if (b) b.onclick = openBag; });
   $('gBackBtn').onclick = () => { if (gachaReturn === 'worldScreen') { showScreen('worldScreen'); coins(); } else if (gachaReturn === 'modeScreen') openModes(); else if (gachaReturn === 'towerScreen') openTower(); else openChart(); };
-  $('pull1').onclick = () => pull(1); $('pull10').onclick = () => pull(10); $('mCrank').onclick = () => pull(1);
+  $('pull1').onclick = () => pull(1); $('pull10').onclick = () => pull(10); if ($('pull100')) { $('pull100').onclick = () => pull(100); $('pull100').querySelector('small').textContent = `${GACHA_COST.hundred} 枚・每 10 抽保底 SR`; } $('mCrank').onclick = () => pull(1);
   $('gResOk').onclick = () => $('gResult').classList.remove('show');
   $('actBtn').onclick = () => WORLD && WORLD.interact();
   $('dialog').onclick = () => nextLine();

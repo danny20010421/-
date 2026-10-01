@@ -105,3 +105,59 @@
 
 @media (max-width:760px){.lb-bg img{object-position:50% 50%}}
 .ch-lobby{padding:6px 12px;font-weight:700}
+
+/* ===== v58 大廳改版：玩家資料、貨幣＋、左側卡片、下方功能列 ===== */
+#modeScreen .profile-chip.lb-prof{display:flex;align-items:center;gap:12px;padding:4px 18px 4px 4px;border-radius:99px;background:linear-gradient(90deg,rgba(8,16,34,.85),rgba(8,16,34,.4));border:1px solid rgba(232,193,112,.55);box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:min(420px,60vw);text-align:left;color:#fff}
+.lbpf-av{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:50%;padding:3px;background:conic-gradient(from 200deg,#ffe7a8,#c98a22,#ffe7a8,#a8681a,#ffe7a8)}
+.lbpf-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#0b1830}
+.lbpf-av em{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);padding:0 7px;border-radius:99px;background:#0b1830;border:1px solid #e8b64a;font:800 11px/1.5 var(--num,system-ui);font-style:normal;color:#ffe7a8;white-space:nowrap}
+.lbpf-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.lbpf-txt>b{font:900 18px/1.2 var(--serif);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lbpf-txt>b i{font-style:normal;font-size:14px}
+.lbpf-txt small{display:flex;align-items:center;gap:10px;font-size:12px;color:#cbd6e6;white-space:nowrap}
+.lbpf-txt small em{font-style:normal;font-weight:700;color:#ffcf5a}
+.lbpf-id{display:inline-flex;align-items:center;gap:4px}.lbpf-cp{cursor:pointer;opacity:.8;font-size:13px}
+.lbpf-xp{display:block;height:5px;width:min(220px,40vw);border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:2px}.lbpf-xp i{display:block;height:100%;background:linear-gradient(90deg,#3fb6e8,#7ad8ff)}
+#modeScreen .topbar .coin{position:relative;padding-right:34px!important}
+.lb-plus{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:grid;place-items:center;padding:0;border-radius:6px;border:1px solid #8a5a12;background:linear-gradient(180deg,#ffe08a,#d89a2a);color:#3a2000;font:900 16px/1 system-ui}
+/* 左側卡片 */
+.lb-left{gap:8px!important}
+.lb-login,.lb-news,.lb-bounty,.lb-team{position:relative;border-radius:12px!important;border:1px solid rgba(232,193,112,.55)!important;background:linear-gradient(90deg,rgba(10,20,44,.88),rgba(10,20,44,.62))!important;padding-right:30px!important}
+.lb-chev{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:22px;color:#e8d8b0;opacity:.85}
+.lb-news i,.lbb-ico{font-style:normal;font-size:26px;flex:0 0 auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.lb-bounty{display:flex!important;flex-direction:row!important;align-items:center;gap:10px!important}
+.lbb-body{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.lb-backup{position:relative;border-radius:12px!important;padding-left:40px!important;background:linear-gradient(90deg,rgba(120,24,24,.9),rgba(80,16,16,.75))!important}
+.lb-new{position:absolute;left:0;top:0;padding:4px 8px;border-radius:12px 0 10px 0;background:#e0304a;font:900 13px/1 var(--serif);font-style:normal;color:#fff}
+.lb-backup .btn-gold{border-radius:99px}
+.lbt-h{display:flex;align-items:center;gap:8px;width:100%}.lbt-h i{font-style:normal;font-size:22px;color:#e8b64a}.lbt-h b{font-size:15px}
+.lb-team .lbt-av{width:54px!important;height:54px!important;border:2px solid #e8b64a!important;overflow:visible!important}
+.lb-team .lbt-av img{border-radius:50%}
+.lb-team .lbt-av em{bottom:-14px!important;background:none!important;font-size:11px!important;font-weight:800!important;text-shadow:0 1px 2px #000}
+.lb-team{padding-bottom:18px!important}
+/* 右側功能卡 */
+.lb-tiles button{border-radius:12px!important;border:1px solid rgba(232,193,112,.6)!important;background:linear-gradient(180deg,rgba(20,34,64,.92),rgba(10,20,44,.85))!important;padding:12px 6px 10px!important}
+.lb-tiles i{font-size:30px!important;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+.lb-tiles b::after{content:" ›";opacity:.8}
+/* 下方功能列：一整條，項目之間有分隔線 */
+.lb-dock{gap:0!important;padding:6px 8px;border-radius:14px;border:1px solid rgba(232,193,112,.6);background:linear-gradient(180deg,rgba(14,26,52,.92),rgba(6,12,28,.92));box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.lb-dock button{width:64px!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;padding:6px 2px!important}
+.lb-dock button+button{border-left:1px solid rgba(232,193,112,.22)!important}
+.lb-dock button:hover{background:rgba(255,255,255,.06)!important;transform:none!important}
+.lb-dock i{font-size:24px!important}
+@media (max-width:1100px){.lb-dock button{width:54px!important}.lb-dock b{font-size:11px!important}}
+@media (max-width:760px){
+  #modeScreen .profile-chip.lb-prof{max-width:calc(100vw - 210px);padding-right:10px;gap:8px}
+  .lbpf-av{width:44px;height:44px}.lbpf-txt>b{font-size:14px}.lbpf-txt small{font-size:10.5px;gap:6px}.lbpf-id{display:none}.lbpf-xp{width:90px}
+  #modeScreen .topbar .coin{padding-right:28px!important}.lb-plus{width:20px;height:20px;font-size:14px}
+  .lb-bell{display:none}
+  .lb-dock{display:grid!important;grid-template-columns:repeat(4,1fr);row-gap:4px}
+  .lb-dock button{width:auto!important}.lb-dock button:nth-child(5){border-left:0!important}
+}
+#modeScreen .lb-left{top:calc(96px + var(--safeT))!important}
+#modeScreen .profile-chip.lb-prof{flex-shrink:0}
+@media (max-width:760px){
+  #modeScreen .topbar .snd{display:none}
+  #modeScreen .profile-chip.lb-prof{min-width:130px;max-width:46vw;flex-shrink:1}
+  #modeScreen .topbar .coin{min-width:0}
+}
+@media (max-width:760px){#modeScreen .topbar .snd{display:none!important}.lbpf-id{display:none!important}.lbpf-txt small{flex-wrap:nowrap}}
