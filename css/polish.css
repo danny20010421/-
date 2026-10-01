@@ -226,3 +226,11 @@ button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-hi
 /* 15. 鏡頭後拉時，雙方站位跟著拉開（--spread 0～1） */
 .b-arena .fighter.L{translate:calc(var(--spread,0) * -38%) 0;transition:translate .9s cubic-bezier(.2,.8,.2,1)}
 .b-arena .fighter.R{translate:calc(var(--spread,0) * 38%) 0;transition:translate .9s cubic-bezier(.2,.8,.2,1)}
+.news-list p,#newsModal article p,.news-board article p,.nb-item p{white-space:pre-line;line-height:1.7}
+.modal article > p{white-space:pre-line}
+
+/* 16. 奪寶大冒險：速度提醒線與低速紅燈 */
+.rn-rhythm::after{content:"";position:absolute;top:-4px;bottom:-4px;left:var(--warn,30%);width:2px;border-radius:2px;background:#ff5a5a;box-shadow:0 0 6px #ff5a5a}
+.rn-rhythm.low{box-shadow:inset 0 0 0 1px #ff5a5a,0 0 14px rgba(255,80,80,.7);animation:rnLow .5s ease-in-out infinite alternate}
+.rn-rhythm.low i{background:linear-gradient(90deg,#ff3a3a,#ff7a5a)!important}
+@keyframes rnLow{to{box-shadow:inset 0 0 0 1px #ff5a5a,0 0 22px rgba(255,80,80,.95)}}

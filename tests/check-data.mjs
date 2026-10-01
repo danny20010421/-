@@ -25,7 +25,7 @@ T.pieces.forEach(p => { if (!CH.some(c => c.id === p.chapter)) errs.push(`歷史
 S.forEach(s => s.members.forEach(m => { if (!C[m]) errs.push(`羈絆 ${s.name} 的成員 ${m} 不存在`); }));
 EP.forEach(p => { if (!exists(p.banner)) errs.push(`活動橫幅不存在 ${p.id}`); p.shards.forEach(x => { if (!C[x.char]) errs.push(`活動池 ${p.id} 的角色 ${x.char} 不存在`); if (!exists(x.icon)) errs.push(`碎片圖不存在 ${x.icon}`); }); });
 LR.forEach(r => Object.keys(r.items || {}).forEach(k => { if (!IT[k]) errs.push(`七日登入的道具 ${k} 不存在`); }));
-Object.entries(OB).forEach(([id, o]) => { if (!C[id]) errs.push(`CHAR_OBTAIN 有不存在的角色 ${id}`); if (o.reward && o.reward !== '_duel' && !CH.some(c => c.id === o.reward)) errs.push(`${id} 的獎勵篇章 ${o.reward} 不存在`); });
+Object.entries(OB).forEach(([id, o]) => { (o.needs || []).forEach(n => { if (!C[n]) errs.push(`${id} 的組合條件角色 ${n} 不存在`); }); if (!C[id]) errs.push(`CHAR_OBTAIN 有不存在的角色 ${id}`); if (o.reward && !String(o.reward).startsWith('_') && !CH.some(c => c.id === o.reward)) errs.push(`${id} 的獎勵篇章 ${o.reward} 不存在`); });
 const html = rd('index.html'); for (const m of html.matchAll(/(?:src|href)="((?:js|css|assets)\/[^"?]+)/g)) if (!exists(m[1])) errs.push(`index.html 引用的檔案不存在 ${m[1]}`);
 warn.forEach(w => console.log('⚠ ' + w)); errs.forEach(e => console.log('✗ ' + e));
 console.log(errs.length ? `\n資料檢查失敗：${errs.length} 個錯誤` : `\n資料檢查通過（${O.length} 位角色、${CH.length} 個篇章、${warn.length} 個提醒）`);

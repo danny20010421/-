@@ -84,6 +84,10 @@ function copiedSkillDamage(actor,target,picked){
 const VOID_PCT_KEYS=['fixedLightHits','fixedLightHitsRange','randomPercentHits','chanceHalfHpCut','percentCurrentDmg','currentHpCut','maxHpCut','enemyCurrentHpCut','lostHpDamageMult','drainCurrentHpRange','drainMaxHp'];
 const isVoidPctSkill=ef=>!!ef&&VOID_PCT_KEYS.some(k=>ef[k]);
 function computeSkillOutcome(actor,target,skill,blockedEffects){
+ /* 追擊：主招之後再施放自己的另一招（可覆寫吸血比例），兩段傷害合計 */
+ if(!skill.__fu&&skill.effect&&skill.effect.followUp&&actor.skills){const F=skill.effect.followUp,r=computeSkillOutcome(actor,target,{...skill,__fu:true},blockedEffects);r.meta=r.meta||{};const base=actor.skills[F.skill];
+  if(base&&!r.meta.execute){const fs={...JSON.parse(JSON.stringify(base)),__fu:true};if(F.lifestealRange)fs.effect.lifestealRange=F.lifestealRange;const r2=computeSkillOutcome(actor,target,fs,blockedEffects);log(`👻 ${F.label||'追擊'}：${base.name}！`);r.damage+=r2.damage||0;if(r2.meta&&r2.meta.lifesteal)r.meta.lifesteal=(r.meta.lifesteal||0)+r2.meta.lifesteal}
+  return r}
  if(skill.effect&&skill.effect.randomSkillCast&&!skill.__cast){const RC=skill.effect.randomSkillCast,idx=RC.from[Math.floor(Math.random()*RC.from.length)],src=actor.skills[idx];if(src){const cs=deepClone(src);const r=computeSkillOutcome(actor,target,{...cs,__cast:true},blockedEffects);r.meta=r.meta||{};const m=rand(RC.mult[0],RC.mult[1]);if(r.damage>0&&!r.meta.execute)r.damage=Math.floor(r.damage*m);r.meta.castSkill=cs;log(`🌀 ${skill.name}：隨機施放「${cs.name}」（${m.toFixed(1)} 倍）！`);return r}}
  /* 燒傷加成（對已燒傷的對手）與隨機吸血比例 */
  if(!skill.__fire&&skill.effect&&(skill.effect.burnedBonusMult||skill.effect.lifestealRange)){const ef=skill.effect,was=(target.status.burn||0)>0;const r=computeSkillOutcome(actor,target,{...skill,__fire:true},blockedEffects);r.meta=r.meta||{};
@@ -186,6 +190,8 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.damageReductionRange){actor.status.damageReductionTurns=Math.max(actor.status.damageReductionTurns||0,ef.damageReductionTurns||2);actor.status.damageReductionValue=rand(ef.damageReductionRange[0],ef.damageReductionRange[1]);log(`🛡️ ${actor.name} 受到的傷害 -${Math.round(actor.status.damageReductionValue*100)}%`)}
  if(ef.dotChance&&ef.dotSequenceIfHit&&!target.voidImmune&&chance(ef.dotChance)){target.status.dots.push({turns:ef.dotSequenceIfHit.length,sequence:ef.dotSequenceIfHit,label:'劇毒',index:0});log(`☠️ ${target.name} 中了劇毒！`)}
  if(ef.copyEnemyBuffs){let n=0;['atk','def','spd'].forEach(k=>{if(target.buffs[k]>0){actor.buffs[k]=clamp(actor.buffs[k]+target.buffs[k],-6,6);n+=target.buffs[k]}});log(n?`🦊 ${actor.name} 複製了對手的能力提升！`:`🦊 對手沒有可以複製的能力提升`)}
+ if(ef.enemyAllDown&&!target.voidImmune&&!immuneTo(target)){['atk','def','spd'].forEach(k=>{target.buffs[k]=clamp(target.buffs[k]-ef.enemyAllDown,-6,6)});log(`👻 ${target.name} 全能力 -${ef.enemyAllDown}！`)}
+ if(ef.clearEnemyTimed&&!target.voidImmune){const T=target.status;['damageReductionTurns','invuln','dodge','thornTurns','regen','regenTurns','damageMultTurns','nextAttackMultTurns','undyingTurns','reflect','immune'].forEach(k=>{if(T[k]>0)T[k]=0});T.nextAttackMultValue=0;log(`👻 ${target.name} 身上的增益效果全部消失了……`)}
  if(ef.formImage){const FI=ef.formImage;actor.status.formTurns=FI.turns||3;if(!actor.baseImage)actor.baseImage=actor.image;actor.image=FI.image;actor.visMul=FI.scale||1;actor.mirror=!!FI.mirror;if(typeof refreshFighterImage==='function')refreshFighterImage(actor);log(`🐉 ${actor.name} 化為${FI.label||'另一種型態'}！`)}
  if(ef.invulnTurns){actor.status.invuln=Math.max(actor.status.invuln||0,ef.invulnTurns);log(`🛡️ ${actor.name} 接下來 ${ef.invulnTurns} 回合不受對手的攻擊！`)}if(ef.selfDot){actor.status.dots.push({turns:ef.selfDot[0],ratio:ef.selfDot[1],label:'副作用'});log(`💊 ${actor.name} 承受禁藥的副作用！`)}
  if(ef.decoys){actor.status.decoys=(actor.status.decoys||0)+ef.decoys;log(`🎖️ ${ef.decoys} 名海軍小兵趕到，擋在 ${actor.name} 前面！`)}

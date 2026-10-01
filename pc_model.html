@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>3D 模型測試：AI 建模素材檢查</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1a2c;font-family:system-ui,"Noto Sans TC",sans-serif;touch-action:none;color:#e8f0f8}
+  canvas{display:block;width:100%;height:100%}
+  #ui{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top,0px));max-width:min(360px,calc(100% - 20px));padding:10px 12px;border-radius:12px;background:rgba(6,18,30,.78);font-size:13px;line-height:1.6}
+  #ui b{color:#ffd26c}
+  #ui button,#ui select,#ui label.f{margin:4px 4px 0 0;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:#1f4a6a;color:#fff;font-size:13px;cursor:pointer}
+  #ui label.f input{display:none}
+  #stats{color:#9fd4ff}
+  #drop{position:fixed;inset:0;display:none;place-items:center;background:rgba(10,40,70,.7);font-size:22px;border:3px dashed #ffd26c}
+  #err{position:fixed;inset:0;display:none;place-items:center;background:#0a1a2e;padding:24px;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div><b>3D 模型測試頁</b>・FPS <b id="fps">--</b></div>
+  <div>把 Tripo／Meshy／Kivicube 匯出的 <b>.glb</b> 拖進畫面，或用下面的按鈕選擇。</div>
+  <label class="f">選擇 .glb 檔<input type="file" id="file" accept=".glb,.gltf"></label>
+  <select id="list"><option value="">assets/models 裡的模型…</option></select>
+  <button id="bIsland">島嶼場景：開</button><button id="bSpin">自動旋轉：開</button><button id="bBack">回遊戲</button>
+  <div id="stats">尚未載入模型</div>
+  <div style="opacity:.7">拖曳旋轉・滾輪／兩指縮放</div>
+</div>
+<div id="drop">放開以載入模型</div>
+<div id="err"></div>
+<script>
+/* 第二階段測試：檢查 AI 產生的 3D 模型在手機上的效能與質感（面數、貼圖、動畫）。確認沒問題後，再把模型接進關卡挑戰的島嶼。 */
+(function load(urls) { const s = document.createElement('script'); s.src = urls[0]; s.onload = start; s.onerror = () => urls.length > 1 ? load(urls.slice(1)) : fail('無法載入 PlayCanvas 引擎，請確認網路連線。'); document.head.appendChild(s); })(['https://cdn.jsdelivr.net/npm/playcanvas@1.62.0/build/playcanvas.min.js', 'https://cdn.jsdelivr.net/npm/playcanvas@1/build/playcanvas.min.js']);
+function fail(m) { const e = document.getElementById('err'); e.style.display = 'grid'; e.textContent = m; }
+document.getElementById('bBack').onclick = () => { location.href = './'; };
+function start() { try { build(); } catch (e) { fail('測試頁發生錯誤：' + e.message); console.error(e); } }
+function build() {
+  const canvas = document.getElementById('c'), app = new pc.Application(canvas, { mouse: new pc.Mouse(canvas), touch: new pc.TouchDevice(canvas) });
+  app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW); app.setCanvasResolution(pc.RESOLUTION_AUTO); app.graphicsDevice.maxPixelRatio = Math.min(devicePixelRatio || 1, 2);
+  addEventListener('resize', () => app.resizeCanvas());
+  app.scene.ambientLight = new pc.Color(.45, .5, .58); app.scene.gammaCorrection = pc.GAMMA_SRGB; app.scene.toneMapping = pc.TONEMAP_ACES;
+  const mat = (hex, o) => { const m = new pc.StandardMaterial(); m.diffuse = new pc.Color().fromString(hex); m.useMetalness = true; m.metalness = 0; m.gloss = (o && o.gloss) || .3; m.update(); return m; };
+  const prim = (type, pos, sc, m, parent) => { const e = new pc.Entity(); e.addComponent('render', { type, material: m, castShadows: true, receiveShadows: true }); e.setLocalPosition(...pos); e.setLocalScale(...sc); (parent || app.root).addChild(e); return e; };
+  const sun = new pc.Entity(); sun.addComponent('light', { type: 'directional', intensity: 1.4, color: new pc.Color(1, .95, .85), castShadows: true, shadowDistance: 30, shadowResolution: 2048, shadowBias: .2, normalOffsetBias: .05 }); sun.setEulerAngles(50, 30, 0); app.root.addChild(sun);
+  const fillL = new pc.Entity(); fillL.addComponent('light', { type: 'directional', intensity: .4, color: new pc.Color(.6, .75, 1) }); fillL.setEulerAngles(-30, 210, 0); app.root.addChild(fillL);
+  /* 簡易島嶼：海、沙灘、草地，用來看模型放進場景後的比例與光影 */
+  const island = new pc.Entity(); app.root.addChild(island);
+  prim('plane', [0, -.02, 0], [200, 1, 200], mat('#1f6fa0', { gloss: .9 }), island); prim('cylinder', [0, -.25, 0], [16, .5, 16], mat('#e6d3a0'), island); prim('cylinder', [0, -.05, 0], [13, .5, 13], mat('#6fae4e'), island);
+  for (let i = 0; i < 10; i++) { const a = i / 10 * 6.28, r = 9 + (i % 3); prim('cylinder', [Math.cos(a) * r, .9, Math.sin(a) * r], [.35, 1.8, .35], mat('#6b4a2a'), island); prim('sphere', [Math.cos(a) * r, 2.2, Math.sin(a) * r], [1.8, 1.6, 1.8], mat(i % 2 ? '#4f9a44' : '#5fae4e'), island); }
+  const pedestal = prim('cylinder', [0, -.05, 0], [3.2, .1, 3.2], mat('#c9b48a'));
+  /* 軌道相機 */
+  const cam = new pc.Entity(); cam.addComponent('camera', { clearColor: new pc.Color(.55, .74, .9), fov: 45, nearClip: .05, farClip: 500 }); app.root.addChild(cam);
+  let yaw = 30, pitch = 18, dist = 6, target = new pc.Vec3(0, 1, 0), spin = true, drag = null, pinch = 0;
+  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; spin = false; document.getElementById('bSpin').textContent = '自動旋轉：關'; });
+  addEventListener('pointerup', () => drag = null);
+  canvas.addEventListener('pointermove', e => { if (!drag || pinch) return; yaw -= (e.clientX - drag.x) * .4; pitch = Math.max(-5, Math.min(80, pitch + (e.clientY - drag.y) * .3)); drag = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(1, Math.min(40, dist * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { if (e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (pinch) dist = Math.max(1, Math.min(40, dist * pinch / d)); pinch = d; e.preventDefault(); } }, { passive: false });
+  canvas.addEventListener('touchend', () => pinch = 0);
+  /* 載入模型：自動縮放到約 2 公尺高、放在台座上，有動畫就播放第一段 */
+  let current = null; const stats = document.getElementById('stats');
+  function show(url, name) {
+    stats.textContent = `載入中：${name}…`;
+    app.assets.loadFromUrlAndFilename(url, name, 'container', (err, asset) => {
+      if (err) { stats.textContent = '載入失敗：' + err; return; }
+      if (current) current.destroy();
+      const e = asset.resource.instantiateRenderEntity({ castShadows: true, receiveShadows: true }); app.root.addChild(e); current = e;
+      const aabb = new pc.BoundingBox(); let first = true, tris = 0, meshes = 0; const tex = new Set();
+      e.findComponents('render').forEach(r => r.meshInstances.forEach(mi => { if (first) { aabb.copy(mi.aabb); first = false; } else aabb.add(mi.aabb); meshes++; tris += Math.round((mi.mesh.primitive[0].count || 0) / 3); ['diffuseMap', 'normalMap', 'emissiveMap', 'metalnessMap', 'glossMap', 'aoMap'].forEach(k => { const t = mi.material && mi.material[k]; if (t) tex.add(t); }); }));
+      const h = aabb.halfExtents, s = 2 / Math.max(.001, h.y * 2, h.x * 1.2, h.z * 1.2); e.setLocalScale(s, s, s);
+      const c = aabb.center; e.setLocalPosition(-c.x * s, -(c.y - h.y) * s, -c.z * s); target.set(0, h.y * s, 0); dist = 6;
+      let anim = '無';
+      if (asset.resource.animations && asset.resource.animations.length) { e.addComponent('anim', { activate: true }); asset.resource.animations.forEach((a, i) => { if (i === 0) e.anim.assignAnimation('Clip', a.resource); }); anim = `${asset.resource.animations.length} 段（播放第 1 段）`; }
+      const maxTex = [...tex].reduce((m, t) => Math.max(m, t.width || 0), 0);
+      stats.innerHTML = `<b>${name}</b><br>網格 ${meshes}・三角面 ${tris.toLocaleString()}・貼圖 ${tex.size} 張（最大 ${maxTex}px）<br>動畫：${anim}<br>${tris > 60000 ? '⚠ 面數偏高，手機上建議 3～5 萬面以內' : '✓ 面數適合手機'}${maxTex > 2048 ? '<br>⚠ 貼圖超過 2048px，建議壓縮' : ''}`;
+    });
+  }
+  document.getElementById('file').onchange = e => { const f = e.target.files[0]; if (f) show(URL.createObjectURL(f), f.name); };
+  const drop = document.getElementById('drop');
+  addEventListener('dragover', e => { e.preventDefault(); drop.style.display = 'grid'; }); addEventListener('dragleave', e => { if (e.target === drop) drop.style.display = 'none'; });
+  addEventListener('drop', e => { e.preventDefault(); drop.style.display = 'none'; const f = e.dataTransfer.files[0]; if (f) show(URL.createObjectURL(f), f.name); });
+  fetch('assets/models/models.json').then(r => r.json()).then(list => { const s = document.getElementById('list'); list.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; s.appendChild(o); }); s.onchange = () => s.value && show('assets/models/' + s.value, s.value); }).catch(() => { });
+  document.getElementById('bIsland').onclick = function () { island.enabled = !island.enabled; this.textContent = '島嶼場景：' + (island.enabled ? '開' : '關'); };
+  document.getElementById('bSpin').onclick = function () { spin = !spin; this.textContent = '自動旋轉：' + (spin ? '開' : '關'); };
+  const fpsEl = document.getElementById('fps'); let fr = 0, acc = 0;
+  app.on('update', dt => { if (spin) yaw += dt * 15; const p = pitch * Math.PI / 180, y = yaw * Math.PI / 180; cam.setLocalPosition(target.x + dist * Math.cos(p) * Math.sin(y), target.y + dist * Math.sin(p), target.z + dist * Math.cos(p) * Math.cos(y)); cam.lookAt(target);
+    fr++; acc += dt; if (acc > .5) { fpsEl.textContent = Math.round(fr / acc); fr = 0; acc = 0; } });
+  app.start();
+}
+</script>
+</body>
+</html>

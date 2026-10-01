@@ -40,7 +40,7 @@ function toast(msg, kind) { const el = $('toast'); el.textContent = msg; el.clas
 function openModal(id) { const _m = document.getElementById(id); if (_m) _m.querySelectorAll('.modal-card,.cx-detail,.cx-grid').forEach(e => e.scrollTop = 0); $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfOk').textContent = ok || '確定'; $('cfOk').onclick = () => { closeModal('confirmModal'); fn(); }; openModal('confirmModal'); }
-const SCREENS = ['loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'throneScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
+const SCREENS = ['exchangeScreen', 'loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'throneScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
 let currentScreen = 'loginScreen';
 function showScreen(id) {
   document.querySelectorAll('.sk-tip.show').forEach(t => t.classList.remove('show'));
@@ -86,7 +86,7 @@ const ICONS = {
 function itemIcon(it) { if (it.img) return `<img class="ico ico-img" src="${it.img}" alt="" draggable="false">`; return `<svg class="ico" viewBox="0 0 64 64" style="--c:${it.color}">${ICONS[it.icon] || ICONS.potion}</svg>`; }
 
 /* ---------- 登入與公告 ---------- */
-const NEWS_KEY = 'op_rpg_news_v2';
+const NEWS_KEY = 'op_rpg_news_v3';
 function loadNews() { try { const n = JSON.parse(localStorage.getItem(NEWS_KEY) || 'null'); if (Array.isArray(n) && n.length) return n; } catch (e) { } return DEFAULT_NEWS.slice(); }
 let newsFilter = '全部';
 const NEWS_OPEN_KEY = 'op_news_open';
@@ -123,7 +123,7 @@ function openNewsEditor() {
 /* ---------- 船員與培養 ---------- */
 function owned(id) { return !!(SAVE.data.roster || {})[id]; }
 function crewLv(id) { return owned(id) ? SAVE.data.roster[id].lv : 1; }
-function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); if (typeof grantSkins === 'function') grantSkins().forEach(k => setTimeout(() => toast(`獲得皮膚「${SKINS[k].name}」！可在角色背包裝備`, 'gold'), 1600)); if (window.checkTitles) setTimeout(() => checkTitles(false), 1200); return true; }
+function addCrew(id, lv) { if (owned(id)) return false; SAVE.data.roster[id] = { lv: Math.min(MAX_LV, lv || 1), exp: 0 }; SAVE.save(); if (typeof grantCombos === 'function') setTimeout(grantCombos, 0); if (typeof grantSkins === 'function') grantSkins().forEach(k => setTimeout(() => toast(`獲得皮膚「${SKINS[k].name}」！可在角色背包裝備`, 'gold'), 1600)); if (window.checkTitles) setTimeout(() => checkTitles(false), 1200); return true; }
 /* 圖鑑套組：已集滿的套組與全隊加成（各項合計上限 SET_BONUS_CAP %） */
 function setsDone() { return (typeof COLLECTION_SETS !== 'undefined' ? COLLECTION_SETS : []).filter(S => S.members.every(owned)); }
 /* 已開通的羈絆中，出戰陣容有 need 位以上成員者才生效 */

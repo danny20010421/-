@@ -2,7 +2,7 @@
 /* 稀有度：UR 彩虹、SSR 金、SR 紫、R 藍。召喚時依稀有度加權（見 js/app.js 的 CHAR_RATE_BY_RARITY） */
 const CHAR_RARITY = { luffy: 'UR', kaido: 'UR', blackbeard: 'UR', akainu: 'UR', loki: 'UR', imu: 'UR',
   yamato: 'SSR', lucci: 'SSR', crocodile: 'SSR', enel: 'SSR', law: 'SSR', kid: 'SSR', shirahoshi: 'SSR', moria: 'SSR', hancock: 'SSR',
-  mihawk: 'UR', buggy: 'UR', marco: 'SSR', ace: 'SR', franky: 'SR', garp_hc: 'SSR', garp_mf: 'SR', bigmom: 'SSR', magellan: 'SSR', catarina: 'SR', katakuri: 'SR', morgan: 'R', lordcoast: 'R', morgans: 'N', robin: 'SR', vivi: 'SR', hody: 'SR', luffy0: 'R', zoro: 'R', sanji: 'R', marine: 'R', mayor: 'R' };
+  mihawk: 'UR', buggy: 'UR', marco: 'SSR', ace: 'SR', franky: 'SR', garp_hc: 'SSR', garp_mf: 'SR', bigmom: 'SSR', magellan: 'SSR', catarina: 'SR', katakuri: 'SR', morgan: 'R', lordcoast: 'R', morgans: 'N', robin: 'SR', vivi: 'SR', perona: 'SR', hody: 'SR', luffy0: 'R', zoro: 'R', sanji: 'R', marine: 'R', mayor: 'R' };
 const SELL_VALUE = { berry: { R: 2000, SR: 6000, SSR: 15000, UR: 40000, perLv: 120 }, exp: { R: 1500, SR: 4500, SSR: 12000, UR: 30000, perLv: 80 } };
 /* 重複抽到的船員：存在 SAVE.data.dupes，可在海軍本部換成貝里（以 LV 20 計價） */
 const dupeN = id => ((SAVE.data.dupes || {})[id] || 0);

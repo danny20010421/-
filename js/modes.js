@@ -68,7 +68,7 @@
     const rb = (d.runner || {}).best || 0, tw = (d.tower || {}).floor || 1, cl = CHAPTERS.filter(x => d.chapters[x.id] && d.chapters[x.id].cleared).length;
     if ($('mdRunBest')) $('mdRunBest').textContent = rb ? `最遠 ${rb} m` : '尚未挑戰';
     if ($('mdStageProg')) $('mdStageProg').textContent = `通關 ${cl}/${CHAPTERS.length}`;
-    if ($('mdThroneBest')) $('mdThroneBest').textContent = (d.throne && d.throne.best) ? `最高傷害 ${d.throne.best.toLocaleString()}` : '尚未挑戰';
+    if ($('mdThroneBest')) $('mdThroneBest').textContent = (d.throne && d.throne.best) ? `最高傷害 ${d.throne.best.toLocaleString()}` : '尚未挑戰'; if ($('mdXcBest')) $('mdXcBest').textContent = d.exchange && d.exchange.season ? `第 ${d.exchange.season.day} 天進行中` : (d.exchange && d.exchange.best) ? `最佳資產 ${d.exchange.best.toLocaleString()}` : '尚未挑戰';
     if ($('mdTowerProg')) $('mdTowerProg').textContent = `目前第 ${Math.min(TOWER.floors, tw)} 層`;
   }
   window.openModes = function () { profile(); checkTitles(false); if (typeof coins === 'function') coins(); refresh(); showScreen('modeScreen'); };
@@ -78,6 +78,6 @@
     $('mdBackBtn').onclick = () => { if (typeof loginInfo === 'function') loginInfo(); showScreen('loginScreen'); };
     $('mdCrewBtn').onclick = () => openCrew();
     $('mdHubBtn').onclick = () => openGacha('modeScreen');
-    document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { const m = b.dataset.mode; if (m === 'stage') openChart(); if (m === 'run') openRunner(); if (m === 'tower') openTower(); if (m === 'throne') openThrone(); });
+    document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { const m = b.dataset.mode; if (m === 'stage') openChart(); if (m === 'run') openRunner(); if (m === 'tower') openTower(); if (m === 'throne') openThrone(); if (m === 'exchange') openExchange(); });
   });
 })();

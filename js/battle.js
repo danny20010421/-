@@ -37,7 +37,7 @@ function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.c
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
-  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f, spec.map(x => x.id)); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
+  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f, spec.map(x => x.id)); if (typeof setsActive === 'function') setsActive(spec.map(x => x.id)).forEach(S => { if (S.startBuff && S.members.includes(t.id)) Object.entries(S.startBuff).forEach(([k, v]) => { f.buffs[k] = (f.buffs[k] || 0) + v; }); }); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
   const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
@@ -231,8 +231,12 @@ async function applyItem(id) {
   const fw = $('bFL'); fw.classList.add('cast'); spawnSupport('L', true); await wait(420); fw.classList.remove('cast');
   if (ef.healRatio && healOk(p)) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
   if (ef.cleanse) { clearAbnormal(p); clearNegativeStages(p); log('異常狀態與負面能力全部清除。'); }
-  if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppAll; }); log(`所有技能使用次數 +${ef.ppAll}`); }
-  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !s.locked) s.pp += ef.ppUlt; }); }
+  if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !s.locked) s.pp = Math.min(s.maxPP, s.pp + ef.ppAll); }); log(`所有技能使用次數 +${ef.ppAll}（不超過上限）`); }
+  /* 技能補充劑：一次補 1 點、共 N 點；優先順序：用完的 > 剩餘最少的 > 用過的（同順位隨機），不超過上限 */
+  if (ef.ppSmart) { const got = {}; for (let k = 0; k < ef.ppSmart; k++) { const c = p.skills.filter(s => !s.locked && s.maxPP > 0 && s.pp < s.maxPP && !(s.effect && s.effect.noRestore)); if (!c.length) break;
+      const empty = c.filter(s => s.pp <= 0), min = Math.min(...c.map(s => s.pp)), pool = empty.length ? empty : c.filter(s => s.pp === min); const s = pool[Math.floor(Math.random() * pool.length)]; s.pp++; got[s.name] = (got[s.name] || 0) + 1; }
+    log(Object.keys(got).length ? `技能次數恢復：${Object.entries(got).map(([n, v]) => `${n} +${v}`).join('、')}` : '所有技能次數都是滿的'); }
+  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !s.locked) s.pp = Math.min(s.maxPP, s.pp + ef.ppUlt); }); }
   if (ef.atkUp) { p.buffs.atk = clamp(p.buffs.atk + ef.atkUp, -6, 6); log(`攻擊能力 +${ef.atkUp}`); }
   if (ef.shieldRatio) { const sh = Math.round(p.maxHp * ef.shieldRatio); p.status.shield += sh; log(`獲得 ${sh} 點護盾`); }
   if (ef.revive) { p.status.revive = ef.revive; log('不死鳥之羽守護著你。'); }
@@ -290,7 +294,8 @@ function updateCamera() { if (!battle) return; const vs = x => x ? ((x.scale || 
   const big = Math.max(vs(battle.player), vs(battle.enemy)), cam = big <= 1.12 ? 1 : Math.max(.5, Math.min(1, 1.08 / Math.pow(big, .85)));
   const A = $('bArena'), ar = A.getBoundingClientRect(), sk = $('bSkills'), panel = sk ? (sk.closest('.b-cmd') || sk).getBoundingClientRect() : null;
   /* 以「地面」（下方操作面板的上緣）為中心拉遠，角色縮小後仍站在看得見的地面上 */
-  if (panel && ar.height) A.style.transformOrigin = `50% ${Math.max(0, Math.min(ar.height, panel.top - ar.top)).toFixed(0)}px`;
+  const FL = $('bFL'), feet = FL ? FL.offsetTop + FL.offsetHeight : ar.height, vis = panel ? panel.top - ar.top : ar.height;
+  if (ar.height) A.style.transformOrigin = `50% ${Math.max(0, Math.min(ar.height, feet, vis)).toFixed(0)}px`;
   A.style.setProperty('--cam', cam.toFixed(3)); A.style.setProperty('--spread', ((1 - cam) / .5).toFixed(3)); }
 function refreshFighterImage(f) { applyVisual(f); if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
 function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }

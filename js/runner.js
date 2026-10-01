@@ -69,6 +69,7 @@
     G.objs = G.objs.filter(o => o.at > d - 12 && !o.gone); G.decos = G.decos.filter(o => o.at > d - 14);
   }
 
+  const RN_WARN = .3; /* 提醒線：目前速度上限的 30% */
   function hurt(n, msg) {
     if (G.over) return; G.hearts = Math.max(0, G.hearts - n); G.flash = 1; G.shake = n >= 1 ? 1 : .5; SFX.play(n >= 1 ? 'explode' : 'punch'); if (navigator.vibrate) navigator.vibrate(n >= 1 ? [60, 40, 90] : 50);
     for (let i = 0; i < (n >= 1 ? 26 : 12); i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * 220; G.fx.push({ x: laneX(G.x), y: boatY(), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6 + Math.random() * .5, c: n >= 1 ? (Math.random() < .5 ? '#ffb347' : '#fff3c4') : '#7fe0a0' }); }
@@ -80,6 +81,10 @@
     G.t += dt; if (!G.started || G.over) return;
     const cap = 24 + Math.min(12, G.dist / 450);
     G.v = Math.max(0, Math.min(cap, G.v * (1 - .5 * dt) - .6 * dt));
+    /* 最低速度：低於提醒線時速度條變紅並警告；完全停下（持續 1 秒）扣 1 命，並把船推回提醒線以上 */
+    const warnV = cap * RN_WARN; G.low = !G.fly && G.v < warnV && G.dist > 8;
+    if (G.low) { G.lowT = (G.lowT || 0) + dt; if (G.lowT > .2 && (!G.lowMsg || G.t - G.lowMsg > 2.2)) { G.lowMsg = G.t; warn('⚠ 速度太慢了！快划槳！'); } } else G.lowT = 0;
+    if (!G.fly && G.dist > 8 && G.v < .8) { G.stopT = (G.stopT || 0) + dt; if (G.stopT > 1) { G.stopT = 0; G.v = warnV * 1.15; G.inv = Math.max(G.inv, 1.2); hurt(1, '船完全停下來了！扣 1 命'); } } else G.stopT = 0;
     if (G.fly) { G.fly.t += dt; const k = Math.min(1, G.fly.t / G.fly.dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; G.dist = G.fly.from + (G.fly.to - G.fly.from) * e; if (k >= 1) { G.fly = null; G.inv = Math.max(G.inv, .8); SFX.play('water'); G.shake = .4; } }
     else G.dist += G.v * dt;
     G.x = lerp(G.x, G.tx, Math.min(1, dt * 5)); G.tx *= (1 - .15 * dt);
@@ -107,7 +112,7 @@
     if (G.v > 1) for (let i = 0; i < 2; i++) G.foam.push({ x: laneX(G.x) + (Math.random() - .5) * playW() * .08, y: boatY() + playW() * .12, vx: (Math.random() - .5) * 40, life: 1.2 + Math.random(), r: 2 + Math.random() * 3 });
     G.caps.forEach(c => { c.y += sp * .92; c.life -= dt; }); G.caps = G.caps.filter(c => c.life > 0 && c.y < H + 20); if (Math.random() < dt * 6) G.caps.push({ x: Math.random() * W, y: Math.random() * H * .8, life: 1.5 + Math.random() * 1.5, w: 10 + Math.random() * 26 });
     $('rnDist').textContent = Math.floor(G.dist) + ' m'; $('rnCoins').textContent = G.coins;
-    $('rnBar').style.width = Math.min(100, G.v / cap * 100) + '%';
+    $('rnBar').style.width = Math.min(100, G.v / cap * 100) + '%'; const RR = $('rnRhythm'); RR.style.setProperty('--warn', (RN_WARN * 100) + '%'); RR.classList.toggle('low', !!G.low);
     $('rnHearts').innerHTML = [0, 1, 2].map(i => `<i class="${G.hearts >= i + 1 ? 'on' : G.hearts >= i + .5 ? 'half' : ''}">♥</i>`).join('');
   }
 
@@ -197,7 +202,7 @@
     const r = SAVE.data.runner || {};
     panel(`<div class="rn-card"><h2>奪寶大冒險</h2>
       <p class="rn-lead">左右槳<b>交替</b>划船就會加速，節奏越穩連擊越高。<br>划左槳船會往左、划右槳往右，閃開礁石與軍艦，沿途搶金幣！</p>
-      <ul class="rn-rules"><li>➤ 箭頭道具：船會飛越 300 公尺，落地點前後 25 公尺內沒有陷阱</li><li>🐉 海怪：撞到扣半顆心</li><li>💣 1200 公尺後：海軍軍艦會開砲，自己閃開</li><li>🌀 2000 公尺後：軍艦變少，但漩渦可能左右移動</li><li>🏆 到達 2500、5000 公尺：當下的錢幣各翻倍一次，可以繼續航行</li></ul>
+      <ul class="rn-rules"><li>🚨 速度條上的紅線是最低速度：低於紅線速度條會亮紅，船完全停下就扣 1 命</li><li>📦 寶箱：發光的 +1 命、普通的撞到扣 1 命</li><li>➤ 箭頭道具：船會飛越 300 公尺，落地點前後 25 公尺內沒有陷阱</li><li>🐉 海怪：撞到扣半顆心</li><li>💣 1200 公尺後：海軍軍艦會開砲，自己閃開</li><li>🌀 2000 公尺後：軍艦變少，但漩渦可能左右移動</li><li>🏆 到達 2500、5000 公尺：當下的錢幣各翻倍一次，可以繼續航行</li></ul>
       <div class="rn-keys"><span><kbd>←</kbd><kbd>A</kbd> 左槳</span><span><kbd>→</kbd><kbd>D</kbd> 右槳</span><span>手機：點左右大按鈕</span></div>
       <p class="rn-best">最遠紀錄：<b>${r.best || 0} m</b>　累計航行：${Math.floor(r.total || 0)} m</p>
       <div class="rn-btns"><button class="btn-primary big" id="rnGo">開始航行</button><button class="btn-ghost" id="rnQuit">返回</button></div></div>`);
