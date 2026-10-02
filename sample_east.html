@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>東海・風車村｜3D 場景樣板</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#fff;-webkit-user-select:none;user-select:none}
+  #hdCanvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .hd-top{position:fixed;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;pointer-events:none}
+  .hd-top>*{pointer-events:auto}
+  .hd-title{display:flex;align-items:center;gap:10px}
+  .hd-title a{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(10,20,40,.6);color:#fff;text-decoration:none;font-size:20px;border:1px solid rgba(255,255,255,.3)}
+  .hd-title b{font-size:18px;text-shadow:0 2px 6px rgba(0,0,0,.6)}.hd-title small{display:block;font-size:12px;opacity:.85}
+  .hd-ctl{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .hd-seg{display:flex;border-radius:12px;overflow:hidden;background:rgba(10,20,40,.55);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px)}
+  .hd-seg button{min-width:52px;min-height:36px;padding:0 10px;border:0;background:none;color:#e8eef8;font-weight:700;font-size:13px}
+  .hd-seg button.on{background:#ffd34a;color:#2a1600}
+  .hd-hint{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:8px 14px;border-radius:99px;background:rgba(10,20,40,.55);font-size:13px;white-space:nowrap;backdrop-filter:blur(6px)}
+  #hdStick{position:fixed;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);pointer-events:none}
+  #hdStick i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.55)}
+  .hd-load[hidden]{display:none}
+  .hd-load{position:fixed;inset:0;display:grid;place-items:center;background:#0a1830;font-size:16px;letter-spacing:.1em}
+  #hdErr{position:fixed;inset:auto 20px 50% 20px;text-align:center;font-size:16px;background:rgba(80,0,0,.8);padding:16px;border-radius:12px}
+  .hd-hint .mb{display:none}@media (pointer:coarse){.hd-hint .pc{display:none}.hd-hint .mb{display:inline}}
+  @media (max-width:560px){.hd-hint{font-size:12px}.hd-title b{font-size:15px}.hd-seg button{min-width:44px;padding:0 8px;font-size:12px}}
+</style>
+</head>
+<body>
+<canvas id="hdCanvas" aria-label="東海・風車村 3D 場景"></canvas>
+<div class="hd-top">
+  <div class="hd-title"><a href="index.html" aria-label="回到遊戲">‹</a><span><b>東海・風車村</b><small>3D 場景樣板・Three.js 版</small></span></div>
+  <div class="hd-ctl">
+    <div class="hd-seg" role="group" aria-label="時段"><button data-env="noon" class="on">正午</button><button data-env="dusk">黃昏</button><button data-env="night">夜晚</button></div>
+    <div class="hd-seg" role="group" aria-label="效果"><button data-opt="shadow" class="on">陰影</button><button data-opt="bloom" class="on">泛光</button><button data-opt="outline" class="on">描邊</button><button data-opt="grass" class="on">草地</button></div>
+  </div>
+</div>
+<div class="hd-hint"><span class="pc">WASD／方向鍵移動・Shift 奔跑・拖曳轉視角・滾輪縮放</span><span class="mb">左半邊搖桿移動・右半邊轉視角・雙指縮放</span></div>
+<div id="hdStick" hidden><i></i></div>
+<p id="hdErr" hidden></p>
+<div id="hdLoad" class="hd-load">正在建立島嶼…</div>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
+<script type="module" src="js/hd3/east3.js?v=2"></script>
+<script nomodule>document.getElementById('hdErr').hidden=false;document.getElementById('hdErr').textContent='這個瀏覽器太舊，無法開啟 3D 場景';</script>
+</body>
+</html>

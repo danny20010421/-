@@ -58,7 +58,7 @@
   }
   const ACT = {
     gacha: () => hub('summon'), shop: () => hub('shop'), navy: () => hub('navy'), bounty: () => hub('bounty'),
-    treasure: () => openTreasure(), titles: () => openAchievements(), friends: () => openSocial(), cloud: () => openCloud(), settings: () => { const mm = document.querySelector('#modeScreen .m-menu'); if (mm) mm.click(); else toast('設定可以在右上角選單中找到'); }, bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
+    treasure: () => openTreasure(), titles: () => openAchievements(), friends: () => openSocial(), cloud: () => openCloud(), settings: () => openSettings(), bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
   };
 
   /* 跨過午夜時，大廳的懸賞進度自動換成新的一天 */

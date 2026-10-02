@@ -41,6 +41,7 @@
       });
   }
   function settings() {
+    if (typeof openSettings === 'function') return openSettings();
     const P = AUDIO.pref, low = localStorage.getItem('op_gfx') === 'low';
     homePanel('設定', `<div class="set-list">
       <label class="set-row"><span><b>音樂與音效</b><small>關閉後完全靜音</small></span><input type="checkbox" class="sw" data-k="on" ${P.muted ? '' : 'checked'}></label>

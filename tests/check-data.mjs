@@ -6,6 +6,7 @@ for (const f of fs.readdirSync(root + 'js')) if (f.endsWith('.js')) { try { exec
 const ctx = { window: {}, console }; vm.createContext(ctx);
 vm.runInContext(rd('js/data.js').replace(/^const /gm, 'var '), ctx);
 vm.runInContext(rd('js/data_ext.js'), ctx);
+vm.runInContext(rd('js/story_ext.js'), ctx);
 const { CHARACTERS: C, CHARACTER_ORDER: O, CHAR_OBTAIN: OB, CHAPTERS: CH, TREASURE: T, COLLECTION_SETS: S, EVENT_POOLS: EP, ITEMS: IT, LOGIN_REWARDS: LR } = ctx;
 const exists = u => fs.existsSync(root + String(u).split('?')[0]);
 const hub = rd('js/hub.js'), battle = rd('js/battle_core.js') + rd('js/battle.js') + rd('js/ext_effects.js');

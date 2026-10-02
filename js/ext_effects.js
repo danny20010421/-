@@ -5,6 +5,7 @@
   Object.assign(CHAPTER_DIFFICULTY, {
     thriller: { order: 4, label: '困難', stars: 3, hp: 1.52, atk: 2, def: 1, spd: 1, bossHp: 1.45, bossStages: 2, ai: 1.16, revives: 1, bossLvUp: 16 },
     dressrosa: { order: 6, label: '極難', stars: 3, hp: 1.65, atk: 2, def: 2, spd: 1, bossHp: 1.52, bossStages: 2, ai: 1.22, revives: 2, bossLvUp: 19 },
+    emperor: { order: 9, label: '皇帝', stars: 5, hp: 1, atk: 0, def: 0, spd: 0, bossHp: 1, bossStages: 0, ai: 1.35, revives: 0, bossLvUp: 0 },
     pvp: { order: 1, label: '對戰', stars: 0, hp: 1, atk: 0, def: 0, spd: 0, bossHp: 1, bossStages: 0, ai: 1.3, revives: 0, bossLvUp: 0 },
     egghead: { order: 9, label: '地獄', stars: 4, hp: 1.9, atk: 3, def: 2, spd: 2, bossHp: 1.62, bossStages: 2, ai: 1.32, revives: 2, bossLvUp: 23 }
   });
@@ -70,6 +71,7 @@
   applySkillEffects = function (actor, target, skill, result) {
     _ase(actor, target, skill, result);
     if (skill.__voidFx) return; const ef = skill.effect || {};
+    if (ef.restoreAllPP) { actor.skills.forEach(s => { if (s !== skill && !s.locked) s.pp = s.maxPP; }); log(`🔄 ${actor.name} 的其他技能次數全部恢復！`); if (typeof renderSkills === 'function' && actor === battle.player) renderSkills(); }
     if (ef.immuneTurns && !ef.regenTurns) { actor.status.immune = Math.max(actor.status.immune || 0, ef.immuneTurns); log(`🛡️ ${actor.name} ${ef.immuneTurns} 回合內免疫異常狀態！`); }
     if (ef.stunChance && target.hp > 0 && Math.random() < ef.stunChance) inflict(target, 'stun', ef.stunTurns || 1);
     if (ef.haoshoku) haoshoku(actor, target);
@@ -98,6 +100,7 @@
     if (RANK[rarOf(target)] <= 2) { target.status.skipAttack = Math.max(target.status.skipAttack || 0, 1); log(`👑 ${target.name} 被震懾得無法攻擊 1 回合！`); }
   }
   function grantDad(f) { if (!f || f.__dad || f.hp <= 0) return; f.__dad = { first: true, guts: true }; ['atk', 'def', 'spd'].forEach(k => { f.buffs[k] = clamp(f.buffs[k] + 1, -6, 6); }); log(`🌊 ${f.name} 感受到老爹的意志：全能力 +1！`); }
+  window.grantDad = grantDad;
   function dadAura(actor) {
     actor.status.dadOwner = true; log(`🌊 「你們都是我的兒子！」白鬍子的意志籠罩全隊！`);
     if (actor === battle.enemy) grantDad(actor); else { battle.dadTeam = true; battle.team.forEach(f => { if (f === battle.player) grantDad(f); else if (f.hp > 0) f.__dadPending = true; }); }
@@ -132,7 +135,7 @@
   startBattle = function (opts) {
     _sb(opts);
     /* 玩家對戰：對手也套用稀有度體質，雙方條件相同 */ if (opts && opts.pvp) { applyRarityScale(battle.enemy); $('bLvR').textContent = 'LV ' + battle.enemy.level; renderHUD(true); }
-    if (opts && opts.enemyMod) { const e = battle.enemy, M = opts.enemyMod; if (M.hp) { e.maxHp = Math.round(e.maxHp * M.hp); e.hp = e.maxHp; } if (M.dmg) e.dmgMul *= M.dmg; ['atk', 'def', 'spd'].forEach(k => { if (M[k]) e.buffs[k] = clamp(e.buffs[k] + M[k], -6, 6); }); if (M.name) e.name = M.name; if (M.title) e.title = M.title; if (M.lv) e.level = M.lv; $('bNameR').textContent = e.name; $('bTitleR').textContent = e.title; renderHUD(true); }
+    if (opts && opts.enemyMod) { const e = battle.enemy, M = opts.enemyMod; if (M.hp) { e.maxHp = Math.round(e.maxHp * M.hp); e.hp = e.maxHp; } if (M.dmg) e.dmgMul *= M.dmg; if (M.hpFixed) { e.maxHp = M.hpFixed; e.hp = e.maxHp; } if (M.infPP) e.skills.forEach(s => { if (s.locked) return; const n = s.ultimate && M.ultCap ? M.ultCap : 99; s.pp = s.maxPP = n; }); if (M.allUp) ['atk', 'def', 'spd'].forEach(k => { e.buffs[k] = clamp(e.buffs[k] + M.allUp, -6, 6); }); ['atk', 'def', 'spd'].forEach(k => { if (M[k]) e.buffs[k] = clamp(e.buffs[k] + M[k], -6, 6); }); if (M.name) e.name = M.name; if (M.title) e.title = M.title; if (M.lv) e.level = M.lv; $('bNameR').textContent = e.name; $('bTitleR').textContent = e.title; renderHUD(true); }
     if (opts && opts.team) opts.team.forEach((t, i) => { const f = battle.team[i]; if (f && Array.isArray(t.pp)) f.skills.forEach((s, k) => { if (t.pp[k] != null && !s.locked) s.pp = Math.max(0, Math.min(s.maxPP, t.pp[k])); }); });
     if (window.__carryStun) { window.__carryStun = false; inflict(battle.enemy, 'stun', 1, true); }
     renderSkills();

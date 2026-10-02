@@ -46,9 +46,29 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed'])
         && request.resource.data.claimed == true;
     }
-    // 即時對戰房間：只有雙方看得到、能更新；由邀請方（host）建立
+    // 船團：登入的玩家都看得到（搜尋、加入用）；成員可以更新（BOSS 血量、留言板、公告、成員）；非成員只能把自己加進成員名單（最多 20 人）
+    match /guilds/{gid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.leader == request.auth.uid && request.resource.data.members == [request.auth.uid];
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.members
+        || (request.auth.uid in request.resource.data.members
+            && request.resource.data.members.size() == resource.data.members.size() + 1
+            && resource.data.members.size() < 20
+            && request.resource.data.leader == resource.data.leader
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'names'])));
+      allow delete: if request.auth != null && request.auth.uid in resource.data.members && resource.data.members.size() <= 1;
+    }
+    // 好友留言：只有寫的人與收的人看得到；收到的人可以刪除；最多 80 字
+    match /notes/{id} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.to || request.auth.uid == resource.data.from);
+      allow create: if request.auth != null && request.resource.data.from == request.auth.uid
+        && request.resource.data.text is string && request.resource.data.text.size() <= 80;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.to || request.auth.uid == resource.data.from);
+    }
+    // 即時對戰房間：公開房間（open: true）登入的玩家都能觀戰；只有雙方能更新；由邀請方（host）建立
     match /rooms/{id} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.host || request.auth.uid == resource.data.guest);
+      allow read: if request.auth != null && (resource.data.open == true || request.auth.uid == resource.data.host || request.auth.uid == resource.data.guest);
       allow create: if request.auth != null && request.resource.data.host == request.auth.uid;
       allow update: if request.auth != null && (request.auth.uid == resource.data.host || request.auth.uid == resource.data.guest)
         && request.resource.data.host == resource.data.host && request.resource.data.guest == resource.data.guest;

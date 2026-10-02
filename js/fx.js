@@ -61,7 +61,11 @@ const FXE = (() => {
           else { c.fillStyle = p.c; c.beginPath(); c.arc(p.x, p.y, p.s, 0, TAU); c.fill(); } }
       } });
     },
-    text(x, y, str, o) { o = o || {}; return add({ life: o.life || .85, draw(c, k) { const s = k < .12 ? .3 + ease.back(k / .12) * .9 : 1.2 - Math.min(.15, (k - .12) * .3), sz = o.size || 68; c.globalAlpha = fade(k, .05, .75); c.translate(x + (k < .3 ? R(-3, 3) : 0), y + (k < .3 ? R(-3, 3) : 0)); c.rotate(o.rot == null ? -.1 : o.rot); c.scale(s, s); c.font = `900 ${sz}px "Noto Serif TC","Noto Sans TC",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    text(x, y, str, o) { o = o || {};
+      /* 文字不超出畫面：依字數估算寬度，太長就縮小字級，再把位置夾在畫面內（鏡頭拉遠、角色很大時文字不會被裁掉） */
+      { const n = [...String(str)].length || 1, mx = 14; let sz = o.size || 68; const fit = (W - mx * 2) / (n * 1.25); if (sz > fit) sz = Math.max(26, fit); const hw = sz * n * .62, hh = sz * .75; o = { ...o, size: sz };
+        if (W > 0) x = Math.max(mx + hw, Math.min(W - mx - hw, x)); if (H > 0) y = Math.max(mx + hh, Math.min(H - mx - hh, y)); }
+      return add({ life: o.life || .85, draw(c, k) { const s = k < .12 ? .3 + ease.back(k / .12) * .9 : 1.2 - Math.min(.15, (k - .12) * .3), sz = o.size || 68; c.globalAlpha = fade(k, .05, .75); c.translate(x + (k < .3 ? R(-3, 3) : 0), y + (k < .3 ? R(-3, 3) : 0)); c.rotate(o.rot == null ? -.1 : o.rot); c.scale(s, s); c.font = `900 ${sz}px "Noto Serif TC","Noto Sans TC",serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
       c.lineWidth = 16; c.strokeStyle = o.stroke || '#140806'; c.strokeText(str, 4, 5); c.strokeText(str, 0, 0); const g = c.createLinearGradient(0, -sz / 2, 0, sz / 2); g.addColorStop(0, '#ffffff'); g.addColorStop(.5, o.color || '#ffe27a'); g.addColorStop(1, o.color2 || '#ff8a3a'); c.fillStyle = g; c.fillText(str, 0, 0); } }); },
     slash(x, y, o) { o = o || {}; const a0 = o.a == null ? -2.4 : o.a, span = o.span || 2.2, r = o.r || 120, w = o.w || 26, col = o.color || '#ffffff', dir = o.ccw ? -1 : 1;
       P.particles({ x, y, n: 10, spd: [150, 380], life: [.2, .4], size: [1.5, 3], colors: [col, '#ffffff'], shape: 'spark' });

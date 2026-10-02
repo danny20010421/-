@@ -295,9 +295,24 @@
   /* 原作順序：魚人島 → 龐克哈薩特 → 德雷斯羅薩 → 蛋糕島 → 和之國 */
   { const i = CHAPTERS.findIndex(c => c.id === 'dressrosa'), D = CHAPTERS.splice(i, 1)[0], j = CHAPTERS.findIndex(c => c.id === 'fishman'); CHAPTERS.splice(j + 1, 0, D); }
   DEFAULT_NEWS.unshift({ id: 'd1002', date: '2026-10-02', tag: '更新', title: '10/02 大型更新：皇帝領海、三個新篇章', body: '・新模式「皇帝領海」：挑戰白鬍子、BIG MOM、凱多、紅髮（隊長連戰 → 分身 → 真身），擊敗後四皇加入船隊；四皇升為 UR+，不再出現在召喚池\n・新篇章：恐怖三桅帆船篇、德雷斯羅薩篇（支線「SMILE 工廠」）、蛋頭島篇；蜂巢島篇改回原作，BOSS 為青雉\n・新角色：紅髮、白鬍子、多佛朗明哥、大熊、大熊（蛋頭島）、黃猿、青雉、貝加龐克、約克、砂糖、莫內、威爾可；約克新皮膚\n・關卡挑戰新增困難模式（★1～★3 評星與獎勵）\n・勇者之塔擴充到 250 層，伊姆移到第 200、250 層\n・懸賞金交易所改為全服同步行情：所有裝置、所有玩家看到的價格與新聞都一樣；新聞依原作設定撰寫\n・手機版：大廳頂部、交易所版面、奪寶大冒險開始畫面修正' });
+  DEFAULT_NEWS.unshift({ id: 'd1013', date: '2026-10-03', tag: '更新', title: '東海篇正式版', body: '・風車村全面重做：瑪琪諾的酒館、村長家、老漁夫的小屋、碼頭與魯夫的小船、海軍據點與摩根像、小溪與木橋\n・瑪琪諾、村長、摩根、克比等 NPC 外觀更貼近原作' });
+  DEFAULT_NEWS.unshift({ id: 'd1012', date: '2026-10-03', tag: '更新', title: '各島地標登場', body: '・13 座島加上原作地標：阿爾巴那宮殿、黃金鐘、司法之塔與正義之門、龍宮城、鬼之島、寶樹亞當……\n・煙囪冒煙、空中光點、小花等環境細節\n・NPC 造型更圓滑' });
+  DEFAULT_NEWS.unshift({ id: 'd1011', date: '2026-10-03', tag: '更新', title: '全新 3D 島嶼畫面', body: '・13 座島換上新版 3D 畫面：卡通光影、即時陰影、草地、海面浪花、泛光\n・島上的民宅與樹木細節全面升級\n・可在設定中切換回舊畫面' });
+  DEFAULT_NEWS.unshift({ id: 'd1010', date: '2026-10-03', tag: '更新', title: '劇情擴充與技能特效補齊', body: '・13 個篇章補上更多還原原作的對話、序章與尾聲\n・新增 6 個支線：索隆、羅賓、青雉、海王類、大和、路奇、紅髮\n・所有角色的一般招式都有特效與招式名' });
+  DEFAULT_NEWS.unshift({ id: 'd1009', date: '2026-10-03', tag: '更新', title: '船團、3 對 3 即時對戰與觀戰', body: '・船團：和好友組隊，每週一起挑戰船團 BOSS，還有船團留言板\n・即時對戰新增 3 對 3（可換人）\n・好友對戰中可以觀戰\n・36 位角色補上奧義動畫，招式文字不再被畫面裁切' });
+  DEFAULT_NEWS.unshift({ id: 'd1008', date: '2026-10-03', tag: '更新', title: '活動中心、新手教學與好友留言', body: '・活動中心：每週任務＋週末航海祭（週六日戰鬥經驗 ×2）\n・皇帝領海：可派 5 位出戰、8 位隊長連戰、真身體力 12,000\n・四皇奧義使用後恢復其他技能次數\n・新手教學與全新設定頁\n・好友留言、即時對戰表情與「再戰一場」' });
+  DEFAULT_NEWS.unshift({ id: 'd1007', date: '2026-10-03', tag: '更新', title: '全球排行榜與畫面優化', body: '・好友面板新增「排行榜」：勇者之塔、虛空王座、船隊總等級、圖鑑收集\n・多位角色的戰鬥立繪大小與面向調整\n・手機大廳、按鈕觸控範圍、文字大小等視覺優化' });
   DEFAULT_NEWS.unshift({ id: 'd1006', date: '2026-10-02', tag: '更新', title: '即時對戰與好友禮物', body: '・即時對戰：邀請好友 1 對 1 同時出招，每回合 30 秒\n・好友禮物：每天可以送每位好友一份貝里\n・我的帳號：簽名、修改密碼、登出\n・登入改為只用信箱，帳號名稱只用來加好友\n・好友對戰（防守與即時）不再發放獎勵' });
   DEFAULT_NEWS.unshift({ id: 'd1005', date: '2026-10-02', tag: '更新', title: '好友系統與好友對戰', body: '・可以用「帳號名稱＋密碼」註冊登入（需填真實信箱，忘記密碼可寄重設信）\n・大廳「好友」：用帳號名稱或玩家 ID 加好友\n・好友對戰：挑戰好友的防守陣容，勝利可得貝里與寶藏幣\n・即時對戰製作中' });
   DEFAULT_NEWS.unshift({ id: 'd1004', date: '2026-10-02', tag: '更新', title: '雲端存檔上線', body: '・大廳下方「☁️ 雲端存檔」：用 Google 帳號登入，手機、平板、電腦之間接續進度\n・登入時若雲端有其他裝置的進度，會先讓你選擇要保留哪一份\n・自動同步：存檔有變動時每 60 秒上傳一次' });
   DEFAULT_NEWS.unshift({ id: 'd1003', date: '2026-10-02', tag: '更新', title: '10/02 新篇章插圖與各裝置排版修正', body: '・恐怖三桅帆船篇、德雷斯羅薩篇、蛋頭島篇換上正式插圖；SMILE 工廠支線有專屬戰鬥背景\n・手機、平板、桌機排版檢查：島上探索頂部、大廳貨幣列、模式選擇卡片排列、皇帝領海橫式版面\n・召喚機率表數字顯示修正' });
+  /* 東海篇：斧手摩根改用專屬造型（金色短髮、鐵下巴、斧頭手、海軍大衣） */
+  { const E = CHAPTERS.find(c => c.id === 'east'); const m = E && E.npcs.find(n => n.id === 'morgan_n'); if (m) m.look = 'morgan'; }
+  /* 四皇的奧義：使用後恢復其他所有技能的次數 */
+  ['whitebeard', 'shanks', 'kaido', 'bigmom'].forEach(id => { const u = CHARACTERS[id].skills[4]; u.effect.restoreAllPP = true; if (!/恢復其他所有技能/.test(u.desc)) u.desc += ' 使用後恢復其他所有技能的次數。'; });
+  /* 立繪大小與面向（依玩家在「立繪調整」實測的數值寫入預設值，所有裝置一致） */
+  const VIS = { aokiji: [1.65], whitebeard: [2.65], vegapunk: [.45, true], mayor: [.65, true], morgans: [.7], kuma: [1.35], kuma_eh: [1.9], lordcoast: [2.35], lucci: [.9], shanks: [1.4], vergo: [1], ace: [null, true], marine: [.65] };
+  Object.entries(VIS).forEach(([id, [bs, face]]) => { const c = CHARACTERS[id]; if (!c) return; if (bs != null) c.battleScale = bs; if (face !== undefined) c.faceLeft = face; });
+  { const pf = CHARACTERS.marco.skills[4].effect.phoenixForm; if (pf) pf.scale = 2.35; }
   window.__V63_DATA = true;
 })();

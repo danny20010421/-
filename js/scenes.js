@@ -31,10 +31,13 @@
   }
 
   /* ---------- 共用物件 ---------- */
+  const CHIMNEYS = []; /* 煙囪位置（新版畫面會冒煙） */
   const P = {
     tree(b, x, y, z, s, r, col) {
-      b.cyl(x, y - .3, z, .45 * s, .3 * s, 3.2 * s, 5, '#6b4a2f');
-      b.sphere(x, y + 3.6 * s, z, 2.2 * s, 7, col || mix('#3f8a3a', '#6fae44', r()), 1, .25, (r() * 9999) | 0);
+      /* 樹：樹幹＋一根側枝＋三團樹葉，輪廓更蓬鬆 */
+      const c0 = col || mix('#3f8a3a', '#6fae44', r()), sd = (r() * 9999) | 0;
+      b.cyl(x, y - .3, z, .5 * s, .3 * s, 3.4 * s, 7, '#6b4a2f'); b.cyl(x + .3 * s, y + 2.2 * s, z, .14 * s, .1 * s, 1.4 * s, 5, '#6b4a2f', null, 0, [.7 * s, .1 * s]);
+      b.sphere(x, y + 4 * s, z, 2.1 * s, 10, c0, .9, .18, sd); b.sphere(x + 1.2 * s, y + 3.3 * s, z + .6 * s, 1.5 * s, 9, shade(c0, .94), .9, .2, sd + 1); b.sphere(x - 1.1 * s, y + 3.5 * s, z - .5 * s, 1.4 * s, 9, shade(c0, 1.05), .9, .2, sd + 2);
     },
     pine(b, x, y, z, s, col) {
       b.cyl(x, y - .3, z, .35 * s, .25 * s, 2 * s, 5, '#5b3d27');
@@ -48,10 +51,22 @@
     },
     rock(b, x, y, z, s, r, col) { b.sphere(x, y + s * .3, z, s, 6, col || mix('#7b7f86', '#9aa0a6', r()), .75, .45, (r() * 9999) | 0); },
     house(b, x, y, z, w, d, h, wall, roof, ry) {
-      b.box(x, y - .4, z, w, h + .4, d, wall, ry);
-      b.cyl(x, y + h, z, Math.max(w, d) * .78, 0, h * .7, 4, roof, null, (ry || 0) + Math.PI / 4);
-      const c = Math.cos(ry || 0), s = Math.sin(ry || 0), fx = x + s * (d / 2 + .02), fz = z + c * (d / 2 + .02);
-      b.box(fx, y, fz, w * .28, h * .55, .2, '#4a3222', ry);
+      /* 細節版民宅：石基、木骨架、門框與石階、窗框＋百葉窗＋花箱、階梯狀瓦片屋頂、屋脊、煙囪 */
+      ry = ry || 0; const c = Math.cos(ry), s = Math.sin(ry), L = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c], beam = '#5e3e2a', shutter = ['#3f72b8', '#5a8a4a', '#b5543c', '#d8a03a'][Math.abs(Math.round(x * 3 + z)) % 4];
+      b.box(x, y - .6, z, w + .34, 1.0, d + .34, '#a99d90', ry);
+      b.box(x, y + .4, z, w, h - .4, d, wall, ry);
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([a, e]) => { const [px, pz] = L(a * w / 2, e * d / 2); b.box(px, y + .3, pz, .34, h - .2, .34, beam, ry); });
+      b.box(x, y + h - .12, z, w + .12, .26, d + .12, beam, ry); b.box(x, y + h * .52, z, w + .08, .18, d + .08, beam, ry);
+      { const [fx, fz] = L(0, d / 2 + .07); b.box(fx, y - .02, fz, 1.5, 2.45, .18, beam, ry); const [ex, ez] = L(0, d / 2 + .15); b.box(ex, y, ez, 1.08, 2.15, .1, '#8a5a38', ry); const [gx, gz] = L(0, d / 2 + .55); b.box(gx, y - .4, gz, 1.9, .42, .9, '#b4a898', ry); }
+      const win = (lx, lz, back) => { const k = back ? -1 : 1, [ax, az] = L(lx, k * (d / 2 + .06)); b.box(ax, y + h * .3, az, 1.1, 1.0, .16, beam, ry); const [gx, gz] = L(lx, k * (d / 2 + .12)); b.box(gx, y + h * .3 + .12, gz, .78, .76, .08, '#2c3e58', ry);
+        [-1, 1].forEach(q => { const [sx, sz] = L(lx + q * .74, k * (d / 2 + .1)); b.box(sx, y + h * .3, sz, .42, 1.0, .08, shutter, ry); });
+        const [bx, bz] = L(lx, k * (d / 2 + .26)); b.box(bx, y + h * .3 - .3, bz, 1.12, .26, .3, '#8a5a38', ry); ['#ff6a8a', '#ffd34a', '#ffffff'].forEach((fc, q) => { const [px, pz] = L(lx - .32 + q * .32, k * (d / 2 + .28)); b.sphere(px, y + h * .3, pz, .16, 5, fc, 1, .2, q + 3); }); };
+      if (w > 3.6) { win(-w * .3, d / 2); win(w * .3, d / 2); } win(0, d / 2, true);
+      const over = .5, rh = h * .62, n = 6, hd = d / 2 + over;
+      [-1, 1].forEach(sd => { for (let i = 0; i < n; i++) { const [rx, rz] = L(0, sd * hd * (1 - (i + .5) / n)); b.box(rx, y + h + rh * i / n - .04, rz, w + over * 2, rh / n + .14, hd / n * 1.18, shade(roof, .86 + (i % 2) * .12), ry); } });
+      for (let i = 0; i < n - 1; i++) b.box(x, y + h + rh * i / n, z, w - .04, rh / n, d * (1 - (i + 1) / n) + .02, wall, ry);
+      b.box(x, y + h + rh - .04, z, w + over * 2 + .12, .26, .5, shade(roof, .7), ry);
+      { const [cx, cz] = L(w * .28, -d * .18); b.box(cx, y + h, cz, .8, rh + 1.2, .8, '#9a8e82', ry); b.box(cx, y + h + rh + 1.2, cz, 1, .2, 1, '#8a7e72', ry); CHIMNEYS.push([cx, y + h + rh + 1.5, cz]); }
     },
     fence(b, x0, z0, x1, z1, hf, col) {
       const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 2.4)), ang = Math.atan2(x1 - x0, z1 - z0);
@@ -76,8 +91,9 @@
 
   /* NPC：依原作外型設定的低多邊形人物 */
   const LOOKS = {
-    makino: { skin: '#f3cfaa', hair: '#3a2a22', hs: 'short', top: '#f4f2ea', bottom: '#3d6a3a', legs: 'skirt', hat: 'scarf', hatC: '#3f7a3a', apron: '#ffffff' },
-    mayor: { skin: '#e8c29a', hair: '#e8e4dc', hs: 'bald', beard: '#eeeae2', top: '#6d4c3a', bottom: '#3b2c24', glasses: 'round', sc: .92, cane: true },
+    makino: { skin: '#f6d2b0', hair: '#2f5a3a', hs: 'short', top: '#f4f2ea', sleeve: '#f4f2ea', bottom: '#4a7a4a', legs: 'skirt', hat: 'scarf', hatC: '#e8763a', apron: '#ffffff', eye: '#3a2a20', collar: '#e8e2d4' },
+    morgan: { skin: '#e0b08a', hair: '#e8d070', hs: 'buzz', top: '#f4f2ea', bottom: '#3f6fa3', coat: '#f4f2ea', jaw: '#9aa0a6', axe: true, belt: '#3a3a3a', sc: 1.25, bigArms: true },
+    mayor: { skin: '#e2b48a', hair: '#2a2a2a', hs: 'short', top: '#f2c63a', bottom: '#f4f2ea', pantStripe: '#c8322b', hat: 'bucket', hatC: '#f4f2ea', hatStripe: '#c8322b', glasses: 'round', glassC: '#c8a040', stache: '#5a4030', stubble: '#9a7a5a', collar: '#e8b830', sc: .92, cane: true },
     crew: { skin: '#d9a77c', hair: '#1b1b1b', hs: 'spiky', top: '#4a5b3a', bottom: '#2b2b2b', belly: true, hat: 'bandana', hatC: '#c8322b', sc: 1.1 },
     kid: { skin: '#f0c9a4', hair: '#3a2a1a', hs: 'short', top: '#e8b33b', bottom: '#355e8a', hat: 'cap', hatC: '#c8322b', sc: .72 },
     toto: { skin: '#b88a60', hair: '#e8e4dc', hs: 'bald', beard: '#e8e4dc', top: '#c9b27e', bottom: '#8a7a5a', glasses: 'sun', sc: 1.05 },
@@ -90,7 +106,7 @@
     ace: { skin: '#e0b08a', hair: '#1b1b1b', hs: 'spiky', top: '#e0b08a', bottom: '#2b2b2b', hat: 'cowboy', hatC: '#e8753a', beads: '#c8322b', belt: '#8a6240' },
     elder: { skin: '#e8c29a', hair: '#cfc8bb', hs: 'short', beard: '#e8e4dc', top: '#6a5a74', bottom: '#3b3444', sc: .95, cane: true },
     girl: { skin: '#f0c9a4', hair: '#6a3a2a', hs: 'pony', top: '#b8433a', bottom: '#6a2a26', legs: 'skirt', sc: .8 },
-    fisher: { skin: '#c99a73', hair: '#3a2a1a', hs: 'short', top: '#3f6fa3', bottom: '#2b3e59', hat: 'cap', hatC: '#e8e4dc', belly: true },
+    fisher: { skin: '#c99a73', hair: '#3a2a1a', hs: 'short', top: '#3f6fa3', bottom: '#2b3e59', hat: 'cap', hatC: '#e8e4dc', belly: true, stubble: '#6a5040' },
     franky: { skin: '#e8b890', hair: '#4aa8e8', hs: 'pomp', top: '#e85a8a', bottom: '#3a6ad8', glasses: 'sun', sc: 1.2, bigArms: true },
     kokoro: { skin: '#e8c29a', hair: '#6a3a8a', hs: 'bun', top: '#c8322b', bottom: '#e8b33b', legs: 'skirt', belly: true },
     sogeking: { skin: '#b88a60', hair: '#1b1b1b', hs: 'afro', top: '#e8e4dc', bottom: '#8a6240', cape: '#c8322b', mask: '#e8c170' },
@@ -107,7 +123,7 @@
     brogy: { skin: '#d49a6a', hair: '#e8b33b', hs: 'long', beard: '#e8b33b', top: '#5a4028', bottom: '#3a2a1a', hat: 'horned', hatC: '#c9973a', sc: 2.25 },
     robinNpc: { skin: '#e8c0a0', hair: '#1b1b22', hs: 'long', top: '#f4f2ea', bottom: '#6a3a8a', hat: 'cowboy', hatC: '#6a3a8a', cape: '#f4f2ea' },
     shirahoshiNpc: { skin: '#f7dcc6', hair: '#ff9ac2', hs: 'long', top: '#ffd26c', tail: '#ff8fb8', hat: 'crown', hatC: '#e8c170', sc: 2.3 },
-    koby: { skin: '#f3d6bf', hair: '#ff9ac2', hs: 'short', top: '#f4f2ea', bottom: '#3f6fa3', belt: '#8a6240', sc: .95 },
+    koby: { skin: '#f3d6bf', hair: '#ff9ac2', hs: 'short', top: '#f4f2ea', bottom: '#3f6fa3', belt: '#8a6240', glasses: 'round', glassC: '#3a3a40', eye: '#2a3a5a', sc: .95 },
     bbPirate: { skin: '#c99a73', hair: '#1b1b1b', hs: 'short', top: '#3a2a3a', bottom: '#2b2b2b', hat: 'bandana', hatC: '#1b1b1b', belt: '#8a6240', sword: true },
     guardFish: { skin: '#4a8aa8', hair: '#1b1b1b', hs: 'spiky', top: '#2b3e59', bottom: '#1f2e44', belt: '#c8322b', sword: true },
     baroque: { skin: '#e0b08a', hair: '#3a2a1a', hs: 'short', top: '#1b1b22', bottom: '#1b1b22', glasses: 'sun', hat: 'cap', hatC: '#1b1b22' },
@@ -130,6 +146,9 @@
     const tw = L.belly ? 1.2 : 1.0;
     b.box(0, 1.18, 0, tw, 1.12, .62, L.top, 0, .88);
     if (L.belly) b.sphere(0, 1.45, .12, .5, 8, L.top, .9);
+    if (L.coat) { b.box(0, .45, -.04, tw * 1.18, 1.82, .78, L.coat, 0, .92); b.box(0, 1.0, .37, .34, 1.1, .04, L.top); b.box(0, 2.0, -.02, tw * 1.2, .22, .82, shade(L.coat, .92)); }
+    if (L.collar) b.box(0, 1.96, .06, .72, .14, .5, L.collar);
+    if (L.pantStripe && L.legs !== 'skirt' && L.legs !== 'kimono') [-.24, .24].forEach(lx => [.3, .58, .86].forEach(ly => b.box(lx, ly, 0, .345, .1, .355, L.pantStripe)));
     if (L.apron) b.box(0, 1.0, .3, .7, .9, .04, L.apron);
     if (L.belt || L.obi) b.box(0, 1.28, 0, tw * .98, .2, .66, L.obi || L.belt);
     if (L.stripes) { b.box(0, 1.8, .31, .9, .06, .02, L.stripes); b.box(0, 1.6, .31, .9, .06, .02, L.stripes); }
@@ -137,34 +156,38 @@
     if (L.cape) b.box(0, .75, -.35, tw * 1.1, 1.6, .08, L.cape, 0, .85);
     if (L.wings) { b.box(-.45, 1.5, -.38, .6, .7, .06, '#ffffff', .5, .6); b.box(.45, 1.5, -.38, .6, .7, .06, '#ffffff', -.5, .6); }
     // 手臂與手
-    const aw = L.bigArms ? .42 : .26, armC = L.top === sk ? sk : L.top;
-    b.cyl(-.68, 1.05, 0, aw * .6, aw * .7, .95, 6, armC, null, 0, [-.08, 0]); b.cyl(.68, 1.05, 0, aw * .6, aw * .7, .95, 6, armC, null, 0, [.08, 0]);
-    b.sphere(-.68, .98, .02, aw * .62, 6, sk); b.sphere(.68, .98, .02, aw * .62, 6, sk);
+    const aw = L.bigArms ? .42 : .26, armC = L.sleeve || L.coat || (L.top === sk ? sk : L.top);
+    b.cyl(-.68, 1.05, 0, aw * .6, aw * .7, .95, 10, armC, null, 0, [-.08, 0]); b.cyl(.68, 1.05, 0, aw * .6, aw * .7, .95, 10, armC, null, 0, [.08, 0]);
+    b.sphere(-.68, .98, .02, aw * .62, 9, sk); b.sphere(.68, .98, .02, aw * .62, 9, sk);
     if (L.sword) { b.box(-.62, 1.2, -.3, .08, .08, 1.4, '#1b1b22', .3); b.box(-.62, 1.22, .38, .12, .12, .12, '#e8c170', .3); }
     if (L.cane) b.cyl(.78, 0, .2, .05, .05, 1.1, 5, '#6b4a2f');
+    if (L.axe) { /* 摩根的斧頭手：手臂接著金屬柄與半月形斧刃 */ b.cyl(.72, .1, .05, .08, .08, 1, 8, '#6a6a72'); b.box(.98, -.25, .05, .62, 1.5, .1, '#d8dce2', 0, .55); b.box(1.32, -.1, .05, .18, 1.2, .12, '#eef0f4', 0, .7); b.sphere(.72, .1, .05, .14, 8, '#5a5e66'); }
     if (L.lance) { b.cyl(.8, .1, .1, .05, .05, 3, 5, '#c9d6e6'); b.cyl(.8, 3.05, .1, .12, 0, .5, 5, '#e8e4dc'); }
     // 頭
     b.cyl(0, 1.95, 0, .16, .16, .2, 6, sk);
-    b.sphere(0, 2.55, 0, .45, 10, sk, 1.08);
+    b.sphere(0, 2.55, 0, .45, 16, sk, 1.08);
     b.sphere(-.44, 2.55, 0, .09, 5, sk); b.sphere(.44, 2.55, 0, .09, 5, sk);
     b.box(-.15, 2.58, .41, .13, .1, .03, '#ffffff'); b.box(.15, 2.58, .41, .13, .1, .03, '#ffffff');
-    b.box(-.15, 2.58, .43, .06, .08, .02, '#1b1b1b'); b.box(.15, 2.58, .43, .06, .08, .02, '#1b1b1b');
+    b.box(-.15, 2.58, .43, .07, .09, .02, L.eye || '#1b1b1b'); b.box(.15, 2.58, .43, .07, .09, .02, L.eye || '#1b1b1b'); b.box(-.13, 2.62, .445, .03, .03, .01, '#ffffff'); b.box(.17, 2.62, .445, .03, .03, .01, '#ffffff');
+    if (L.stubble) b.sphere(0, 2.36, .14, .34, 10, L.stubble, .62); if (L.stache) { b.box(-.12, 2.39, .44, .22, .08, .06, L.stache, .15); b.box(.12, 2.39, .44, .22, .08, .06, L.stache, -.15); }
+    if (L.jaw) { b.box(0, 2.12, .12, .6, .32, .52, L.jaw); b.sphere(-.26, 2.28, .3, .05, 5, '#5a5e66'); b.sphere(.26, 2.28, .3, .05, 5, '#5a5e66'); }
     b.box(-.15, 2.7, .42, .16, .03, .03, shade(L.hair, .9)); b.box(.15, 2.7, .42, .16, .03, .03, shade(L.hair, .9));
     b.box(0, 2.47, .45, .06, .1, .06, shade(sk, .9)); b.box(0, 2.35, .42, .16, .03, .03, '#8a3a3a');
     if (L.glasses === 'sun') b.box(0, 2.58, .45, .5, .1, .03, '#1b1b22');
-    if (L.glasses === 'round') { b.box(-.15, 2.58, .45, .16, .14, .02, '#8ab4d8'); b.box(.15, 2.58, .45, .16, .14, .02, '#8ab4d8'); }
+    if (L.glasses === 'round') { const gc = L.glassC || '#5a4a3a'; [-.15, .15].forEach(gx => { b.box(gx, 2.5, .45, .2, .03, .03, gc); b.box(gx, 2.66, .45, .2, .03, .03, gc); b.box(gx - .1, 2.5, .45, .03, .19, .03, gc); b.box(gx + .1, 2.5, .45, .03, .19, .03, gc); b.box(gx, 2.53, .44, .16, .12, .01, '#cfe4f4'); }); b.box(0, 2.6, .45, .1, .03, .03, gc); }
     if (L.mask) b.box(0, 2.6, .44, .66, .34, .04, L.mask);
     if (L.beard) b.sphere(0, 2.26, .2, L.sc > 1.5 ? .42 : .3, 7, L.beard, 1.2);
     // 髮型
     const H = L.hair;
-    if (L.hs === 'short') b.sphere(0, 2.66, -.04, .47, 9, H, .78);
-    else if (L.hs === 'long') { b.sphere(0, 2.66, -.05, .48, 9, H, .8); b.box(0, 1.9, -.28, .9, 1.0, .22, H, 0, 1.1); }
-    else if (L.hs === 'pony') { b.sphere(0, 2.66, -.04, .47, 9, H, .78); b.sphere(0, 2.9, -.45, .2, 6, H); b.cyl(0, 2.1, -.55, .12, .22, .8, 6, H, null, 0, [0, .1]); }
-    else if (L.hs === 'bun') { b.sphere(0, 2.66, -.04, .47, 9, H, .78); b.sphere(0, 3.08, -.12, .26, 7, H); if (L.pin) b.box(.18, 3.1, -.1, .5, .05, .05, L.pin, .4); }
-    else if (L.hs === 'spiky') { b.sphere(0, 2.66, -.04, .46, 8, H, .7); for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; b.cyl(Math.cos(a) * .28, 2.8, Math.sin(a) * .28 - .05, .14, 0, .38, 4, H, null, 0, [Math.cos(a) * .2, Math.sin(a) * .2]); } }
-    else if (L.hs === 'pomp') { b.box(0, 2.95, .1, .6, .35, .8, H, 0, .8); b.sphere(0, 2.66, -.1, .44, 8, H, .7); }
-    else if (L.hs === 'afro') b.sphere(0, 2.85, -.05, .66, 8, H, .9, .15, 3);
-    else if (L.hs === 'topknot') { b.sphere(0, 2.62, -.08, .46, 8, H, .7); b.cyl(0, 3.0, -.1, .08, .08, .35, 5, H, null, 0, [0, -.12]); }
+    if (L.hs === 'short') b.sphere(0, 2.66, -.04, .47, 14, H, .78);
+    else if (L.hs === 'long') { b.sphere(0, 2.66, -.05, .48, 14, H, .8); b.box(0, 1.9, -.28, .9, 1.0, .22, H, 0, 1.1); }
+    else if (L.hs === 'pony') { b.sphere(0, 2.66, -.04, .47, 14, H, .78); b.sphere(0, 2.9, -.45, .2, 6, H); b.cyl(0, 2.1, -.55, .12, .22, .8, 6, H, null, 0, [0, .1]); }
+    else if (L.hs === 'bun') { b.sphere(0, 2.66, -.04, .47, 14, H, .78); b.sphere(0, 3.08, -.12, .26, 14, H); if (L.pin) b.box(.18, 3.1, -.1, .5, .05, .05, L.pin, .4); }
+    else if (L.hs === 'spiky') { b.sphere(0, 2.66, -.04, .46, 14, H, .7); for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; b.cyl(Math.cos(a) * .28, 2.8, Math.sin(a) * .28 - .05, .14, 0, .38, 4, H, null, 0, [Math.cos(a) * .2, Math.sin(a) * .2]); } }
+    else if (L.hs === 'pomp') { b.box(0, 2.95, .1, .6, .35, .8, H, 0, .8); b.sphere(0, 2.66, -.1, .44, 14, H, .7); }
+    else if (L.hs === 'buzz') b.sphere(0, 2.66, -.03, .465, 14, H, .64);
+    else if (L.hs === 'afro') b.sphere(0, 2.85, -.05, .66, 14, H, .9, .15, 3);
+    else if (L.hs === 'topknot') { b.sphere(0, 2.62, -.08, .46, 14, H, .7); b.cyl(0, 3.0, -.1, .08, .08, .35, 5, H, null, 0, [0, -.12]); }
     // 帽子
     const hc = L.hatC || '#333';
     if (L.hat === 'cap') { b.cyl(0, 2.88, 0, .48, .46, .22, 10, hc); b.box(0, 2.88, .45, .6, .05, .35, shade(hc, .9)); }
@@ -172,7 +195,8 @@
     else if (L.hat === 'crown') for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; b.cyl(Math.cos(a) * .36, 2.85, Math.sin(a) * .36, .1, 0, .4, 4, hc); }
     else if (L.hat === 'helmet') b.sphere(0, 2.72, 0, .5, 8, hc, .8);
     else if (L.hat === 'horned') { b.sphere(0, 2.72, 0, .5, 8, hc, .75); b.cyl(-.42, 2.85, 0, .1, .03, .6, 5, '#f4ead2', null, 0, [-.25, 0]); b.cyl(.42, 2.85, 0, .1, .03, .6, 5, '#f4ead2', null, 0, [.25, 0]); }
-    else if (L.hat === 'bandana' || L.hat === 'scarf') b.sphere(0, 2.7, -.05, .49, 9, hc, .72);
+    else if (L.hat === 'bucket') { b.cyl(0, 2.82, 0, .76, .76, .06, 18, hc); b.cyl(0, 2.84, 0, .56, .46, .46, 16, hc); if (L.hatStripe) { b.cyl(0, 2.9, 0, .555, .53, .1, 16, L.hatStripe); b.cyl(0, 3.08, 0, .51, .49, .1, 16, L.hatStripe); } }
+    else if (L.hat === 'bandana' || L.hat === 'scarf') { b.sphere(0, 2.7, -.05, .49, 14, hc, .72); if (L.hat === 'scarf') { b.box(-.08, 2.5, -.5, .22, .3, .08, hc, .3, .6); b.box(.1, 2.48, -.5, .22, .34, .08, shade(hc, .9), -.3, .6); } }
     else if (L.hat === 'band') b.cyl(0, 2.68, 0, .48, .48, .12, 10, hc);
     else if (L.hat === 'kappa') b.cyl(0, 2.98, 0, .34, .34, .06, 10, hc);
     if (L.antenna) { b.cyl(-.2, 2.95, 0, .03, .03, .5, 4, '#f4f2ea', null, 0, [-.1, 0]); b.cyl(.2, 2.95, 0, .03, .03, .5, 4, '#f4f2ea', null, 0, [.1, 0]); b.sphere(-.3, 3.47, 0, .07, 5, '#f4f2ea'); b.sphere(.3, 3.47, 0, .07, 5, '#f4f2ea'); }
@@ -205,22 +229,64 @@
   /* ---------- 各篇章 ---------- */
   const BUILD = {
     east(b, H, r, O, D) {
-      const col = (x, y, z) => { const n = hash(x, z) * .08; if (y < .9) return mix('#d9c48f', '#e6d3a0', n * 5); if (y > 3.4) return mix('#6f9c47', '#7fae52', n * 5); return mix('#5d9a3e', '#76b04b', n * 6); };
-      b.terrain(200, 70, H, col);
-      // 村莊房屋
-      const houses = [[-22, 30, 0.3], [-30, 44, -.2], [24, 42, .5], [30, 16, 1.2], [-34, 22, 2.8], [4, 30, 0]];
-      houses.forEach(([x, z, a], i) => { P.house(b, x, H(x, z), z, 5.5, 5, 3.2, i % 2 ? '#e8dcc2' : '#f1e6cf', ['#b8433a', '#3f6fa3', '#7a4b2a'][i % 3], a); O.push([x, z, 4]); });
-      // 風車（塔身）
-      D.windmills = [[-44, -10], [44, 0], [-14, -30]].map(([x, z]) => { const y = H(x, z); b.cyl(x, y - .4, z, 2.4, 1.5, 9, 8, '#efe5cf'); b.cyl(x, y + 8.6, z, 1.9, 0, 2.2, 8, '#8b3a2e'); O.push([x, z, 3]); return [x, y + 7.6, z + 1.8]; });
-      // 碼頭與船
-      for (let i = 0; i < 8; i++) { b.box(46 + i * 2.2, -.2, 44, 2.1, .35, 3.4, i % 2 ? '#8a6240' : '#7a5636'); b.box(46 + i * 2.2, -3, 42.5, .35, 3, .35, '#4a3222'); b.box(46 + i * 2.2, -3, 45.5, .35, 3, .35, '#4a3222'); }
-      P.ship(b, 72, 0, 36, 0, 1, '#f1ead8'); P.ship(b, -80, 0, 20, 1.2, .8, '#d9cfb8');
-      // 樹與岩石
-      for (let i = 0; i < 70; i++) { const a = r() * Math.PI * 2, d = 20 + r() * 58, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z); if (bad(x, z) || y < 1.2 || Math.hypot(x, z - 40) < 22 || Math.hypot(x, z + 58) < 18 || Math.abs(x) < 6) continue; if (r() < .7) { P.tree(b, x, y, z, .8 + r() * .6, r); O.push([x, z, 1.4]); } else { P.rock(b, x, y, z, .8 + r() * 1.4, r); O.push([x, z, 1.2]); } }
-      P.fence(b, -40, 52, -14, 56, H, '#8a6240'); P.fence(b, 14, 56, 40, 52, H, '#8a6240');
-      // 北方岬角（BOSS 區）
-      P.arena(b, 0, H(0, -58), -58, 14, '#8d8f92', 12);
-      for (let i = -1; i <= 1; i += 2) P.torch(b, i * 5, H(i * 5, -42), -42);
+      /* ======== 東海・風車村（正式版）：依任務 NPC 的位置配置瑪琪諾的酒館、村長家、老漁夫的小屋、碼頭與魯夫的小船、海軍據點與摩根像、岬角 ======== */
+      const ch = (global.CHAPTERS || []).find(c => c.id === 'east') || { npcs: [], steps: [] }, NP = {}; ch.npcs.forEach(n => { NP[n.id] = n.pos; });
+      const keep = [...ch.npcs.map(n => n.pos), ...(D.L.spots || []), [40, 40], D.L.spawn, D.L.boss];
+      const free = (x, z, c) => !onPath(x, z, c + 3.5) && keep.every(p => Math.hypot(x - p[0], z - p[1]) > c + 5) && O.every(o => Math.hypot(x - o[0], z - o[1]) > c + o[2]);
+      const face = (x, z, t) => Math.atan2(t[0] - x, t[1] - z);
+      const col = (x, y, z) => { const n = hash(x, z), sl = Math.abs(H(x + 1, z) - H(x - 1, z)) + Math.abs(H(x, z + 1) - H(x, z - 1));
+        if (y < .25) return mix('#c9b07a', '#d4bc88', n); if (y < 1.05) return mix('#e6d29c', '#efdcaa', n); let c = y > 3.2 ? mix('#5ea845', '#78b850', n) : mix('#58a03e', '#6fb04a', n);
+        if (Math.hypot(x + 2, z - 34) < 20) c = mix(c, '#7aae4a', .35); if (sl > 1.6) c = mix(c, '#8f8478', Math.min(1, (sl - 1.6) * .8)); return c; };
+      b.terrain(210, 92, H, col);
+      /* --- 瑪琪諾的酒館（兩層樓、招牌、露天座位、木桶）：門口朝向瑪琪諾 --- */
+      { const t = NP.makino || [-10, 40], x = t[0] - 2, z = t[1] + 8.5, ry = face(x, z, t), y = H(x, z), c = Math.cos(ry), s2 = Math.sin(ry), L = (lx, lz) => [x + lx * c + lz * s2, z - lx * s2 + lz * c];
+        P.house(b, x, y, z, 9, 6.6, 4.4, '#f2dfb8', '#b03a30', ry); b.box(x, y + 4.4, z, 6.4, 2.4, 4.8, '#f6e8cc', ry); { const [ax, az] = L(0, 0); b.box(ax, y + 6.8, az, 7.2, .3, 5.6, '#8a2a24', ry); }
+        { const [sx, sz] = L(-2.6, 3.7); b.box(sx, y + 3.2, sz, 3.4, 1.1, .16, '#6a3e22', ry); const [tx, tz] = L(-2.6, 3.8); b.box(tx, y + 3.3, tz, 3.0, .8, .08, '#f2c46a', ry); }
+        [[2.6, 5.4], [5.2, 5.0]].forEach(([lx, lz]) => { const [px, pz] = L(lx, lz), py = H(px, pz); b.cyl(px, py, pz, .12, .16, 1, 6, '#5e3e2a'); b.cyl(px, py + 1, pz, .8, .8, .12, 14, '#a87650'); [-1, 1].forEach(k => { const [qx, qz] = L(lx + k * 1.15, lz); b.box(qx, H(qx, qz), qz, .55, .55, .55, '#8a5a38', ry); }); });
+        for (let i = 0; i < 4; i++) { const [px, pz] = L(-5.4 + (i % 2) * .95, 2.8 + Math.floor(i / 2) * .1); P.barrel(b, px, H(px, pz) + Math.floor(i / 2) * 1.15, pz, .85); }
+        O.push([x, z, 5.6]); }
+      /* --- 村長家（較大、旗竿）：門口朝向村長 --- */
+      { const t = NP.mayor || [18, 26], x = t[0] + 5, z = t[1] + 7.5, ry = face(x, z, t), y = H(x, z); P.house(b, x, y, z, 7.4, 5.8, 3.9, '#efe4cc', '#3f6fa3', ry); const fx = x - Math.sin(ry) * 5 + Math.cos(ry) * 4.6, fz = z - Math.cos(ry) * 5 - Math.sin(ry) * 4.6; b.cyl(fx, H(fx, fz), fz, .1, .08, 7, 6, '#e8e4dc'); b.box(fx + .9, H(fx, fz) + 5.8, fz, 1.8, 1.1, .06, '#4a7ad8'); O.push([x, z, 5]); }
+      /* --- 老漁夫的小屋：漁網架、曬魚架、翻過來的小船 --- */
+      { const t = NP.roux || [-24, 18], x = t[0] - 7, z = t[1] + 3, ry = face(x, z, t), y = H(x, z); P.house(b, x, y, z, 5, 4.4, 3, '#d8c8a8', '#7a4b2a', ry);
+        const nx = t[0] - 3, nz = t[1] - 6; [-2, 2].forEach(k => b.box(nx + k, H(nx + k, nz) - .2, nz, .18, 2.6, .18, '#6b4a2f')); b.box(nx, H(nx, nz) + 2.3, nz, 4.2, .12, .12, '#6b4a2f'); for (let i = 0; i < 7; i++) b.box(nx - 1.8 + i * .6, H(nx, nz) + .6, nz, .04, 1.7, .04, '#d8c890'); b.box(nx, H(nx, nz) + 1.4, nz + .02, 3.8, 1.6, .02, '#c8b880');
+        const bx = t[0] + 5, bz = t[1] - 4; b.box(bx, H(bx, bz) - .1, bz, 1.6, .7, 4, '#8a5a38', .4, .7); O.push([x, z, 3.6]); O.push([nx, nz, 2.4]); }
+      /* --- 一般民宅：自動挑選不擋路的位置 --- */
+      { const cand = [[-30, 42], [-36, 28], [-20, 54], [-4, 58], [12, 58], [26, 46], [32, 22], [-38, 8], [6, 24], [-8, 24], [22, 56], [-44, 40]], walls = ['#f1e6cf', '#e8dcc2', '#f4ecd8', '#ead8b8'], roofs = ['#b8433a', '#3f6fa3', '#d8803a', '#5a8a4a', '#7a4b2a'];
+        let k = 0; cand.forEach(([x, z]) => { if (!free(x, z, 3.6)) return; const y = H(x, z); if (y < 1.2) return; const ry = Math.atan2(-x, 34 - z) + (r() - .5) * .3; P.house(b, x, y, z, 5.2 + r() * 1.2, 4.4 + r() * .8, 3.1 + r() * .5, walls[k % 4], roofs[k % 5], ry); O.push([x, z, 4.2]);
+          const gx = x + Math.cos(ry) * 4.2, gz = z - Math.sin(ry) * 4.2; if (free(gx, gz, 1.2)) for (let i = 0; i < 6; i++) b.sphere(gx + (i % 3) * .7 - .7, H(gx, gz) + .1, gz + Math.floor(i / 3) * .8, .38, 6, ['#ff6a8a', '#ffd34a', '#ffffff', '#ff8a3a'][(i + k) % 4], .7, .2, i + k * 7); k++; }); }
+      /* --- 水井、曬衣繩、木箱、路牌 --- */
+      { const x = 2, z = 36; if (free(x, z, 1.6)) { const y = H(x, z); b.cyl(x, y - .2, z, 1.3, 1.4, 1.1, 14, '#a99d90'); b.cyl(x, y + .85, z, 1.15, 1.15, .06, 14, '#2c4058'); [-1, 1].forEach(k => b.box(x + k * 1.15, y, z, .2, 2.6, .2, '#6b4a2f')); b.cyl(x, y + 2.6, z, 1.9, 0, 1, 4, '#b5543c', null, Math.PI / 4); O.push([x, z, 1.8]); } }
+      { const x0 = -18, z0 = 30; if (free(x0 + 2, z0, 2.4)) { [0, 4].forEach(dx => b.cyl(x0 + dx, H(x0 + dx, z0), z0, .08, .08, 2.4, 5, '#6b4a2f')); ['#ff8a8a', '#ffffff', '#8ac8ff', '#ffe08a'].forEach((c2, i) => b.box(x0 + .6 + i * .9, H(x0 + 2, z0) + 1.3, z0, .7, .9, .04, c2)); } }
+      for (let i = 0; i < 10; i++) { const a = r() * 6.28, d = 8 + r() * 26, x = -2 + Math.cos(a) * d, z = 36 + Math.sin(a) * d; if (!free(x, z, .8)) continue; const y = H(x, z); r() < .5 ? P.crate(b, x, y, z, .9, r() * 3) : P.barrel(b, x, y, z, .9); O.push([x, z, .9]); }
+      { const x = 24, z = 34; if (free(x, z, .6)) { const y = H(x, z); b.box(x, y - .2, z, .18, 2.8, .18, '#6b4a2f'); b.box(x + .7, y + 2, z, 1.6, .45, .08, '#d8b880', -.6); b.box(x - .6, y + 1.5, z, 1.4, .4, .08, '#d8b880', .5); } }
+      /* --- 小路兩旁的路燈 --- */
+      for (let i = 0; i < D.L.path.length - 1; i++) { const [ax, az] = D.L.path[i], [bx, bz] = D.L.path[i + 1], L2 = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / L2, nz = (bx - ax) / L2; for (let t2 = .3; t2 < 1; t2 += .5) { const x = ax + (bx - ax) * t2 + nx * 4.4, z = az + (bz - az) * t2 + nz * 4.4; if (H(x, z) < 1 || keep.some(p => Math.hypot(x - p[0], z - p[1]) < 4)) continue; const y = H(x, z); b.cyl(x, y - .2, z, .1, .13, 3.6, 6, '#3a3040'); b.box(x, y + 3.2, z, .5, .6, .5, '#ffcf7a'); b.cyl(x, y + 3.8, z, .42, 0, .4, 4, '#3a3040', null, Math.PI / 4); O.push([x, z, .6]); } }
+      /* --- 風車（石基、腰帶、門窗）：扇葉由遊戲繪製 --- */
+      D.windmills = [[-44, -10], [44, 0], [-14, -30]].map(([x, z]) => { const y = H(x, z); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; b.box(x + Math.cos(a) * 2.5, y - .5, z + Math.sin(a) * 2.5, 1.4, .9, .9, mix('#a99d90', '#c4b8aa', hash(i, x)), -a); }
+        b.cyl(x, y - .4, z, 2.4, 1.6, 9, 14, '#f4eee0'); for (let k = 1; k < 4; k++) b.cyl(x, y + k * 2.2, z, 2.4 - k * .22, 2.4 - k * .22, .22, 14, '#6b4a2f'); b.cyl(x, y + 8.6, z, 2.1, 0, 2.6, 14, '#8b3a2e');
+        b.box(x, y - .3, z + 2.15, 1.2, 2.2, .2, '#8a5a38'); b.box(x, y + 5, z + 1.8, .8, .8, .2, '#2c3e58'); O.push([x, z, 3.2]); return [x, y + 7.6, z + 1.9]; });
+      /* --- 碼頭：木板、木樁、繫船柱、繩索、燈；魯夫的小船 --- */
+      for (let i = 0; i < 10; i++) { for (let k = 0; k < 4; k++) b.box(46 + i * 2.2, -.15, 42.4 + k * .9, 2.12, .3, .82, mix('#8a6240', '#a87650', hash(i, k))); [41.9, 46].forEach(zz => b.cyl(46 + i * 2.2, -3.2, zz, .2, .22, 3.6, 7, '#4a3222')); }
+      [[47, 41.8], [58, 41.8], [66, 46.1]].forEach(([x, z]) => { b.cyl(x, .1, z, .26, .22, .7, 8, '#3a3a40'); b.cyl(x, .5, z, .45, .45, .12, 10, '#c8b080'); });
+      { const x = 64, z = 46.2; b.cyl(x, .1, z, .1, .12, 3.4, 6, '#3a3040'); b.box(x, 3.3, z, .5, .6, .5, '#ffcf7a'); }
+      { const x = 56, z = 38.6; b.box(x, -.6, z, 2.2, 1, 5.6, '#8a5a38', 0, .62); b.box(x, .35, z, 2, .12, 4.6, '#b58a5a'); b.cyl(x, .4, z + .3, .08, .1, 4.4, 6, '#6b4a2f'); b.box(x, 1.9, z + .45, .06, 2.4, 2, '#f6f0e2'); b.box(x, 3.6, z + .3, .08, .5, .9, '#c8322b'); }
+      P.ship(b, 76, 0, 30, -.2, 1, '#f1ead8');
+      /* --- 海軍據點（城牆、摩根像、旗）：在摩根附近 --- */
+      { const t = NP.morgan_n || [-26, -10], x = t[0] - 9, z = t[1] - 6; if (free(x, z, 3) && H(x, z) > 1.3) { const y = H(x, z); b.box(x, y - .4, z, 2.6, 1.6, 2.6, '#c4bcac'); b.box(x, y + 1.2, z, 1.4, 3.2, 1, '#9aa0a6'); b.sphere(x, y + 5, z, .8, 10, '#9aa0a6'); b.box(x + .9, y + 2.4, z + .1, .4, 2.2, .4, '#9aa0a6', .4); b.box(x + 1.5, y + 3.6, z + .1, 1.2, 1.4, .18, '#c8ccd2', .4); O.push([x, z, 2.2]); }
+        const wx = t[0] - 4, wz = t[1] - 14; for (let i = 0; i < 6; i++) { const px = wx + i * 2.4 - 6, pz = wz; if (!free(px, pz, .8) || H(px, pz) < 1.3) continue; const py = H(px, pz); b.box(px, py - .4, pz, 2.4, 3, 1, '#d8d2c4'); if (i % 2 === 0) b.box(px, py + 2.6, pz, .8, .6, 1, '#d8d2c4'); O.push([px, pz, 1.4]); }
+        const fx = t[0] + 5, fz = t[1] - 8; if (free(fx, fz, .5)) { b.cyl(fx, H(fx, fz), fz, .1, .08, 7, 6, '#e8e4dc'); b.box(fx + .9, H(fx, fz) + 5.8, fz, 1.8, 1.1, .06, '#3a6ab0'); } }
+      /* --- 孩子們的鞦韆 --- */
+      { const t = NP.kid || [8, 48], x = t[0] - 6, z = t[1] + 3; if (free(x, z, 2)) { const y = H(x, z); [-1.4, 1.4].forEach(k => b.box(x + k, y, z, .2, 3, .2, '#6b4a2f')); b.box(x, y + 2.9, z, 3.2, .2, .2, '#6b4a2f'); b.box(x, y + .9, z, 1, .1, .4, '#a87650'); [-.4, .4].forEach(k => b.box(x + k, y + 1, z, .04, 1.9, .04, '#c8b080')); O.push([x, z, 2]); } }
+      /* --- 樹與岩石 --- */
+      for (let i = 0; i < 110; i++) { const a = r() * Math.PI * 2, d = 18 + r() * 62, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z); if (bad(x, z) || y < 1.3 || !free(x, z, 1.4) || Math.hypot(x + 2, z - 34) < 16 || Math.hypot(x - D.L.boss[0], z - D.L.boss[1]) < 18) continue; if (r() < .75) { (r() < .2 ? P.pine(b, x, y, z, .9 + r() * .5) : P.tree(b, x, y, z, .8 + r() * .6, r)); O.push([x, z, 1.4]); } else { P.rock(b, x, y, z, .8 + r() * 1.4, r); O.push([x, z, 1.2]); } }
+      for (let i = 0; i < 26; i++) { const a = r() * 6.28, d = 72 + r() * 10, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z); if (y > .6 || y < -2.5 || bad(x, z)) continue; P.rock(b, x, y - .4, z, 1 + r() * 1.8, r, mix('#8a8278', '#a49a90', r())); }
+      /* --- 小溪上的木橋 --- */
+      { const x = 38, zc = -26 - (x - 14) * .14 + Math.sin(x * .12) * 2.2; for (let i = 0; i < 9; i++) b.box(x, .9 + Math.sin(i / 8 * Math.PI) * .5, zc - 4 + i, 3.2, .2, .9, mix('#8a6240', '#a87650', hash(i, 3))); [-1.5, 1.5].forEach(k => b.box(x + k, 1.2, zc, .12, .12, 8.4, '#6b4a2f')); }
+      P.fence(b, -42, 54, -16, 58, H, '#8a6240'); P.fence(b, 14, 58, 34, 56, H, '#8a6240');
+      /* --- 北方岬角（送行之戰）：石圈、火把、孤樹、長椅 --- */
+      { const [bx, bz] = D.L.boss, by = H(bx, bz); P.arena(b, bx, by, bz, 14, '#8d8f92', 14); for (let i = -1; i <= 1; i += 2) P.torch(b, bx + i * 6, H(bx + i * 6, bz + 16), bz + 16);
+        const tx = bx - 15, tz = bz - 10; if (H(tx, tz) > 1) { P.tree(b, tx, H(tx, tz), tz, 1.6, r, '#5aa040'); O.push([tx, tz, 2.4]); b.box(tx + 3, H(tx + 3, tz), tz + 2, 2.4, .3, .7, '#8a6240'); [-1, 1].forEach(k => b.box(tx + 3 + k, H(tx + 3, tz) - .2, tz + 2, .2, .5, .6, '#6b4a2f')); } }
     },
     alabasta(b, H, r, O, D) {
       const col = (x, y, z) => { const n = hash(x, z); if (y < -.2) return mix('#3a8fb0', '#4aa0c0', n); if (y < .6 && Math.hypot(x + 18, z - 18) < 16) return mix('#6a9a45', '#7fae52', n); return mix('#d8b370', '#e7c887', n * .8 + Math.sin(x * .2) * .1); };
@@ -371,7 +437,9 @@
   };
 
   const OPTS = {
-    east: { R: 78, flats: [[0, 44, 26], [0, -58, 18, 2.2], [0, 10, 16]], hill: 1.4 },
+    east: { R: 80, flats: [[0, 44, 26], [0, -58, 18, 2.2], [0, 10, 16]], hill: 1.6,
+      /* 起伏的丘陵（村子與道路附近保持平坦） */ bump: (x, z) => { const v = Math.hypot(x + 2, z - 34); return (Math.sin(x * .05 + 1.2) * Math.cos(z * .045) * 2.6 + Math.sin(x * .11 - z * .08) * .9) * sm(18, 34, v); },
+      /* 從東邊山坡流進海裡的小溪 */ carve: (x, z, h) => { const zc = -26 - (x - 14) * .14 + Math.sin(x * .12) * 2.2; if (x < 12) return h; const d = Math.abs(z - zc), k = 1 - sm(1.4, 4.2, d); return h * (1 - k) + Math.min(h, -1.1) * k; } },
     alabasta: { R: 80, flats: [[0, 44, 26], [0, -60, 18, 1.8], [0, 0, 14]], hill: 2.2, bump: (x, z) => Math.sin(x * .09 + z * .05) * 1.4, carve: (x, z, h) => { const d = Math.hypot(x + 18, z - 18); return d < 8 ? h - (1 - d / 8) * 2.4 : h; } },
     skypiea: { R: 76, flats: [[0, 44, 26], [0, -62, 18, 2.6], [0, 0, 16]], hill: 1.2 },
     dark: { R: 80, flats: [[0, 44, 24], [0, -60, 18, 2], [0, 0, 14], [0, -38, 10, 2]], hill: 1.9 },
@@ -414,6 +482,7 @@
       else { b.box(x, y - .2, z, 3.2, 1.1, 1.6, '#8a6240'); [-1.4, 1.4].forEach(dx => b.cyl(x + dx, y, z - .7, .08, .08, 2.6, 4, '#5a3a2a')); b.box(x, y + 2.5, z - .2, 3.6, .15, 2.2, T.stall, 0, .9); for (let k = 0; k < 3; k++) b.sphere(x - 1 + k, y + 1.05, z, .25, 5, ['#ff9a4a', '#e8553b', '#ffd26c'][k]); O.push([x, z, 1.8]); } });
   }
   function buildScene(renderer, chapterId, clear, layout) {
+    CHIMNEYS.length = 0;
     CLEAR = clear || []; CUR_PATH = layout ? layout.path : null;
     const base = OPTS[chapterId], opt = Object.assign({}, base);
     if (layout) { opt.lobes = layout.lobes || []; opt.flats = [...(base.flats || []), [layout.spawn[0], layout.spawn[1], 18], [layout.boss[0], layout.boss[1], 18, 2], ...layout.path.map(p => [p[0], p[1], 7])]; }
@@ -426,9 +495,10 @@
         for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, x0 = ax + (bx - ax) * t0, z0 = az + (bz - az) * t0, x1 = ax + (bx - ax) * t1, z1 = az + (bz - az) * t1, y = (X, Z) => H(X, Z) + .08;
           const c = mix(RC, '#ffffff', hash(x0, z0) * .12); b.quad([x0 - nx, y(x0 - nx, z0 - nz), z0 - nz], [x0 + nx, y(x0 + nx, z0 + nz), z0 + nz], [x1 + nx, y(x1 + nx, z1 + nz), z1 + nz], [x1 - nx, y(x1 - nx, z1 - nz), z1 - nz], c); } } }
     detail(b, H, r, O, chapterId);
+    if (global.LANDMARKS) LANDMARKS.build(chapterId, b, H, r, O, opt.R || 78, layout); /* 各島地標 */
     const w = new Builder(); w.grid(520, 44, 0, WATER[chapterId]);
-    const scene = { H, obstacles: O, dyn: D, staticMesh: renderer.mesh(b), water: renderer.mesh(w), waterAlpha: chapterId === 'skypiea' ? 1 : .9, tris: b.count / 3 };
-    if (D.windmills) { const bl = new Builder(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; bl.box(Math.cos(a) * 3.4, -.1, Math.sin(a) * 3.4, 6.4, .2, 1.3, '#f7f1e4', -a); } bl.cyl(0, -.3, 0, .7, .7, .6, 8, '#8b3a2e'); scene.blade = renderer.mesh(bl); }
+    const scene = { chimneys: CHIMNEYS.slice(), H, obstacles: O, dyn: D, staticMesh: renderer.mesh(b), water: renderer.mesh(w), waterAlpha: chapterId === 'skypiea' ? 1 : .9, tris: b.count / 3 };
+    if (D.windmills) { const bl = new Builder(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; bl.box(Math.cos(a) * 3.5, -.12, Math.sin(a) * 3.5, 7, .16, .22, '#6b4a2f', -a); bl.box(Math.cos(a) * 3.8 + Math.cos(a + 1.5708) * .7, -.06, Math.sin(a) * 3.8 + Math.sin(a + 1.5708) * .7, 5.6, .08, 1.3, '#f7f1e4', -a); for (let k = 0; k < 5; k++) bl.box(Math.cos(a) * (1.6 + k * 1.1) + Math.cos(a + 1.5708) * .7, .02, Math.sin(a) * (1.6 + k * 1.1) + Math.sin(a + 1.5708) * .7, .1, .08, 1.4, '#6b4a2f', -a); } bl.cyl(0, -.35, 0, .7, .7, .7, 12, '#8b3a2e'); scene.blade = renderer.mesh(bl); } /* 扇葉：骨架＋帆布＋橫桿 */
     if (D.fish) { const fb = new Builder(); fb.sphere(0, 0, 0, .5, 6, '#ffffff', .6); fb.cyl(-.5, -.25, 0, .02, .35, .5, 4, '#ffffff', null, 0, [-.2, 0]); scene.fishMesh = renderer.mesh(fb); }
     { const bb = new Builder(); bb.box(-.6, 0, 0, 1.2, .06, .35, '#ffffff', -.35); bb.box(.6, 0, 0, 1.2, .06, .35, '#ffffff', .35); scene.bird = renderer.mesh(bb); }
     if (D.petals) { const pb = new Builder(); pb.box(0, 0, 0, .35, .04, .25, '#ffc4d8'); scene.petal = renderer.mesh(pb); }
