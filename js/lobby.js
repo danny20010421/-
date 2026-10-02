@@ -35,7 +35,8 @@
     if (typeof EVENT_POOLS === 'undefined' || !EVENT_POOLS.length) { $('lbEvent').hidden = true; return; }
     const P = EVENT_POOLS[evIdx % EVENT_POOLS.length], img = $('lbEventImg');
     if (anim) { img.classList.remove('in'); void img.offsetWidth; }
-    img.src = P.banner; img.classList.add('in'); $('lbEventName').textContent = P.tab;
+    const act = typeof eventSchedule === 'function' ? eventSchedule() : null, on = !act || act.active === P.id;
+    img.src = P.banner; img.classList.add('in'); $('lbEventName').textContent = P.tab + (on ? '' : '・休息中'); $('lbEvent').classList.toggle('ev-rest', !on);
     $('lbEvent').dataset.pool = P.id;
   }
   function openModesSheet(on) { const s = $('lbModes'); s.classList.toggle('show', on); s.setAttribute('aria-hidden', String(!on)); }
@@ -44,6 +45,7 @@
   function acctLevel() { const d = SAVE.data, st = d.stats || {}, cleared = CHAPTERS.filter(c => (d.chapters[c.id] || {}).cleared).length, crewLv_ = Object.values(d.roster || {}).reduce((a, r) => a + (r.lv || 1), 0);
     const xp = (st.wins || 0) * 15 + (st.steps || 0) * 80 + (d.pulls || 0) * 4 + cleared * 600 + crewLv_ * 6, lv = Math.min(99, 1 + Math.floor(Math.sqrt(xp / 40))), base = 40 * (lv - 1) ** 2, next = 40 * lv ** 2;
     return { lv, pct: lv >= 99 ? 1 : Math.max(0, Math.min(1, (xp - base) / (next - base))) }; }
+  window.acctLevelInfo = acctLevel;
   function renderProfile() {
     const chip = $('profileChip'); if (!chip || currentScreen !== 'modeScreen') return; const d = SAVE.data, p = d.profile || {}, pid = [(d.lineup || [])[0], d.player].find(x => x && CHARACTERS[x] && owned(x)) || CHARACTER_ORDER[0], A = acctLevel();
     const title = (TITLES.find(t => t.id === p.title) || TITLES[0]).name, id = p.id || '';
@@ -51,11 +53,12 @@
     const cp = chip.querySelector('.lbpf-cp'); cp.onclick = e => { e.stopPropagation(); try { navigator.clipboard.writeText(String(id)); toast('已複製玩家 ID'); } catch (er) { toast('ID：' + id); } };
     /* 貨幣旁的「＋」：貝里與寶藏幣都可以在道具商店補充 */
     document.querySelectorAll('#modeScreen .topbar .coin').forEach(c => { if (!c.querySelector('.lb-plus')) { const b = document.createElement('button'); b.className = 'lb-plus'; b.setAttribute('aria-label', '前往商店'); b.textContent = '+'; b.onclick = e => { e.stopPropagation(); hub('shop'); }; c.appendChild(b); } });
+    const ach = document.querySelector('[data-lb=titles]'); if (ach) ach.classList.toggle('has-dot', typeof achieveClaimable === 'function' && achieveClaimable() > 0);
     const bell = $('lbBell'); if (bell) bell.classList.toggle('has-dot', typeof bounties === 'function' && bounties().some(b => b.prog >= b.goal && !b.claimed));
   }
   const ACT = {
     gacha: () => hub('summon'), shop: () => hub('shop'), navy: () => hub('navy'), bounty: () => hub('bounty'),
-    treasure: () => openTreasure(), titles: () => openProfile(), friends: () => toast('好友功能敬請期待！'), settings: () => { const mm = document.querySelector('#modeScreen .m-menu'); if (mm) mm.click(); else toast('設定可以在右上角選單中找到'); }, bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
+    treasure: () => openTreasure(), titles: () => openAchievements(), friends: () => toast('好友功能敬請期待！'), settings: () => { const mm = document.querySelector('#modeScreen .m-menu'); if (mm) mm.click(); else toast('設定可以在右上角選單中找到'); }, bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
   };
 
   /* 跨過午夜時，大廳的懸賞進度自動換成新的一天 */

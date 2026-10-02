@@ -64,9 +64,9 @@ function renderBounty() {
     <div class="bt-body"><h4>${b.text}</h4><div class="bar"><i style="width:${b.prog / b.goal * 100}%"></i></div>
       <p class="bt-rew">${COIN_STACK}<b>${b.berry.toLocaleString()}</b>${b.tokens ? `<span class="bt-plus">＋</span><i class="coin-ico"></i><b>×${b.tokens}</b>` : ''}</p></div>
     <button class="btn-gold" data-claim="${b.id}" ${done && !b.claimed ? '' : 'disabled'}>${b.claimed ? '已領取' : '領取賞金'}</button></article>`; }).join('');
-  $('bountyList').querySelectorAll('[data-claim]').forEach(btn => btn.onclick = () => {
+  $('bountyList').querySelectorAll('[data-claim]').forEach(btn => btn.onclick = () => { if (window.timeLocked && timeLocked()) { toast('裝置時間異常，暫時無法領取懸賞獎勵'); return; }
     const x = SAVE.data.bounty.list.find(y => y.id === btn.dataset.claim), def = bountyDef(x.id); if (x.claimed) return;
-    x.claimed = true; SAVE.save(); if (window.eventBountyCheck) setTimeout(eventBountyCheck, 60); addBerry(def.berry); if (def.tokens) addTokens(def.tokens, '懸賞任務'); SFX.play('coin'); toast(`領到賞金 ${def.berry.toLocaleString()} 貝里`, 'gold'); renderBounty();
+    x.claimed = true; track('bounty'); SAVE.save(); if (window.eventBountyCheck) setTimeout(eventBountyCheck, 60); addBerry(def.berry); if (def.tokens) addTokens(def.tokens, '懸賞任務'); SFX.play('coin'); toast(`領到賞金 ${def.berry.toLocaleString()} 貝里`, 'gold'); renderBounty();
   });
   $('bountyNote').textContent = `每天 00:00 更換 4 張懸賞單＋1 張高級懸賞（寶藏幣 ×5），今天剩下 ${list.filter(b => !b.claimed).length} 張。`;
 }

@@ -97,7 +97,7 @@
     const t0 = m.tick; m.tick += n; const bar = Math.floor(m.tick / BAR) > Math.floor(t0 / BAR) || m.tick % BAR === 0;
     if (R() < n / 1440) newsEvent(m, !live); /* 約每 2 小時一則 */
     m.pending = m.pending.filter(p => { if (p.day === m.day && m.tick >= p.at) { push(m, p.id, (p.up ? 1 : -1) * p.mag, rint(6, 14)); addNews(m, { id: p.id, t: `澄清：「${p.text}」為不實消息`, up: p.up, clar: true }, !live); return false; } return true; });
-    BASIC.forEach(s => { const S = m.s[s.id]; let r = gauss() * .00025 * s.vol * Math.sqrt(n) + .000003 * n;
+    BASIC.forEach(s => { const S = m.s[s.id]; let r = gauss() * .00025 * s.vol * Math.sqrt(n) + Math.log(s.base / S.px) * .000012 * n; /* 無長期漂移，價格遠離基準價時會慢慢拉回 */
       S.mom = S.mom.filter(x => { const k = Math.min(n, x.left); r += x.per * k; x.left -= k; return x.left > 0; });
       const p = Math.max(S.prev * (1 - LIMIT), Math.min(S.prev * (1 + LIMIT), S.px * (1 + r))); S.px = r2(Math.max(.05, p)); S.hi = Math.max(S.hi, S.px); S.lo = Math.min(S.lo, S.px);
       if (bar) S.min.push(S.px); });
@@ -115,6 +115,7 @@
   }
   /* 補算錯過的行情：整天沒開過就用「日線」快速推進，今天再逐跳模擬 */
   function advance(t = Date.now()) {
+    if (window.timeLocked && timeLocked()) return; /* 時間異常時不推進行情，避免快轉 */
     const m = M(), today = tradeDay(t);
     if (m.day !== today) {
       if (m.tick >= 0) { while (m.tick < TICKS_DAY - 1) step(m, Math.min(12, TICKS_DAY - 1 - m.tick)); closeDay(m); }
@@ -128,15 +129,21 @@
 
   /* ---------- 交易 ---------- */
   const price = id => M().s[id].px;
+  /* 每日投入上限：200 ＋ 航海等級 × 10 枚寶藏幣（以交易日計，賣出不會增加額度） */
+  const dailyCap = () => 200 + (typeof acctLevelInfo === 'function' ? acctLevelInfo().lv : 1) * 10;
+  const usedToday = () => (M().used && M().used.day === M().day) ? M().used.n : 0;
   function log(kind, id, q, amt) { const m = M(); m.trades.unshift({ k: kind, id, q, amt, px: price(id), at: Date.now() }); if (m.trades.length > 40) m.trades.length = 40; }
   function buy(id, q) {
+    if (window.timeLocked && timeLocked()) { toast('裝置時間異常，交易所暫停交易'); return; }
     if (!isOpen()) { toast('目前休市中（台灣時間每天 05:00 開盤、隔天 04:00 收盤）'); return; }
     q = Math.floor(q); if (q <= 0) return; const cost = Math.ceil(price(id) * q * (1 + FEE));
+    const cap = dailyCap(), used = usedToday(); if (used + cost > cap) { toast(`今天的投入上限是 ${cap} 枚（已用 ${used} 枚），保護召喚用的寶藏幣`); return; }
     if (SAVE.data.tokens < cost) { toast(`寶藏幣不足：需要 ${cost} 枚`); return; }
-    const h = M().hold[id] = M().hold[id] || { q: 0, cost: 0 }; SAVE.data.tokens -= cost; h.cost += cost; h.q += q;
+    const h = M().hold[id] = M().hold[id] || { q: 0, cost: 0 }; SAVE.data.tokens -= cost; h.cost += cost; h.q += q; const U = M().used = M().used && M().used.day === M().day ? M().used : { day: M().day, n: 0 }; U.n += cost;
     log('買進', id, q, cost); SFX.play('coin'); coins(); SAVE.save(); render(); toast(`買進 ${STOCKS.find(s => s.id === id).name} ${q} 股，花費 ${cost} 枚寶藏幣`, 'gold');
   }
   function sell(id, q) {
+    if (window.timeLocked && timeLocked()) { toast('裝置時間異常，交易所暫停交易'); return; }
     if (!isOpen()) { toast('目前休市中（台灣時間每天 05:00 開盤、隔天 04:00 收盤）'); return; }
     const h = M().hold[id]; if (!h || !h.q) return; q = Math.min(h.q, Math.floor(q)); if (q <= 0) return;
     const get = Math.floor(price(id) * q * (1 - FEE - TAX)), basis = h.cost * q / h.q; h.cost -= basis; h.q -= q; if (!h.q) delete M().hold[id];
@@ -160,11 +167,11 @@
   function render() {
     const root = $('xcBody'); if (!root) return; const m = M(), s = STOCKS.find(x => x.id === sel), S = m.s[sel], ix = indexVal(), open = isOpen();
     const hv = holdValue(), hc = holdCost(), h = m.hold[sel];
-    const maxBuy = Math.max(0, Math.floor(SAVE.data.tokens / (S.px * (1 + FEE)))), maxSell = h ? h.q : 0, qmax = Math.max(1, maxBuy, maxSell); qty = Math.min(Math.max(1, qty), qmax);
+    const maxBuy = Math.max(0, Math.floor(Math.min(SAVE.data.tokens, dailyCap() - usedToday()) / (S.px * (1 + FEE)))), maxSell = h ? h.q : 0, qmax = Math.max(1, maxBuy, maxSell); qty = Math.min(Math.max(1, qty), qmax);
     root.innerHTML = `
       <div class="mk-top"><div class="mk-idx"><small>偉大航路指數</small><b class="${cls(ix.c)}">${fmt(ix.v)}</b><em class="${cls(ix.c)}">${sgn(ix.c)}</em></div>
         <div class="mk-st ${open ? 'on' : ''}"><i></i>${statusText()}</div>
-        <div class="mk-wallet"><small>寶藏幣</small><b>${SAVE.data.tokens.toLocaleString()}</b></div>
+        <div class="mk-wallet"><small>寶藏幣・今日可投入</small><b>${SAVE.data.tokens.toLocaleString()}</b><em>${Math.max(0, dailyCap() - usedToday())} / ${dailyCap()}</em></div>
         <div class="mk-wallet"><small>持股市值</small><b>${fmt(hv)}</b><em class="${cls(hv - hc)}">${hc ? sgn((hv - hc) / hc) : ''}</em></div></div>
       <nav class="mk-tabs">${[['market', '行情'], ['chart', '走勢・交易'], ['hold', '我的持股'], ['news', '新聞']].map(([k, n]) => `<button class="${tab === k ? 'on' : ''}" data-tab="${k}">${n}</button>`).join('')}</nav>
       <div class="mk-grid tab-${tab}">
@@ -229,7 +236,10 @@
   }
   function loop() { live = true; advance(); live = false; if (currentScreen === 'exchangeScreen') { const ae = document.activeElement; if (!ae || ae.id !== 'mkQty') render(); } SAVE.save(); }
 
-  window.openExchange = function () { init(); advance(); showScreen('exchangeScreen'); render(); clearInterval(timer); timer = setInterval(() => { if (currentScreen !== 'exchangeScreen') { clearInterval(timer); timer = null; return; } loop(); }, TICK); };
+  /* 第一次進入：三步驟教學 */
+  function tutorial() { if (SAVE.data.mktTut) return; const steps = [['① 挑標的', '左邊（手機在「行情」分頁）是 37 檔海賊團、海軍、國家、ETF 與期貨。上方分類可以切換，紅色是上漲、綠色是下跌。'], ['② 看走勢・聽新聞', '中間是走勢圖，每 5 秒跳一次價。上方滑出「突發新聞」時，該標的接下來幾十秒會明顯漲跌；少數是假消息，之後會被澄清並反轉。'], ['③ 買進・賣出', `拉數量滑桿，按紅色「買進」或綠色「賣出」。每天最多投入 ${dailyCap()} 枚寶藏幣（航海等級越高越多），賣出的寶藏幣隨時可以拿去召喚。`]]; let i = 0;
+    const box = document.createElement('div'); box.className = 'dl-wrap'; const draw = () => { box.innerHTML = `<div class="dl-card mk-tut"><img src="assets/ui/exchange_logo.webp?v=59" alt=""><h3>${steps[i][0]}</h3><p>${steps[i][1]}</p><div class="mk-tut-dots">${steps.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div><button class="btn-gold big" id="mkTutNext">${i < steps.length - 1 ? '下一步' : '開始交易'}</button></div>`; box.querySelector('#mkTutNext').onclick = () => { if (++i >= steps.length) { SAVE.data.mktTut = true; SAVE.save(); box.remove(); } else draw(); }; }; draw(); document.body.appendChild(box); }
+  window.openExchange = function () { init(); advance(); showScreen('exchangeScreen'); render(); tutorial(); clearInterval(timer); timer = setInterval(() => { if (currentScreen !== 'exchangeScreen') { clearInterval(timer); timer = null; return; } loop(); }, TICK); };
   window.addEventListener('DOMContentLoaded', () => { const b = $('xcBack'); if (b) b.onclick = () => openModes(); addEventListener('resize', () => { if (currentScreen === 'exchangeScreen') drawChart(); }); });
   window.mkSummary = () => { try { if (!SAVE.data.mkt) return '尚未進場'; advance(); const ix = indexVal(); return `指數 ${fmt(ix.v)}（${sgn(ix.c)}）`; } catch (e) { return ''; } };
   window.__mk = { advance, step: () => { live = true; step(M()); live = false; }, buy, sell, M, STOCKS, isOpen, newsEvent: () => newsEvent(M(), false), render };

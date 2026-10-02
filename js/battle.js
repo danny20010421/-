@@ -37,7 +37,7 @@ function hideTBC() { const el = document.getElementById('tbc'); if (!el || !el.c
 function startBattle(opts) {
   const { playerId, enemyId, chapterId, isBoss, onEnd } = opts;
   const spec = opts.team && opts.team.length ? opts.team : [{ id: playerId, lv: opts.playerLv || MAX_LV, hp: opts.playerHp }];
-  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); if (typeof applySetBonus === 'function') applySetBonus(f, spec.map(x => x.id)); if (typeof setsActive === 'function') setsActive(spec.map(x => x.id)).forEach(S => { if (S.startBuff && S.members.includes(t.id)) Object.entries(S.startBuff).forEach(([k, v]) => { f.buffs[k] = (f.buffs[k] || 0) + v; }); }); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
+  const team = spec.map(t => { const f = buildFighter(t.id, t.lv || MAX_LV, t.skin !== undefined ? t.skin : equippedSkin(t.id)); applyRarityScale(f); if (typeof applySetBonus === 'function') applySetBonus(f, spec.map(x => x.id)); if (typeof setsActive === 'function') setsActive(spec.map(x => x.id)).forEach(S => { if (S.startBuff && S.members.includes(t.id)) Object.entries(S.startBuff).forEach(([k, v]) => { f.buffs[k] = (f.buffs[k] || 0) + v; }); }); f.status.revive = 0; if (t.hp != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.round(t.hp))); return f; });
   let pi = team.findIndex(f => f.hp > 0); if (pi < 0) { pi = 0; team[0].hp = 1; }
   const p = team[pi];
   const e = applyChapterDifficulty(buildFighter(enemyId, opts.enemyLv || MAX_LV, opts.enemySkin), chapterId, isBoss);
@@ -292,10 +292,12 @@ function applyVisual(f) { if (!battle || !f) return; if (f.baseScale == null) f.
 /* 鏡頭：依雙方立繪的視覺大小自動拉遠，並把兩人的站位拉開，避免貼在一起 */
 function updateCamera() { if (!battle) return; const vs = x => x ? ((x.scale || .9) * (x.battleScale || 1) * (x.visMul || 1)) / .9 : 1;
   const big = Math.max(vs(battle.player), vs(battle.enemy)), cam = big <= 1.12 ? 1 : Math.max(.5, Math.min(1, 1.08 / Math.pow(big, .85)));
-  const A = $('bArena'), ar = A.getBoundingClientRect(), sk = $('bSkills'), panel = sk ? (sk.closest('.b-cmd') || sk).getBoundingClientRect() : null;
+  const A = $('bArena'), sk = $('bSkills'), panel = sk ? (sk.closest('.b-cmd') || sk).getBoundingClientRect() : null, scr = A.offsetParent ? A.offsetParent.getBoundingClientRect() : { top: 0 }, ar = { top: scr.top + A.offsetTop, height: A.offsetHeight };
   /* 以「地面」（下方操作面板的上緣）為中心拉遠，角色縮小後仍站在看得見的地面上 */
   const FL = $('bFL'), feet = FL ? FL.offsetTop + FL.offsetHeight : ar.height, vis = panel ? panel.top - ar.top : ar.height;
-  if (ar.height) A.style.transformOrigin = `50% ${Math.max(0, Math.min(ar.height, feet, vis)).toFixed(0)}px`;
+  const oy = Math.max(0, Math.min(ar.height, feet, vis)); if (ar.height) A.style.transformOrigin = `50% ${oy.toFixed(0)}px`;
+  /* 鏡頭往上移：拉遠時畫面整體下移（最多到下方面板上緣），避免縮小後的角色擠在畫面偏高處 */
+  A.style.setProperty('--camY', (cam < 1 ? Math.max(0, Math.min(vis - oy, (1 - cam) * 90)) : 0).toFixed(0) + 'px');
   A.style.setProperty('--cam', cam.toFixed(3)); A.style.setProperty('--spread', ((1 - cam) / .5).toFixed(3)); }
 function refreshFighterImage(f) { applyVisual(f); if (!battle) return; const side = f === battle.player ? 'L' : f === battle.enemy ? 'R' : null; if (!side) return; const im = $('bImg' + side); if (im) { im.classList.remove('morph'); void im.offsetWidth; im.src = f.image; im.classList.add('morph'); } }
 function equippedSkin(id) { const S = (SAVE.data && SAVE.data.skins) || {}; return (S.equip || {})[id] || null; }

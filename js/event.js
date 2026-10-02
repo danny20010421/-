@@ -41,7 +41,7 @@
       return `<div class="ev-shard" style="--c:${s.color}"><img src="${s.icon}" alt=""><div class="ev-sh-info"><b><span class="rar c-rar r-${(typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[s.char]) || 'SSR'}">${(typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[s.char]) || 'SSR'}</span> ${c.name}<small>${c.title}</small></b><div class="ev-bar"><i style="width:${pct}%"></i></div><small>碎片 ${n}/${P().need}・單抽機率 ${Math.round(s.rate * 1000) / 10}%</small></div>
         ${own ? '<span class="ev-owned">已擁有</span>' : `<button class="btn-gold sm" data-synth="${s.char}" ${n >= P().need ? '' : 'disabled'}>合成</button>`}</div>`; };
     const cost1 = E.tickets >= 1 ? '1 張抽獎券' : `${P().tokenCost} 枚寶藏幣`, cost10 = E.tickets >= 10 ? '10 張抽獎券' : `${P().tokenCost * 10} 枚寶藏幣`;
-    pane.innerHTML = `<div class="ev-banner"><img src="${P().banner}" alt="${P().name}"></div>
+    pane.innerHTML = (typeof eventSchedule === 'function' ? (() => { const S = eventSchedule(); return isActive() ? `<div class="ev-clock on">本期限定活動・剩 <b>${left(S.endsAt - Date.now())}</b></div>` : `<div class="ev-clock">活動休息中・<b>${left(S.returnAt(P().id) - Date.now())}</b>後回歸（碎片保留，可照常合成）</div>`; })() : '') + `<div class="ev-banner"><img src="${P().banner}" alt="${P().name}"></div>
       <div class="ev-side">
         <div class="ev-tickets"><span>🎟️ 活動抽獎券 <b>${E.tickets}</b></span><small>新手免費 ${P().newbieFree} 抽・每天免費 ${P().dailyFree} 抽・每日懸賞全部完成 +${P().bountyBonus} 抽</small></div>
         ${P().shards.map(card).join('')}
@@ -63,8 +63,12 @@
   window.eventSynth = synth;
 
   let busy = false;
+  /* 輪替：只有本期活動可以抽；其他活動顯示回歸倒數（碎片照樣保留、可合成） */
+  const left = ms => { const h = Math.max(0, Math.floor(ms / 3600e3)); return h >= 24 ? `${Math.floor(h / 24)} 天 ${h % 24} 小時` : `${h} 小時 ${Math.max(0, Math.floor(ms / 60000) % 60)} 分`; };
+  const isActive = () => typeof eventSchedule !== 'function' || eventSchedule().active === P().id;
   async function pull(n) {
     if (busy) return; const E = st();
+    if (!isActive()) { const S = eventSchedule(); toast(`這個活動目前休息中，${left(S.returnAt(P().id) - Date.now())}後回歸`); return; }
     if (E.tickets >= n) E.tickets -= n; else if (SAVE.data.tokens >= n * P().tokenCost) SAVE.data.tokens -= n * P().tokenCost; else { toast(`抽獎券不足，也沒有足夠的寶藏幣（需要 ${n * P().tokenCost} 枚）`, 'warn'); return; }
     busy = true; const res = []; for (let i = 0; i < n; i++) res.push(rollOne(E)); grant(E, res); SAVE.save(); if (typeof coins === 'function') coins();
     try { await animate(res); } finally { busy = false; render(); }
@@ -107,7 +111,7 @@
   let pool = 'normal';
   function buildTabs() {
     const t = $('poolTabs'); if (!t) return;
-    t.innerHTML = `<button data-pool="normal" role="tab">寶藏扭蛋</button>` + POOLS().map(pl => `<button data-pool="ev:${pl.id}" role="tab"><img src="${pl.shards[0].icon}" alt="">${pl.tab || pl.name}<i class="pool-hot">HOT</i></button>`).join('');
+    t.innerHTML = `<button data-pool="normal" role="tab">寶藏扭蛋</button>` + POOLS().map(pl => `<button data-pool="ev:${pl.id}" role="tab"><img src="${pl.shards[0].icon}" alt="">${pl.tab || pl.name}${typeof eventSchedule !== 'function' || eventSchedule().active === pl.id ? '<i class="pool-hot">HOT</i>' : '<i class="pool-off">休息</i>'}</button>`).join('');
     t.querySelectorAll('[data-pool]').forEach(b => b.onclick = () => { pool = b.dataset.pool; if (pool.startsWith('ev:')) curId = pool.slice(3); applyPool(); t.scrollTo({ left: Math.max(0, b.offsetLeft - (t.clientWidth - b.offsetWidth) / 2), behavior: 'smooth' }); const gs = $('gachaScreen'); if (gs) gs.scrollLeft = 0; });
   }
   function applyPool() {

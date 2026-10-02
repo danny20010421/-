@@ -192,7 +192,7 @@ button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-hi
 @media (max-width:860px){input,select,textarea{font-size:16px!important}}
 
 /* 13. 立繪變身：鏡像（--mx）、巨大化時不遮住資訊、鏡頭後拉（--cam） */
-.b-arena{transform:scale(var(--cam,1));transform-origin:50% 100%;transition:transform .9s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.b-arena{transform:translateY(var(--camY,0px)) scale(var(--cam,1));transform-origin:50% 100%;transition:transform .9s cubic-bezier(.2,.8,.2,1);pointer-events:none}
 .b-arena .fighter{pointer-events:auto}
 .fighter{--mx:1}
 .fighter img{transform:scale(var(--sc)) scaleX(var(--mx));transition:transform .7s cubic-bezier(.2,.8,.2,1)}
@@ -267,3 +267,59 @@ button,a,[role=button],.char,.mode-card{touch-action:manipulation;-webkit-tap-hi
   #battleScreen .b-arena{top:calc(70px + var(--safeT,0px))!important;bottom:calc(74px + var(--safeB,0px))!important}
   #battleScreen .fighter{height:96%!important;bottom:0!important}
 }
+
+/* 19. 後台工具：選單＋按鈕佔整列 */
+.atools .adm-get{grid-column:1/-1;display:flex!important;gap:8px;margin:0}
+.atools .adm-get select{flex:1 1 auto;min-width:0;max-width:none;padding:10px;font-size:15px}
+.atools .adm-get .btn-ghost{flex:0 0 auto;white-space:nowrap;padding:10px 14px}
+/* 20. 海軍本部（手機）：拿掉上方大片空白、分頁一次看得完、船員卡縮小 */
+@media (max-width:860px){
+  #gachaScreen[data-tab=navy] .hub-pane{padding-top:10px!important}
+  .hub-tabs button{padding:8px 12px!important;font-size:15px!important}
+  .navy-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+  .navy-list>*{min-height:0!important}
+  .navy-list img{max-height:120px;object-fit:contain}
+  #gachaScreen[data-tab=navy] .hub-inner{padding:14px 12px}
+  #gachaScreen[data-tab=navy] .hub-inner p{font-size:13.5px}
+}
+
+/* 21. 成就 */
+.ach-card{width:min(640px,100%)}
+.ach-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.ach-tabs button{position:relative;display:flex;flex-direction:column;gap:2px;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;font-weight:800}
+.ach-tabs button small{font-size:10.5px;font-weight:600;color:#cbd6e6}
+.ach-tabs button.on{border-color:var(--lc);box-shadow:inset 0 -3px 0 var(--lc);background:rgba(255,255,255,.1)}
+.ach-tabs i{position:absolute;right:6px;top:4px;min-width:18px;height:18px;border-radius:99px;background:#e0304a;font:800 11px/18px system-ui;font-style:normal}
+.ach-list{display:flex;flex-direction:column;gap:8px;max-height:min(60dvh,520px);overflow-y:auto;text-align:left}
+.ach-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.ach-row>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ach-row b{font-size:14.5px}.ach-row small{font-size:12px;color:#cbd6e6}.ach-row em{font-style:normal;font-size:11px;color:#9fb0c8}
+.ach-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}.ach-bar i{display:block;height:100%}
+.ach-row.ready{border-color:#e8b64a;box-shadow:0 0 12px rgba(232,182,74,.25)}.ach-row.got{opacity:.55}
+.lb-dock button.has-dot{position:relative}.lb-dock button.has-dot::after{content:'';position:absolute;top:4px;right:12px;width:8px;height:8px;border-radius:50%;background:#e0304a}
+.pp-next{display:block;font-size:10.5px;color:#ffcf5a}
+
+/* 22. 後台：立繪調整 */
+.vz-ctl{display:flex;flex-direction:column;gap:10px;margin:8px 0}
+.vz-ctl select{padding:10px;border-radius:10px;background:#0e2036;color:#fff;border:1px solid rgba(255,255,255,.25);font-size:15px}
+.vz-ctl label{display:flex;align-items:center;gap:10px;font-size:14px}.vz-ctl input[type=range]{flex:1;accent-color:#e8b64a}
+.vz-stage{position:relative;height:300px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#2a4a6a,#14283e 70%,#0c1828)}
+.vz-f{position:absolute;bottom:14%;width:42%;height:80%;display:flex;align-items:flex-end;justify-content:center}
+.vz-f.L{left:4%}.vz-f.R{right:4%}
+.vz-f img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:50% 100%}
+.vz-f.R img{transform:scale(.9) scaleX(-1)}
+.vz-f.L{z-index:2}
+.vz-ground{position:absolute;left:0;right:0;bottom:14%;height:2px;background:rgba(255,220,140,.45)}
+.vz-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:10px}
+
+/* 23. 活動輪替、交易所上限與教學、奪寶每日任務 */
+.ev-clock{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);font-size:13px;text-align:center}
+.ev-clock.on{background:rgba(232,182,74,.14);border-color:#e8b64a}.ev-clock b{color:#ffe7a8}
+.pool-off{font-style:normal;font-size:10px;padding:1px 6px;margin-left:4px;border-radius:99px;background:#5a6a80;color:#fff}
+.lb-event.ev-rest img,#lbEvent.ev-rest img{filter:grayscale(.6) brightness(.8)}
+.mk-wallet em{font-style:normal;font-size:11px;color:#ffe7a8}
+.mk-tut{text-align:center;max-width:420px}.mk-tut img{width:90px;height:90px;object-fit:contain}.mk-tut h3{font:900 20px var(--serif);margin:6px 0}.mk-tut p{font-size:14px;line-height:1.7;color:#dbe4f0;text-align:left}
+.mk-tut-dots{display:flex;justify-content:center;gap:6px;margin:8px 0 12px}.mk-tut-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}.mk-tut-dots i.on{background:#e8b64a}
+.rn-daily{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0;padding:8px 12px;border-radius:10px;background:rgba(232,182,74,.14);border:1px solid #e8b64a;font-size:13px}
+.rn-daily b{color:#ffe7a8}.rn-daily em{font-style:normal;margin-left:auto;font-size:12px;color:#cbd6e6}.rn-daily.done{opacity:.6}
+#evPane .ev-clock{grid-column:1/-1;align-self:start}

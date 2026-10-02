@@ -6,9 +6,14 @@ function chance(p){return Math.random()<p}
 function weightedChoice(items){const total=items.reduce((s,it)=>s+it[0],0);let r=Math.random()*total;for(const [w,v] of items){r-=w;if(r<=0)return v}return items[0][1]}
 /* 稀有度體質：稀有度越高基礎越強，但差距不大（同階約 50%、相鄰階約 40～60%）；statScale 為個別角色的微調。 */
 function rarityScale(id){const r=(typeof CHAR_RARITY!=='undefined'&&CHAR_RARITY[id])||'SSR',R=(typeof GAME_SETTINGS!=='undefined'&&GAME_SETTINGS.rarityScale)||{};return (R[r]??1)*((CHARACTERS[id]&&CHARACTERS[id].statScale)||1)}
+/* 只用在玩家擁有的角色身上（battle.js 組隊時呼叫）；敵方 BOSS 由關卡難度另外調整 */
+function applyRarityScale(f){const rs=rarityScale(f.id);f.maxHp=Math.round(f.maxHp*rs);f.hp=Math.min(f.maxHp,Math.round(f.hp*rs));f.dmgMul*=rs;return f}
+/* 立繪調整（後台）：存在獨立的本機設定，不會因改版而失效 */
+function visualOverride(key){try{return (JSON.parse(localStorage.getItem('op_visual_v1')||'{}'))[key]||null}catch(e){return null}}
 function buildFighter(id,lv,skin){
-  const base=deepClone(CHARACTERS[id]); const SK=(typeof SKINS!=='undefined'&&skin)?SKINS[skin]:null; if(SK&&SK.char===id){base.image=SK.image;base.avatar=SK.avatar;base.ultimateBg=SK.image;base.skinName=SK.name;}
-  lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; { const rs=rarityScale(id); base.maxHp=Math.round(base.maxHp*rs); base.dmgMul=base.dmgMul*rs; } base.atk=L.atk; base.def=L.def;
+  const base=deepClone(CHARACTERS[id]); const SK=(typeof SKINS!=='undefined'&&skin)?SKINS[skin]:null; if(SK&&SK.char===id){base.image=SK.image;base.avatar=SK.avatar;base.ultimateBg=SK.image;base.skinName=SK.name;if(SK.battleScale)base.battleScale=SK.battleScale;if(SK.faceLeft!==undefined)base.faceLeft=SK.faceLeft;}
+  { const VO=visualOverride(SK&&SK.char===id?'skin:'+skin:'char:'+id); if(VO){ if(VO.battleScale)base.battleScale=VO.battleScale; if(VO.faceLeft!==undefined)base.faceLeft=VO.faceLeft; } }
+  lv=lv||MAX_LV; const L=lvStats(base,lv); base.level=lv; base.maxHp=L.hp; base.baseSpeed=L.spd; base.dmgMul=L.dmg; base.atk=L.atk; base.def=L.def;
   base.skills.forEach((s,i)=>{const need=SKILL_UNLOCK[i]||1; if(lv<need){s.locked=need;s.pp=0;s.maxPP=0}else if(s.maxPP>0){s.maxPP=skillPP(s,lv,L.ppAdj);s.pp=s.maxPP} if(base.skinSkills&&base.skinSkills.includes(i)&&!(SK&&SK.char===id)){s.locked='skin';s.pp=0;s.maxPP=0}});
   base.hp=base.maxHp;
   base.buffs={atk:0,def:0,spd:0};
@@ -183,7 +188,7 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.enemyAtkDownChance&&!target.voidImmune&&!immuneTo(target)){const[[a,b],amt,turns]=ef.enemyAtkDownChance;if(chance(rand(a,b))){target.buffs.atk=clamp(target.buffs.atk-amt,-6,6);target.status.atkDownTemp=(target.status.atkDownTemp||0)+amt;target.status.atkDownTurns=turns;log(`🦶 ${target.name} 攻擊 -${amt}！`)}}
  if(ef.phoenixForm){const PF=ef.phoenixForm;actor.status.phoenix=PF.turns;actor.status.phoenixRegen=PF.regen;actor.status.counterChance=rand(PF.counter[0],PF.counter[1]);actor.status.damageReductionTurns=Math.max(actor.status.damageReductionTurns||0,PF.turns);actor.status.damageReductionValue=Math.max(actor.status.damageReductionValue||0,rand(PF.reduce[0],PF.reduce[1]));
   if(!actor.status.phoenixSpd){actor.buffs.spd=clamp(actor.buffs.spd+PF.spd,-6,6);actor.status.phoenixSpd=PF.spd}
-  if(PF.image){if(!actor.baseImage)actor.baseImage=actor.image;actor.image=PF.image;actor.visMul=PF.scale||1;actor.mirror=!!PF.mirror;if(typeof refreshFighterImage==='function')refreshFighterImage(actor)}
+  if(PF.image){if(!actor.baseImage)actor.baseImage=actor.image;actor.image=PF.image;{const VO=visualOverride('form:'+actor.id);actor.visMul=(VO&&VO.battleScale)||PF.scale||1;actor.mirror=VO&&VO.faceLeft!==undefined?VO.faceLeft:!!PF.mirror;}if(typeof refreshFighterImage==='function')refreshFighterImage(actor)}
   log(`🐦 ${actor.name} 化為不死鳥！受到的傷害 -${Math.round(actor.status.damageReductionValue*100)}%，反擊機率 ${Math.round(actor.status.counterChance*100)}%`)}
  if(result&&result.meta&&result.meta.castSkill&&!skill.__castApplied){const cs=result.meta.castSkill;applySkillEffects(actor,target,{...cs,__castApplied:true},{damage:result.damage,meta:{...result.meta,castSkill:null}})}
  if(ef.bonusCurHpCut&&target.hp>0&&chance(ef.bonusCurHpCut[0])){if(target.voidImmune)log(`👑 ${target.name} 不受比例傷害影響！`);else{let d=Math.max(1,Math.floor(target.hp*ef.bonusCurHpCut[1]));if(battle.isBoss&&target===battle.enemy)d=Math.min(d,Math.floor(target.maxHp*(GAME_SETTINGS.bossPctCap??0.15)));target.hp=Math.max(0,target.hp-d);showDamage(target===battle.player?'L':'R',d,'#ffcf5a');log(`💥 追加扣除 ${target.name} ${d} 體力！`)}}
@@ -192,7 +197,7 @@ function applySkillEffects(actor,target,skill,result){
  if(ef.copyEnemyBuffs){let n=0;['atk','def','spd'].forEach(k=>{if(target.buffs[k]>0){actor.buffs[k]=clamp(actor.buffs[k]+target.buffs[k],-6,6);n+=target.buffs[k]}});log(n?`🦊 ${actor.name} 複製了對手的能力提升！`:`🦊 對手沒有可以複製的能力提升`)}
  if(ef.enemyAllDown&&!target.voidImmune&&!immuneTo(target)){['atk','def','spd'].forEach(k=>{target.buffs[k]=clamp(target.buffs[k]-ef.enemyAllDown,-6,6)});log(`👻 ${target.name} 全能力 -${ef.enemyAllDown}！`)}
  if(ef.clearEnemyTimed&&!target.voidImmune){const T=target.status;['damageReductionTurns','invuln','dodge','thornTurns','regen','regenTurns','damageMultTurns','nextAttackMultTurns','undyingTurns','reflect','immune'].forEach(k=>{if(T[k]>0)T[k]=0});T.nextAttackMultValue=0;log(`👻 ${target.name} 身上的增益效果全部消失了……`)}
- if(ef.formImage){const FI=ef.formImage;actor.status.formTurns=FI.turns||3;if(!actor.baseImage)actor.baseImage=actor.image;actor.image=FI.image;actor.visMul=FI.scale||1;actor.mirror=!!FI.mirror;if(typeof refreshFighterImage==='function')refreshFighterImage(actor);log(`🐉 ${actor.name} 化為${FI.label||'另一種型態'}！`)}
+ if(ef.formImage){const FI=ef.formImage;actor.status.formTurns=FI.turns||3;if(!actor.baseImage)actor.baseImage=actor.image;actor.image=FI.image;{const VO=visualOverride('form:'+actor.id);actor.visMul=(VO&&VO.battleScale)||FI.scale||1;actor.mirror=VO&&VO.faceLeft!==undefined?VO.faceLeft:!!FI.mirror;}if(typeof refreshFighterImage==='function')refreshFighterImage(actor);log(`🐉 ${actor.name} 化為${FI.label||'另一種型態'}！`)}
  if(ef.invulnTurns){actor.status.invuln=Math.max(actor.status.invuln||0,ef.invulnTurns);log(`🛡️ ${actor.name} 接下來 ${ef.invulnTurns} 回合不受對手的攻擊！`)}if(ef.selfDot){actor.status.dots.push({turns:ef.selfDot[0],ratio:ef.selfDot[1],label:'副作用'});log(`💊 ${actor.name} 承受禁藥的副作用！`)}
  if(ef.decoys){actor.status.decoys=(actor.status.decoys||0)+ef.decoys;log(`🎖️ ${ef.decoys} 名海軍小兵趕到，擋在 ${actor.name} 前面！`)}
  if(ef.eruption){if(battle.eruption&&battle.eruption.owner.hp>0)log('🌋 火山已經在噴發中。');else{battle.eruption={owner:actor,ratio:ef.eruptionRatio||0.10,left:ef.eruptionTurns||0};log(`🌋 ${actor.name} 引發火山噴發！整個戰場陷入熔岩之中！`)}}

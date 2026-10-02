@@ -46,6 +46,7 @@ function renderAdmin(tab) {
   tab = tab || document.querySelector('#adminNav .on')?.dataset.tab || 'general';
   document.querySelectorAll('#adminNav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   const P = $('adminPane'); const S = GAME_SETTINGS;
+  if (tab === 'visual') { renderVisualAdmin(P); $('adminStatus').textContent = ''; return; }
   if (tab === 'general') {
     P.innerHTML = `<h3>基本規則</h3><p class="an">存檔後立即套用到下一場戰鬥與下一次登島。</p><div class="agrid">
       ${field('每回合選技秒數', 'turnSeconds', S.turnSeconds, 'number', 'min="5" max="120"')}

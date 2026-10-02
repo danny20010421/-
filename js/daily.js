@@ -12,13 +12,14 @@
 
   /* ---------- 每天補給掃蕩卷 ---------- */
   function dailySweep() {
+    if (window.timeLocked && timeLocked()) return 0;
     const d = SAVE.data, day = today(); if (d.sweepDay === day) return 0;
     d.sweepDay = day; const n = GAME_SETTINGS.sweepDaily || 5; inv().sweep = (inv().sweep || 0) + n; SAVE.save(); return n;
   }
 
   /* ---------- 七日登入 ---------- */
   function loginState() { return (SAVE.data.login = SAVE.data.login || { day: 0, last: '' }); }
-  function canClaim() { return loginState().last !== today(); }
+  function canClaim() { return !(window.timeLocked && timeLocked()) && loginState().last !== today(); }
   function grantReward(R) {
     const out = [];
     if (R.berry) { addBerry(R.berry); out.push(`貝里 ${R.berry.toLocaleString()}`); }
@@ -38,7 +39,7 @@
     const close = () => box.remove();
     box.querySelector('[data-x]').onclick = close; box.onclick = e => { if (e.target === box) close(); };
     const c = box.querySelector('#dlClaim'); if (ok) c.onclick = () => {
-      const R = LOGIN_REWARDS[L.day], got = grantReward(R); L.last = today(); L.day = (L.day + 1) % LOGIN_REWARDS.length; SAVE.save();
+      const R = LOGIN_REWARDS[L.day], got = grantReward(R); L.last = today(); L.day = (L.day + 1) % LOGIN_REWARDS.length; SAVE.data.loginTotal = (SAVE.data.loginTotal || 0) + 1; SAVE.save();
       SFX.play('rare'); toast(`登入獎勵：${got.join('、')}`, 'gold'); close(); if (window.renderLobby) renderLobby();
     };
   }
@@ -61,7 +62,7 @@
     }
     addBerry(berry); if (lead) gainExp(lead, exp, true); lineup.filter(x => x !== lead).forEach(x => gainExp(x, Math.round(exp * (1 - GAME_SETTINGS.shareExp)), true));
     Object.entries(drops).forEach(([k, n]) => { inv()[k] = (inv()[k] || 0) + n; });
-    track('wins', B.total * runs); SAVE.save(); coins();
+    track('wins', B.total * runs); track('sweeps', B.total * runs); SAVE.save(); coins();
     const lines = [`掃蕩「${c.name}」×${runs}（共 ${B.total * runs} 場戰鬥，其中 BOSS ${B.bosses * runs} 場），使用掃蕩卷 ${need} 張`, `貝里 +${berry.toLocaleString()}`, `出戰陣容經驗 +${exp.toLocaleString()}（先鋒全額，其他人 ${Math.round((1 - GAME_SETTINGS.shareExp) * 100)}%）`, Object.keys(drops).length ? '掉落：' + Object.entries(drops).map(([k, n]) => `${ITEMS[k].name} ×${n}`).join('、') : '這次沒有掉落道具', `剩餘掃蕩卷：${inv().sweep}`];
     SFX.play('quest'); storyCard('掃蕩完成', lines, '好', () => { if (typeof selectChapter === 'function') selectChapter(id); });
   }
