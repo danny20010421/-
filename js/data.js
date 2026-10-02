@@ -1,5 +1,5 @@
 /* 資料版本：每次改動角色或劇情資料時加一。後台設定若來自舊版本會自動停用，避免舊劇情覆蓋新內容。 */
-const DATA_VERSION = 39;
+const DATA_VERSION = 40;
 /* 七日登入獎勵：第 7 天領完後從第 1 天重新開始 */
 const LOGIN_REWARDS = [
  {day:1, label:'貝里 5,000', berry:5000},
@@ -11,7 +11,7 @@ const LOGIN_REWARDS = [
  {day:7, label:'寶藏幣 ×10', tokens:10, big:true}
 ];
 /* 圖片版本：換圖時加一，瀏覽器就會重新下載（不影響後台設定） */
-const ASSET_VERSION = 32;
+const ASSET_VERSION = 33;
 /* 遊戲資料：角色（沿用原版數值）、篇章劇情、道具、公告 */
 const CHARACTERS = {
  luffy0:{"id":"luffy0","name":"初登場魯夫","title":"草帽小子","types":["格鬥"],"image":"assets/chars/luffy0.webp?v=24","avatar":"assets/chars/luffy0_face.webp?v=24","scale":0.6,"worldScale":0.86,"maxHp":1180,"baseSpeed":112,"desc":"剛從風車村出海的橡膠人，靠伸縮自如的拳腳和不服輸的鬥志戰鬥。","ultimateBg":"assets/chars/luffy0.webp?v=24","ai":"aggressive","skills":[{"name":"橡膠手槍","type":"attack","pp":15,"maxPP":15,"power":120,"accuracy":100,"desc":"伸長手臂的直拳，25% 機率造成 1.8 倍傷害。","tags":[["爆發","red"]],"anima":"punch","effect":{"critBoost":0.25,"critMult":1.8}},{"name":"橡膠鞭","type":"attack","pp":12,"maxPP":12,"power":120,"accuracy":100,"desc":"甩出伸長的腿橫掃，25% 機率使對手麻痺 1 回合。","tags":[["麻痺","gold"]],"anima":"whip","effect":{"skipAttackChance":0.25,"skipAttackTurns":1},"ppDelta":[-4,-2,-2]},{"name":"橡膠加特林","type":"attack","pp":8,"maxPP":8,"power":0,"accuracy":100,"desc":"連續出拳 6 次，每次造成對手最大體力 1%～5% 傷害。","tags":[["六連擊","blue"]],"anima":"barrage","effect":{"randomPercentHits":[6,0.01,0.05,false]}},{"name":"橡膠風船","type":"support","pp":5,"maxPP":5,"power":0,"accuracy":100,"desc":"把身體吹成氣球，下一次受到的攻擊以 1.5 倍反彈，並回復 10% 體力。","tags":[["反彈","gold"],["回復","green"]],"anima":"balloon","effect":{"reflectTurns":1,"reflectMultiplier":1.5,"healRatio":0.1}},{"name":"二檔","type":"support","pp":2,"maxPP":2,"power":0,"accuracy":100,"desc":"血液加速流動、全身冒出蒸氣：接下來的攻擊傷害 3.5 倍，50% 使對手恐懼 1 回合。","tags":[["強化","gold"],["恐懼","gold"]],"anima":"gear2","ultimate":true,"effect":{"nextAttackMult":3.5,"nextAttackMultTurns":2,"fearChance":0.5,"fearTurns":1}}],"no":1,"statScale":1.2},
@@ -92,7 +92,7 @@ const CHAPTER_DIFFICULTY = {
  dark:{order:9,label:'地獄',stars:4,hp:1.85,atk:3,def:2,spd:2,bossHp:1.60,bossStages:2,ai:1.30,revives:2,bossLvUp:22},
  giant:{order:10,label:'傳說',stars:5,hp:2.00,atk:3,def:3,spd:2,bossHp:1.70,bossStages:3,ai:1.35,revives:2,bossLvUp:25}
 };
-const GAME_SETTINGS = {turnSeconds:20, stageStep:0.20, bossRevives:1, itemsPerBattle:3, startTokens:5, clearBonus:5, dailyLimit:2, unlockAll:false, charRate:0.03,bossPctCap:0.15,gachaPity:150,rarityScale:{N: 1, R: 1.37, SR: 1.095, SSR: 1.06, UR: 1},sweepDaily:5, charLv:20, shareExp:0.3, bossJoinFirst:0.5, bossJoinRepeat:0.2, bossJoinLv:20, lineupMax:3, levelSync:true, syncGap:6, atkStep:0.10, defStep:0.10, spdStep:0.05, freezeDot:0.02, burnDot:0.04, freezeSlow:0.25, weakDealt:0.15, armorBreak:0.05, typeEffect:true, typeUp:1.25, typeDown:0.8};
+const GAME_SETTINGS = {turnSeconds:20, stageStep:0.20, bossRevives:1, itemsPerBattle:3, startTokens:5, clearBonus:5, dailyLimit:2, unlockAll:false, charRate:0.03,bossPctCap:0.15,gachaPity:150,rarityScale:{N: 1, R: 1.37, SR: 1.095, SSR: 1.06, UR: 1, 'UR+': 1},sweepDaily:5, charLv:20, shareExp:0.3, bossJoinFirst:0.5, bossJoinRepeat:0.2, bossJoinLv:20, lineupMax:3, levelSync:true, syncGap:6, atkStep:0.10, defStep:0.10, spdStep:0.05, freezeDot:0.02, burnDot:0.04, freezeSlow:0.25, weakDealt:0.15, armorBreak:0.05, typeEffect:true, typeUp:1.25, typeDown:0.8};
 
 const ENCOUNTER_LINES = {
  "luffy0": [

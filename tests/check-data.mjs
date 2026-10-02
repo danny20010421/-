@@ -5,14 +5,15 @@ const errs = [], warn = [];
 for (const f of fs.readdirSync(root + 'js')) if (f.endsWith('.js')) { try { execSync(`node --check "${root}js/${f}"`, { stdio: 'pipe' }); } catch (e) { errs.push(`語法錯誤 js/${f}: ${e.stderr}`); } }
 const ctx = { window: {}, console }; vm.createContext(ctx);
 vm.runInContext(rd('js/data.js').replace(/^const /gm, 'var '), ctx);
+vm.runInContext(rd('js/data_ext.js'), ctx);
 const { CHARACTERS: C, CHARACTER_ORDER: O, CHAR_OBTAIN: OB, CHAPTERS: CH, TREASURE: T, COLLECTION_SETS: S, EVENT_POOLS: EP, ITEMS: IT, LOGIN_REWARDS: LR } = ctx;
 const exists = u => fs.existsSync(root + String(u).split('?')[0]);
-const hub = rd('js/hub.js'), battle = rd('js/battle_core.js') + rd('js/battle.js');
+const hub = rd('js/hub.js'), battle = rd('js/battle_core.js') + rd('js/battle.js') + rd('js/ext_effects.js');
 const nos = {};
 for (const id of O) {
   const c = C[id]; if (!c) { errs.push(`CHARACTER_ORDER 有不存在的角色 ${id}`); continue; }
   if (!exists(c.image)) errs.push(`${id} 立繪不存在 ${c.image}`); if (!exists(c.avatar)) errs.push(`${id} 頭像不存在 ${c.avatar}`);
-  if (!new RegExp(`\\b${id}: *'(N|R|SR|SSR|UR)'`).test(hub)) errs.push(`${id} 沒有稀有度（js/hub.js CHAR_RARITY）`);
+  if (!new RegExp(`\\b${id}: *'(N|R|SR|SSR|UR|UR\\+)'`).test(hub)) errs.push(`${id} 沒有稀有度（js/hub.js CHAR_RARITY）`);
   (nos[c.no] = nos[c.no] || []).push(id);
   c.skills.forEach((s, i) => { const keys = Object.keys(s.effect || {}); (s.effect && s.effect.variants || []).forEach(v => keys.push(...Object.keys(v.effect || {})));
     keys.forEach(k => { const base = k.replace(/(Chance|Turns)$/, ''); if (!battle.includes(k) && !/^(fear|fatigue|paralyze|armorBreak|burn|freeze|weak|petrify)$/.test(base)) warn.push(`${id} 第 ${i + 1} 招的效果 ${k} 在戰鬥程式中找不到`); });

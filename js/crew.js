@@ -1,6 +1,6 @@
 /* 角色背包：我的船員（只列已獲得）、角色圖鑑、訓練營 */
 (function () {
-  const RAR_COLOR = { N: '#9aa6b2', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a', UR: '#ff7ad9' };
+  const RAR_COLOR = { N: '#9aa6b2', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a', UR: '#ff7ad9', 'UR+': '#ff3b3b' };
   const rarOf = id => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'R';
   const noOf = id => 'No.' + (CHARACTERS[id].noText || String(CHARACTERS[id].no || 0).padStart(3, '0'));
   const ownedIds = () => CHARACTER_ORDER.filter(owned);

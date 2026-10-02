@@ -33,6 +33,7 @@
 
   let items = [], doneCount = 0, failed = [], started = 0, total = 0;
   function setProgress(label) {
+    if (!el('ldPct')) return; /* 載入畫面已經關閉時不再更新 */
     const p = total ? Math.min(100, Math.floor(Math.max(0, doneCount - failed.length) / total * 100)) : 0;
     el('ldPct').textContent = p; el('ldFill').style.width = p + '%'; el('ldBar').setAttribute('aria-valuenow', p);
     if (label) el('ldText').textContent = label;
@@ -56,7 +57,7 @@
   }
   function finish() {
     doneCount = total; setProgress(failed.length ? `有 ${failed.length} 個資源下載失敗` : '全部資源已就緒');
-    const box = el('ldDone'); box.hidden = false;
+    const box = el('ldDone'); if (!box || !el('loader')) return; /* 載入畫面已經關閉 */ box.hidden = false;
     if (!failed.length) {
       box.innerHTML = `<button class="ld-enter" id="ldEnter">點擊進入</button><small>資源檢查完成（${items.length}/${items.length}）・${((performance.now() - started) / 1000).toFixed(1)} 秒</small>`;
       el('ldEnter').onclick = enter; el('loader').classList.add('ready');

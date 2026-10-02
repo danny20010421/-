@@ -40,7 +40,7 @@ function toast(msg, kind) { const el = $('toast'); el.textContent = msg; el.clas
 function openModal(id) { const _m = document.getElementById(id); if (_m) _m.querySelectorAll('.modal-card,.cx-detail,.cx-grid').forEach(e => e.scrollTop = 0); $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 function confirmBox(title, text, ok, fn) { $('cfTitle').textContent = title; $('cfText').textContent = text; $('cfOk').textContent = ok || '確定'; $('cfOk').onclick = () => { closeModal('confirmModal'); fn(); }; openModal('confirmModal'); }
-const SCREENS = ['exchangeScreen', 'loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'throneScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen'];
+const SCREENS = ['exchangeScreen', 'loginScreen', 'modeScreen', 'runnerScreen', 'towerScreen', 'throneScreen', 'chapterScreen', 'worldScreen', 'battleScreen', 'gachaScreen', 'emperorScreen'];
 let currentScreen = 'loginScreen';
 function showScreen(id) {
   document.querySelectorAll('.sk-tip.show').forEach(t => t.classList.remove('show'));
@@ -87,7 +87,7 @@ function itemIcon(it) { if (it.img) return `<img class="ico ico-img" src="${it.i
 
 /* ---------- 登入與公告 ---------- */
 const NEWS_KEY = 'op_rpg_news_v3';
-function loadNews() { try { const n = JSON.parse(localStorage.getItem(NEWS_KEY) || 'null'); if (Array.isArray(n) && n.length) return n; } catch (e) { } return DEFAULT_NEWS.slice(); }
+function loadNews() { try { const n = JSON.parse(localStorage.getItem(NEWS_KEY) || 'null'); if (Array.isArray(n) && n.length) { const have = new Set(n.map(x => x.id)); return [...DEFAULT_NEWS.filter(x => !have.has(x.id)), ...n]; } } catch (e) { } return DEFAULT_NEWS.slice(); } /* 新版的預設公告會自動補進已存的公告清單 */
 let newsFilter = '全部';
 const NEWS_OPEN_KEY = 'op_news_open';
 function setNewsOpen(open) { const b = document.querySelector('.news-board'); if (open && b.classList.contains('collapsed')) setTimeout(renderNewsBoard, 0); b.classList.toggle('collapsed', !open); $('newsToggle').setAttribute('aria-expanded', String(open)); localStorage.setItem(NEWS_OPEN_KEY, open ? '1' : '0'); }
@@ -491,7 +491,7 @@ function beginFight(n, carryHp) {
   WORLD.paused = true;
   const s = curStep(); if (s && s.type === 'gauntlet' && !n.boss && !CHAIN) CHAIN = { wins: [] };
   startBattle({
-    playerId: SAVE.data.player, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id), hp: carryHp ? carryHp[id] : undefined })), enemyId: n.id, chapterId: CH.id, isBoss: n.boss, enemyLv: enemyLvFor(n.boss),
+    playerId: SAVE.data.player, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id), hp: carryHp ? carryHp[id] : undefined })), enemyId: n.id, chapterId: CH.id, isBoss: n.boss, enemyLv: enemyLvFor(n.boss), bg: (SIDE && SIDE.bg) || undefined,
     onEnd: (r) => onBattleEnd(r, n),
     onLeave: () => { showScreen('worldScreen'); if (pendingClear) AUDIO.stopSong(); WORLD.paused = false; refreshWorld(); coins(); if (pendingClear) { const pc = pendingClear; pendingClear = null; setTimeout(() => showClear(pc), 350); } }
   });
@@ -503,7 +503,7 @@ function onBattleEnd(r) {
   if (r.win) { const elv = enemyLvFor(r.isBoss), amt = Math.round((30 + elv * 6) * (r.isBoss ? 3 : 1)), lead = SAVE.data.lineup[0] || SAVE.data.player; const ex = gainExp(lead, amt); SAVE.data.lineup.filter(id => id !== lead).forEach(id => gainExp(id, Math.round(amt * (1 - GAME_SETTINGS.shareExp)), true)); if (ex) msgs.push(expText(ex) + (SAVE.data.lineup.length > 1 ? '（陣容全員）' : '')); const bry = Math.round((40 + elv * 8) * (r.isBoss ? 4 : 1)); addBerry(bry); msgs.push(`貝里 +${bry.toLocaleString()}`); }
   if (SIDE) { const S = SIDE; SIDE = null;
     if (!r.win) return { message: `${S.title} 失敗了……整理好狀態，再去找他聽一次吧。` };
-    if (r.enemyId === S.enemy) { st.sides = st.sides || {}; const first = !st.sides[S.id]; st.sides[S.id] = true; if (first) { addTokens(S.reward || 0, S.title); addBerry(S.berry || 0); } SAVE.save(); renderQuest(); if (S.win) setTimeout(() => say(S.win), 900); msgs.push(`📜 ${S.title} 完成！${first ? `寶藏幣 +${S.reward || 0}、貝里 +${(S.berry || 0).toLocaleString()}` : ''}`); return { message: msgs.join('<br>') }; } }
+    if (r.enemyId === S.enemy) { st.sides = st.sides || {}; const first = !st.sides[S.id]; st.sides[S.id] = true; if (first) { addTokens(S.reward || 0, S.title); addBerry(S.berry || 0); } if (S.joins && !owned(S.joins)) { addCrew(S.joins, S.joinLv || 20); msgs.push(`<b>${CHARACTERS[S.joins].name}</b> 加入了你的船隊！`); } SAVE.save(); renderQuest(); if (S.win) setTimeout(() => say(S.win), 900); msgs.push(`📜 ${S.title} 完成！${first ? `寶藏幣 +${S.reward || 0}、貝里 +${(S.berry || 0).toLocaleString()}` : ''}`); return { message: msgs.join('<br>') }; } }
   if (s && s.type === 'gauntlet' && !r.isBoss && CHAIN) {
     if (!r.win) { CHAIN = null; renderQuest(); return { message: '連戰中斷了。整理好狀態，再從第一場開始。' }; }
     CHAIN.wins.push(r.enemyId);
@@ -518,7 +518,7 @@ function onBattleEnd(r) {
   }
   if (!r.win) return {};
   if (r.isBoss) {
-    if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward === CH.id && !owned(cid)) { addCrew(cid, 10); msgs.push(`<b>${CHARACTERS[cid].name}</b> 加入了角色背包！（LV 10）`); } }); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = first ? (ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst) : (ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat), again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(`${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
+    if (s && s.type === 'boss') { window.__tbcNext = true; const before = SAVE.data.tokens; const first = !st.cleared; st.cleared = true; completeStep(); if (first) { SAVE.data.tokens += GAME_SETTINGS.clearBonus; msgs.push(`首次通關獎勵：寶藏幣 ×${GAME_SETTINGS.clearBonus}`); Object.entries(CHAR_OBTAIN).forEach(([cid, o]) => { if (o.reward === CH.id && !owned(cid)) { addCrew(cid, 10); msgs.push(`<b>${CHARACTERS[cid].name}</b> 加入了角色背包！（LV 10）`); } }); } SAVE.save(); coins(); const got = SAVE.data.tokens - before; if (got) msgs.unshift(`這一戰共得到寶藏幣 ×${got}`); { const bid = CH.boss, ob = CHAR_OBTAIN[bid] || {}, rate = first ? (ob.bossFirst ?? ob.boss ?? GAME_SETTINGS.bossJoinFirst) : (ob.bossRepeat ?? ob.boss ?? GAME_SETTINGS.bossJoinRepeat), again = ob.boss != null ? ob.boss : GAME_SETTINGS.bossJoinRepeat; if (!owned(bid) && rate <= 0) msgs.push(ob.reward === '_emperor' ? `${CHARACTERS[bid].name} 只能在「皇帝領海」挑戰中取得。` : `${CHARACTERS[bid].name} 無法透過戰鬥取得，只能在懸賞處召喚。`); else if (!owned(bid)) { if (Math.random() < rate) { addCrew(bid, GAME_SETTINGS.bossJoinLv); msgs.push(`<b>${CHARACTERS[bid].name}</b> 被你的實力打動，加入了角色背包！（LV ${GAME_SETTINGS.bossJoinLv}）`); } else msgs.push(`${CHARACTERS[bid].name} 這次沒有加入。再次擊敗時仍有 ${Math.round(again * 100)}% 機率加入。`); } } pendingClear = { first }; }
   } else {
     if (s && s.type === 'duel' && r.enemyId === s.enemy) { const b = SAVE.data.tokens; completeStep(); msgs.push(`⚔ 對決勝利！任務完成：${s.title}（寶藏幣 +${SAVE.data.tokens - b}）`); if (s.joins && !owned(s.joins)) { addCrew(s.joins, s.joinLv || 20); msgs.push(`<b>${CHARACTERS[s.joins].name}</b> 加入了你的船隊！`); } if (s.after) setTimeout(() => say(s.after), 900); return { message: msgs.join('<br>') }; }
     /* 只有「擊敗／連戰／奪鑰」任務進行中的戰鬥才會讓敵人消失；提前打倒的敵人會留在原地，避免任務卡住 */
@@ -572,7 +572,7 @@ function hideDialog() { setDialogMin(false); dialogOpen = false; $('dialog').cla
 let gachaReturn = 'chapterScreen', gachaBusy = false;
 function openGacha(ret) {
   gachaReturn = typeof ret === 'string' ? ret : currentScreen === 'gachaScreen' ? gachaReturn : currentScreen; coins();
-  $('rateTable').innerHTML = '<caption>出現機率</caption>' + `<tr><th><span class="rar c-rar r-CHAR">船員</span></th><td>${+(GAME_SETTINGS.charRate * 100).toFixed(1)}%</td><td>UR ${CHAR_RATE_BY_RARITY.UR * 100}%・SSR ${CHAR_RATE_BY_RARITY.SSR * 100}%・SR ${CHAR_RATE_BY_RARITY.SR * 100}%（LV ${GACHA_CHAR_LV} 加入；重複可到海軍本部換貝里）</td></tr>` + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * (1 - GACHA_CHAR_RATE) * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join(''); pityCaption();
+  $('rateTable').innerHTML = '<caption>出現機率</caption>' + `<tr><th><span class="rar c-rar r-CHAR">船員</span></th><td>${+(GAME_SETTINGS.charRate * 100).toFixed(1)}%</td><td>UR ${+(CHAR_RATE_BY_RARITY.UR * 100).toFixed(2)}%・SSR ${+(CHAR_RATE_BY_RARITY.SSR * 100).toFixed(2)}%・SR ${+(CHAR_RATE_BY_RARITY.SR * 100).toFixed(2)}%（LV ${GACHA_CHAR_LV} 加入；重複可到海軍本部換貝里）</td></tr>` + Object.entries(RARITY).map(([k, r]) => `<tr><th><span class="rar r-${k}">${k}</span></th><td>${Math.round(r.rate * (1 - GACHA_CHAR_RATE) * 100)}%</td><td>${Object.values(ITEMS).filter(i => i.rarity === k).map(i => i.name).join('、')}</td></tr>`).join(''); pityCaption();
   const caps = $('mCaps'); if (!caps.children.length) { const cols = ['#e8553b', '#3fb6c9', '#ffd26c', '#b58cff', '#6fd08c', '#f4f7f2']; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; let placed = 0, guard = 0; while (placed < 30 && guard++ < 4000) { const x = 8 + rnd() * 84, y = 40 + rnd() * 52; if (Math.hypot(x - 50, y - 50) > 40) continue; const s = document.createElement('i'); s.style.cssText = `--c:${cols[placed % cols.length]};left:${x - 7}%;top:${y - 7}%;--r:${Math.round(rnd() * 360)}deg;z-index:${Math.round(y)}`; caps.appendChild(s); placed++; } }
   updateGachaBtns(); showScreen('gachaScreen'); if (typeof switchHub === 'function') switchHub('summon');
 }

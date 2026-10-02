@@ -385,7 +385,8 @@
   /* 細節：草叢、花、木桶木箱、市集攤位、燈火 */
   /* 頂上戰爭篇：沿用要塞型的司法島地形 */
   queueMicrotask(() => { BUILD.marineford = BUILD.enies; OPTS.marineford = OPTS.enies; WATER.marineford = WATER.enies; if (THEME.enies && !THEME.marineford) THEME.marineford = THEME.enies;
-    /* 蛋糕島篇：沿用空島的粉彩雲朵地形 */ BUILD.wholecake = BUILD.skypiea; OPTS.wholecake = OPTS.skypiea; WATER.wholecake = WATER.skypiea; if (THEME.skypiea && !THEME.wholecake) THEME.wholecake = THEME.skypiea; });
+    /* 蛋糕島篇：沿用空島的粉彩雲朵地形 */ BUILD.wholecake = BUILD.skypiea; OPTS.wholecake = OPTS.skypiea; WATER.wholecake = WATER.skypiea; if (THEME.skypiea && !THEME.wholecake) THEME.wholecake = THEME.skypiea;
+    /* v63：恐怖三桅帆船沿用蜂巢島的陰暗地形、蛋頭島沿用要塞型地形、德雷斯羅薩沿用阿拉巴斯坦的石造城鎮 */ [['thriller', 'dark'], ['egghead', 'enies'], ['dressrosa', 'alabasta']].forEach(([a, b]) => { BUILD[a] = BUILD[b]; OPTS[a] = OPTS[b]; WATER[a] = WATER[b]; if (THEME[b] && !THEME[a]) THEME[a] = THEME[b]; }); });
   const THEME = {
     east: { grass: '#5d9a3e', flower: ['#ffd26c', '#ff7f9f', '#ffffff'], stall: '#b8433a' },
     alabasta: { grass: '#8a9a4a', flower: ['#ff9a4a'], stall: '#3f6fa3', dry: true },

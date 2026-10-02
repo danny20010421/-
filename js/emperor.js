@@ -1,0 +1,85 @@
+/* 皇帝領海挑戰：四皇（白鬍子、BIG MOM、凱多、紅髮）。
+   第一階段：連續擊敗旗下全部隊長（體力與技能次數延續，中途不能離開）；第二階段：連續擊敗兩個分身；第三階段：挑戰真身。
+   通關第三階段後，該位四皇加入船隊（四皇已移出召喚池，只能從這裡取得）。
+   隊長名單：原作幹部還沒做成角色前，先用現有角色補上（依 seed 固定，不會每次都換）。 */
+const EMPEROR_DOMAIN = {
+  joinLv: 50,            /* 加入時的等級 */
+  captainLv: 86,         /* 第一階段隊長等級 */
+  cloneLv: 95,           /* 第二階段分身等級 */
+  firstReward: { tokens: 30, berry: 30000 }, /* 首次擊敗真身 */
+  replayReward: { berry: 8000 },             /* 重複挑戰真身 */
+  phaseReward: { tokens: 5, berry: 5000 },   /* 首次通過第一、二階段 */
+  list: [
+    { id: 'whitebeard', crew: '白鬍子海賊團', color: '#5ab0e0', captains: ['marco', 'ace'], fill: 2, sea: '新世界・白鬍子的領海', quote: '咕啦啦啦……來吧，小鬼們！' },
+    { id: 'bigmom', crew: 'BIG MOM 海賊團', color: '#e85a9a', captains: ['katakuri'], fill: 3, sea: '萬國・托特蘭', quote: '瑪嘛嘛嘛！你想要的，是生命還是點心？' },
+    { id: 'kaido', crew: '百獸海賊團', color: '#5a6a8a', captains: [], fill: 4, sea: '和之國・鬼之島', quote: '烏囉囉囉……讓我享受一場像樣的戰鬥吧！' },
+    { id: 'shanks', crew: '紅髮海賊團', color: '#c8322b', captains: [], fill: 4, sea: '艾爾巴夫外海', quote: '……要打的話，我也不會手下留情。' }
+  ]
+};
+(function () {
+  const E = EMPEROR_DOMAIN, BG = 'assets/ui/emperor_bg.webp?v=63';
+  let sel = E.list[0].id, RUN = null;
+  const state = () => { const d = SAVE.data.emperor = SAVE.data.emperor || {}; E.list.forEach(x => { d[x.id] = d[x.id] || { phase: 1, clears: 0 }; }); return d; };
+  const EMP = new Set(E.list.map(x => x.id));
+  /* 隊長補位：以皇帝 id 當 seed，固定挑出同一批角色 */
+  function captainsOf(x) {
+    const taken = new Set(E.list.flatMap(e => e.captains)); const pool = CHARACTER_ORDER.filter(id => !EMP.has(id) && !taken.has(id) && id !== 'imu' && !STARTERS.includes(id) && !x.captains.includes(id) && !((CHAR_OBTAIN[id] || {}).npcOnly)); let seed = [...x.id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 2147483647 || 1; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+    const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return [...x.captains, ...a.slice(0, x.fill)];
+  }
+  function stagesOf(x, phase) {
+    const C = CHARACTERS[x.id];
+    if (phase === 1) return captainsOf(x).map((id, i) => ({ id, lv: E.captainLv + i, mod: { hp: 1.25, title: `${x.crew}・隊長` }, boss: false }));
+    if (phase === 2) return [1, 2].map(k => ({ id: x.id, lv: E.cloneLv, mod: { hp: .7, dmg: .85, name: `${C.name}（分身 ${k}）`, title: '皇帝的分身' }, boss: false }));
+    return [{ id: x.id, lv: MAX_LV, mod: { hp: 1.6, atk: 1, def: 1, name: C.name, title: `${x.crew}・真身` }, boss: true }];
+  }
+  const PHASE_NAME = ['', '第一階段・隊長連戰', '第二階段・皇帝的分身', '第三階段・皇帝真身'];
+  const PHASE_DESC = ['', '連續擊敗旗下全部隊長。體力與技能次數會延續到下一場，中途撤退或戰敗就要從頭開始。', '連續擊敗兩個分身（體力 70%）。中途撤退或戰敗就要從頭開始。', '挑戰四皇真身（BOSS，體力強化並會復活一次）。擊敗後，這位四皇加入你的船隊。'];
+
+  function render() {
+    const S = state(), x = E.list.find(e => e.id === sel), st = S[x.id], C = CHARACTERS[x.id], done = st.phase > 3;
+    $('epList').innerHTML = E.list.map(e => { const s = S[e.id], c = CHARACTERS[e.id]; return `<button class="ep-card ${e.id === sel ? 'on' : ''} ${s.phase > 3 ? 'done' : ''}" data-id="${e.id}" style="--ec:${e.color}"><img src="${c.avatar}" alt=""><span><b>${c.name}</b><small>${e.crew}</small><i class="ep-pips">${[1, 2, 3].map(p => `<em class="${s.phase > p ? 'ok' : s.phase === p ? 'now' : ''}"></em>`).join('')}</i></span>${owned(e.id) ? '<i class="ep-own">已加入</i>' : ''}</button>`; }).join('');
+    $('epList').querySelectorAll('[data-id]').forEach(b => b.onclick = () => { sel = b.dataset.id; render(); });
+    const ph = Math.min(3, st.phase), stages = stagesOf(x, ph);
+    $('epMain').innerHTML = `<div class="ep-hero" style="--ec:${x.color}"><img src="${C.image}" alt="${C.name}"><div class="ep-hero-txt"><small>${x.sea}</small><h3>${C.name}<span class="rar c-rar r-UR+">UR+</span></h3><p>「${x.quote}」</p></div></div>
+      <ol class="ep-phases">${[1, 2, 3].map(p => `<li class="${st.phase > p ? 'ok' : st.phase === p ? 'now' : 'lock'}"><b>${PHASE_NAME[p]}</b><small>${PHASE_DESC[p]}</small><span class="ep-foes">${stagesOf(x, p).map(s => `<img src="${CHARACTERS[s.id].avatar}" alt="" title="${(s.mod && s.mod.name) || CHARACTERS[s.id].name}・LV ${s.lv}">`).join('')}</span></li>`).join('')}</ol>
+      <p class="ep-note">${done ? `🏆 已擊敗 ${C.name} 真身 ${st.clears} 次。可以重複挑戰真身（獎勵：貝里 ${E.replayReward.berry.toLocaleString()}）。` : `目前：<b>${PHASE_NAME[ph]}</b>（${stages.length} 場）・建議等級 LV 81 以上（霸王色會讓 LV80 以下的角色直接倒下）`}</p>
+      <p class="ep-team">出戰陣容：${SAVE.data.lineup.map(id => `<img src="${charArt(id, 'avatar')}" alt="${CHARACTERS[id].name}" title="${CHARACTERS[id].name}・LV ${crewLv(id)}">`).join('')}<button class="btn-ghost sm" id="epCrew">調整陣容</button></p>
+      <button class="btn-gold big" id="epGo">${done ? '重複挑戰真身' : `開始${PHASE_NAME[ph]}`}</button>`;
+    $('epGo').onclick = () => begin(x, ph); $('epCrew').onclick = () => openCrew();
+  }
+  function begin(x, ph) {
+    if (!SAVE.data.lineup.length) { toast('請先設定出戰陣容'); return; }
+    if (SAVE.data.lineup.some(id => typeof isTraining === 'function' && isTraining(id))) { toast('出戰陣容中有船員正在訓練營'); return; }
+    RUN = { x, ph, stages: stagesOf(x, ph), i: 0, team: SAVE.data.lineup.map(id => ({ id, lv: crewLv(id) })) }; fight();
+  }
+  function fight() {
+    const R = RUN, s = R.stages[R.i];
+    startBattle({ team: R.team, enemyId: s.id, enemyLv: s.lv, enemyMod: s.mod, bg: BG, chapterId: 'giant', isBoss: s.boss, revives: s.boss ? 1 : 0,
+      onEnd: r => end(r), onLeave: () => openEmperor() });
+    if (R.stages.length > 1) log(`皇帝領海：${PHASE_NAME[R.ph]} 第 ${R.i + 1}/${R.stages.length} 場`);
+  }
+  function end(r) {
+    const R = RUN; if (!R) return {}; const S = state(), st = S[R.x.id], C = CHARACTERS[R.x.id];
+    if (!r.win) { RUN = null; return { message: `${r.fled ? '撤退' : '戰敗'}了……${PHASE_NAME[R.ph]}要從第一場重新開始。`, alt: { label: '返回皇帝領海', fn: () => openEmperor() } }; }
+    track('wins'); if (r.isBoss) track('bossWins');
+    if (R.i < R.stages.length - 1) {
+      R.team = teamSnapshot().map((t, k) => ({ ...t, lv: R.team[k].lv })); if (battle && battle.__nextFoeStun === 'R') window.__carryStun = true;
+      R.i++; const nx = R.stages[R.i];
+      return { message: `第 ${R.i}/${R.stages.length} 場勝利！體力與技能次數會延續。<br>下一位：<b>${(nx.mod && nx.mod.name) || CHARACTERS[nx.id].name}</b>（LV ${nx.lv}）`, next: { label: '迎戰下一位', fn: () => fight() } };
+    }
+    RUN = null; const msgs = [`🏆 ${PHASE_NAME[R.ph]} 突破！`];
+    SAVE.data.lineup.forEach(id => gainExp(id, 600 + R.ph * 400, true));
+    if (R.ph < 3) { if (st.phase === R.ph) { st.phase++; addTokens(E.phaseReward.tokens, '皇帝領海'); addBerry(E.phaseReward.berry); msgs.push(`獲得 寶藏幣 ×${E.phaseReward.tokens}、貝里 ${E.phaseReward.berry.toLocaleString()}`); } msgs.push(`下一階段：${PHASE_NAME[R.ph + 1]}`); }
+    else { const first = !st.clears; st.clears = (st.clears || 0) + 1; st.phase = 4;
+      if (first) { addTokens(E.firstReward.tokens, '皇帝領海'); addBerry(E.firstReward.berry); msgs.push(`首次擊敗真身：寶藏幣 ×${E.firstReward.tokens}、貝里 ${E.firstReward.berry.toLocaleString()}`); }
+      else { addBerry(E.replayReward.berry); msgs.push(`貝里 +${E.replayReward.berry.toLocaleString()}`); }
+      if (!owned(R.x.id)) { addCrew(R.x.id, E.joinLv); msgs.push(`👑 <b>${C.name}</b> 認同了你的實力，加入船隊！（UR+・LV ${E.joinLv}）`); }
+      }
+    SAVE.save(); coins(); if (window.checkTitles) checkTitles(false);
+    return { message: msgs.join('<br>'), next: { label: '返回皇帝領海', fn: () => openEmperor() } };
+  }
+  window.openEmperor = function () { state(); if (typeof coins === 'function') coins(); render(); showScreen('emperorScreen'); AUDIO.playSong && AUDIO.playSong('boss'); };
+  window.emperorSummary = () => { try { const S = state(); const n = E.list.filter(e => S[e.id].clears).length; return n ? `已擊敗 ${n}/4 位四皇` : '尚未挑戰'; } catch (e) { return ''; } };
+  window.addEventListener('DOMContentLoaded', () => { if (typeof SCREENS !== 'undefined' && !SCREENS.includes('emperorScreen')) SCREENS.push('emperorScreen'); const b = $('epBack'); if (b) b.onclick = () => openModes(); });
+})();

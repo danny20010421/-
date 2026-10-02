@@ -4,7 +4,7 @@
   const d = () => SAVE.data, st = () => d().stats || {};
   const cleared = () => CHAPTERS.filter(c => (d().chapters[c.id] || {}).cleared).length;
   const crew = () => Object.keys(d().roster || {}).length;
-  const ur = () => Object.keys(d().roster || {}).filter(id => CHAR_RARITY[id] === 'UR').length;
+  const ur = () => Object.keys(d().roster || {}).filter(id => String(CHAR_RARITY[id] || '').startsWith('UR')).length;
   const skins = () => ((d().skins || {}).owned || []).length;
   const sets = () => COLLECTION_SETS.filter(S => S.members.every(id => (d().roster || {})[id])).length;
   const poneg = () => ((d().treasure || {}).found || []).length;
