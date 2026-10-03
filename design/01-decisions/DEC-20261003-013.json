@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-013",
+  "title": "登島場景的標竿與引擎",
+  "decision_question": "登島場景以什麼為標竿、用什麼引擎？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "high",
+  "reversibility": "costly_to_reverse",
+  "current_default_action": "原神風格＋Three.js",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "原神風格＋Three.js",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "維持自製輕量引擎",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者決定：以原神為標竿，先用 Three.js 製作（v73～v75）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "若主流手機實測卡頓到無法遊玩，設定頁可切回舊引擎（op_r3 = 0），並評估降低特效",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者決定：以原神為標竿，先用 Three.js 製作（v73～v75）"
+}

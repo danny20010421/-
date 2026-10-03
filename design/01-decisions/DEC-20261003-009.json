@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-009",
+  "title": "瑪琪諾的配色",
+  "decision_question": "瑪琪諾的 NPC 配色是否符合原作？",
+  "owner": "UC",
+  "status": "proposed",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "low",
+  "reversibility": "reversible",
+  "current_default_action": "深綠短髮、橘色頭巾、白上衣、綠長裙、白圍裙",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "深綠短髮、橘色頭巾、白上衣、綠長裙、白圍裙",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "需要修改",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": null,
+  "rollback_trigger": ""
+}

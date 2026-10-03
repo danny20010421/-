@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-010",
+  "title": "大廳版面原則",
+  "decision_question": "大廳版面遵守什麼排版原則？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "medium",
+  "reversibility": "reversible",
+  "current_default_action": "8px 網格、同一列元件高度一致且垂直置中",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "8px 網格、同一列元件高度一致且垂直置中",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "自由排版",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者要求：版面要置中對齊、有網格設計的概念，不要高低不一（v81）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者要求：版面要置中對齊、有網格設計的概念，不要高低不一（v81）"
+}

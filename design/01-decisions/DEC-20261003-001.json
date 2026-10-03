@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-001",
+  "title": "帳號登入方式",
+  "decision_question": "玩家要怎麼登入帳號？",
+  "owner": "UC",
+  "status": "superseded",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "high",
+  "reversibility": "costly_to_reverse",
+  "current_default_action": "只用信箱登入，帳號名稱只用來加好友",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "只用信箱登入，帳號名稱只用來加好友",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "帳號名稱或信箱都能登入",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "superseded",
+    "by": "UC（使用者）",
+    "reason": "補上回退條件後重新登記",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "",
+  "supersedes": "DEC-20261003-011"
+}

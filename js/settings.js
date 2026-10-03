@@ -1,6 +1,6 @@
 /* 設定頁（大廳「設定」與首頁「設定」共用）＋ 新手教學（大廳聚光燈導覽）。
    設定存在 localStorage：op_gfx（畫質）、op_motion（減少動態）、op_bspeed（預設戰鬥速度）、op_vibe（震動回饋）、op_live_pop（即時對戰邀請通知）、op_text（文字大小）。 */
-const GAME_VERSION = 'v77';
+const GAME_VERSION = 'v81';
 (function () {
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, put = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } };
   /* ---------- 套用設定 ---------- */
@@ -67,12 +67,14 @@ const GAME_VERSION = 'v77';
 const GUIDE = (function () {
   const STEPS = [
     { t: '歡迎來到偉大航路！', d: '這裡是大廳，所有冒險都從這裡出發。跟著導覽花一分鐘認識主要功能吧！' },
-    { s: '#modeScreen .lb-team', t: '出戰陣容', d: '戰鬥時最多 3 位船員依序上場。點這裡可以更換、調整順序，等級越高越強。' },
-    { s: '#lbGo', t: '關卡挑戰', d: '主線劇情：在海圖上選擇篇章，登島探索、完成任務、打倒 BOSS。通關後還能挑戰「困難模式」拿星星。' },
-    { s: '#lbModesBtn', t: '模式選擇', d: '奪寶大冒險、勇者之塔（250 層）、懸賞金交易所、皇帝領海（打贏四皇讓他們加入）、虛空王座，都在這裡。' },
-    { s: '[data-lb=gacha]', t: '懸賞召喚', d: '用寶藏幣召喚新船員。限定活動池會定期輪替，集滿碎片也能換角色。' },
-    { s: '.lb-bounty', t: '每日懸賞', d: '每天完成小任務領寶藏幣；七日登入也記得每天領取。' },
-    { s: '[data-lb=friends]', t: '好友', d: '登入帳號後可以加好友、留言、送禮、挑戰對方的防守陣容，或即時 1 對 1 對戰，還有全球排行榜。' },
+    { s: '#lbGo', t: '出航', d: '主線劇情：在海圖上選擇篇章，登島探索、完成任務、打倒 BOSS。通關後還能挑戰「困難模式」拿星星。' },
+    { s: '#lbTeam', t: '出戰陣容', d: '戰鬥時最多 3 位船員依序上場。點這裡可以更換、調整順序，等級越高越強。' },
+    { s: '#lbModesBtn', t: '冒險', d: '奪寶大冒險、勇者之塔（250 層）、懸賞金交易所、皇帝領海、虛空王座，都在這裡。' },
+    { s: '#l2Emperor', t: '皇帝領海', d: '挑戰四皇：打贏隊長、分身與真身，四皇就會加入你的船隊。' },
+    { s: '[data-lb=gacha]', t: '召喚', d: '用寶藏幣召喚新船員。左下角的限定召喚會定期輪替，集滿碎片也能換角色。' },
+    { s: '#lbBounty', t: '每日懸賞與活動', d: '左側是公告、每日懸賞、活動中心、七日登入、成就與寶藏日誌，有紅點就代表有獎勵可領。' },
+    { s: '[data-lb=guild]', t: '船團', d: '和好友組成船團，每週一起挑戰船團 BOSS，還有船團留言板。' },
+    { s: '[data-lb=friends]', t: '好友', d: '登入帳號後可以加好友、留言、送禮、即時對戰與觀戰，還有全球排行榜。' },
     { s: '[data-lb=settings]', t: '設定', d: '音量、畫質、戰鬥速度、雲端存檔都在這裡；想再看一次導覽也可以從這裡開啟。祝你航海愉快！' }
   ];
   let i = 0, el = null;
@@ -82,7 +84,9 @@ const GUIDE = (function () {
     while (i < STEPS.length && STEPS[i].s && !visible(STEPS[i].s)) i++;
     if (i >= STEPS.length) return finish();
     const S = STEPS[i], tgt = S.s ? visible(S.s) : null;
-    if (tgt) tgt.scrollIntoView({ block: 'center', behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' });
+    /* 只捲動真的可以捲的容器（手機版大廳）；不要捲動整個頁面，否則桌機版畫面會被推開卡住 */
+    if (tgt) { let sc = tgt.parentElement; while (sc && sc !== document.body) { const cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 4) break; sc = sc.parentElement; }
+      if (sc && sc !== document.body) { const r1 = tgt.getBoundingClientRect(), r0 = sc.getBoundingClientRect(); sc.scrollTop += (r1.top - r0.top) - (sc.clientHeight - r1.height) / 2; } }
     requestAnimationFrame(() => {
       const r = tgt ? tgt.getBoundingClientRect() : null, pad = 6, vw = innerWidth, vh = innerHeight;
       const hole = el.querySelector('.gd-hole'), card = el.querySelector('.gd-card');
@@ -96,7 +100,7 @@ const GUIDE = (function () {
       card.querySelector('[data-g=skip]').onclick = finish;
     });
   }
-  function finish() { if (el) el.remove(); el = null; SAVE.data.guide = SAVE.data.guide || {}; if (!SAVE.data.guide.lobby) { SAVE.data.guide.lobby = Date.now(); SAVE.save(); } }
+  function finish() { if (el) el.remove(); el = null; try { document.scrollingElement.scrollTop = 0; document.scrollingElement.scrollLeft = 0; document.querySelectorAll('.screen').forEach(x => { x.scrollTop = 0; x.scrollLeft = 0; }); } catch (e) { } SAVE.data.guide = SAVE.data.guide || {}; if (!SAVE.data.guide.lobby) { SAVE.data.guide.lobby = Date.now(); SAVE.save(); } }
   function start(force) {
     if (!force && done()) return; if (el) return; i = 0;
     el = document.createElement('div'); el.className = 'gd-wrap'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '新手教學');

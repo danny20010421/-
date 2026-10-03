@@ -86,12 +86,15 @@ const EMPEROR_DOMAIN = {
     else { const first = !st.clears; st.clears = (st.clears || 0) + 1; st.phase = 4;
       if (first) { addTokens(E.firstReward.tokens, '皇帝領海'); addBerry(E.firstReward.berry); msgs.push(`首次擊敗真身：寶藏幣 ×${E.firstReward.tokens}、貝里 ${E.firstReward.berry.toLocaleString()}`); }
       else { addBerry(E.replayReward.berry); msgs.push(`貝里 +${E.replayReward.berry.toLocaleString()}`); }
-      if (!owned(R.x.id)) { addCrew(R.x.id, E.joinLv); msgs.push(`👑 <b>${C.name}</b> 認同了你的實力，加入船隊！（UR+・LV ${E.joinLv}）`); }
+      if (!owned(R.x.id)) { addCrew(R.x.id, E.joinLv); msgs.push(`👑 <b>${C.name}</b> 認同了你的實力，加入船隊！（UR+・LV ${E.joinLv}）`); const jid = R.x.id; setTimeout(() => window.showRewards && showRewards({ title: '四皇加入！', sub: `${C.name} 認同了你的實力` }, [{ char: jid }]), 900); }
       }
     SAVE.save(); coins(); if (window.checkTitles) checkTitles(false);
     return { message: msgs.join('<br>'), next: { label: '返回皇帝領海', fn: () => openEmperor() } };
   }
-  window.openEmperor = function () { state(); if (typeof coins === 'function') coins(); render(); showScreen('emperorScreen'); AUDIO.playSong && AUDIO.playSong('boss'); };
+  let solo = false;
+  /* openEmperor(id)：只顯示這位四皇的挑戰（從四皇展示頁進入）；不帶 id 時維持目前的顯示方式 */
+  window.openEmperor = function (id) { if (id) { sel = id; solo = true; } state(); if (typeof coins === 'function') coins(); render(); $('emperorScreen').classList.toggle('ep-solo', solo); showScreen('emperorScreen'); AUDIO.playSong && AUDIO.playSong('boss'); };
+  window.emperorSolo = () => solo;
   window.emperorSummary = () => { try { const S = state(); const n = E.list.filter(e => S[e.id].clears).length; return n ? `已擊敗 ${n}/4 位四皇` : '尚未挑戰'; } catch (e) { return ''; } };
   window.addEventListener('DOMContentLoaded', () => { if (typeof SCREENS !== 'undefined' && !SCREENS.includes('emperorScreen')) SCREENS.push('emperorScreen'); const b = $('epBack'); if (b) b.onclick = () => openModes(); });
 })();

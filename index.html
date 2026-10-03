@@ -14,17 +14,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/loader.css?v=77">
-<link rel="preload" as="image" href="assets/ui/loading_bg.webp?v=77">
-<link rel="stylesheet" href="css/style.css?v=77">
-<link rel="stylesheet" href="css/fx.css?v=77">
-<link rel="stylesheet" href="css/mobile.css?v=77">
-<link rel="stylesheet" href="css/ui2.css?v=77">
-<link rel="stylesheet" href="css/modes.css?v=77">
-<link rel="stylesheet" href="css/lobby.css?v=77">
-<link rel="stylesheet" href="css/polish.css?v=77">
-<link rel="stylesheet" href="css/exchange.css?v=77">
-<link rel="stylesheet" href="css/v63.css?v=77">
+<link rel="stylesheet" href="css/loader.css?v=81">
+<link rel="preload" as="image" href="assets/ui/loading_bg.webp?v=81">
+<link rel="stylesheet" href="css/style.css?v=81">
+<link rel="stylesheet" href="css/fx.css?v=81">
+<link rel="stylesheet" href="css/mobile.css?v=81">
+<link rel="stylesheet" href="css/ui2.css?v=81">
+<link rel="stylesheet" href="css/modes.css?v=81">
+<link rel="stylesheet" href="css/lobby.css?v=81">
+<link rel="stylesheet" href="css/polish.css?v=81">
+<link rel="stylesheet" href="css/exchange.css?v=81">
+<link rel="stylesheet" href="css/v63.css?v=81">
+<link rel="stylesheet" href="css/lobby2.css?v=81">
 </head>
 <body>
 <div class="loader" id="loader" role="dialog" aria-modal="true" aria-label="遊戲載入中">
@@ -42,7 +43,7 @@
 
 <!-- ================= 登入 ================= -->
 <section class="screen" id="loginScreen">
-  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=77" autoplay muted loop playsinline preload="metadata"><source src="assets/login/loop.mp4?v=77" type="video/mp4"></video>
+  <video class="login-video" id="loginVideo" poster="assets/login/poster.webp?v=81" autoplay muted loop playsinline preload="metadata"><source src="assets/login/loop.mp4?v=81" type="video/mp4"></video>
   <div class="login-shade"></div>
   <header class="home-nav">
     <div class="hn-logo">海賊王</div>
@@ -94,53 +95,48 @@
     <div class="topbar-right">
       <button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button>
       <div class="coin-pair"><div class="coin berry" title="貝里"><i class="berry-ico">B</i><b class="berryVal">0</b></div><div class="coin" title="寶藏幣"><i class="coin-ico"></i><b class="coinVal">0</b></div></div>
-      <button class="icon-btn lb-top" id="lbMail" aria-label="公告">✉</button><button class="icon-btn lb-top lb-bell" id="lbBell" aria-label="每日懸賞與提醒">🔔</button><button class="btn-ghost" id="mdCrewBtn">角色背包</button>
+      <button class="icon-btn lb-top" id="lbMail" aria-label="公告">✉</button><button class="icon-btn lb-top" data-lb="friends" aria-label="好友"><i class="l2-svg" data-ic="friends" aria-hidden="true"></i></button><button class="icon-btn lb-top" data-lb="settings" aria-label="設定"><i class="l2-svg" data-ic="gear" aria-hidden="true"></i></button><button class="btn-ghost" id="mdCrewBtn">角色背包</button>
       <button class="btn-gold" id="mdHubBtn">懸賞處</button>
     </div>
   </header>
   <!-- ===== 遊戲大廳 ===== -->
-  <div class="lobby" id="lobby">
+  <div class="lobby l2" id="lobby">
     <div class="lb-bg" aria-hidden="true"><img id="lbBg" alt=""><i class="lb-rays"></i><i class="lb-fog"></i></div>
     <button class="lb-hero" id="lbHero" aria-label="查看船員"><img id="lbHeroImg" alt=""><span class="lb-aura" aria-hidden="true"></span></button>
+    <div class="l2-say" id="l2Say" role="status" aria-live="polite"></div>
     <div class="lb-plate" id="lbPlate"></div>
 
-    <aside class="lb-left">
-      <button class="lb-login" id="lbLogin" aria-label="七日登入獎勵"><img src="assets/ui/login_reward.webp?v=77" alt="" class="lbl-ico"><span><b>七日登入</b><small id="lbLoginTxt"></small></span><em class="lb-chev" aria-hidden="true">›</em></button>
-      <div class="lb-backup" id="lbBackup" hidden><i class="lb-new">新</i><span>好一陣子沒備份存檔了，換手機或清除瀏覽器資料會遺失進度。</span><button class="btn-gold sm" id="lbBackupBtn">匯出存檔</button></div>
-      <button class="lb-news" id="lbNews"><i aria-hidden="true">⛵</i><span><b>航海公告</b><small id="lbNewsTitle"></small></span><em class="lb-chev" aria-hidden="true">›</em></button>
-      <button class="lb-bounty" id="lbBounty"><i class="lbb-ico" aria-hidden="true">📜</i><span class="lbb-body"><span class="lbb-head"><b>每日懸賞</b><small id="lbBountyTxt"></small></span><span class="lbb-bar"><i id="lbBountyBar"></i></span></span><em class="lb-chev" aria-hidden="true">›</em></button>
-      <button class="lb-bounty lb-weekly" id="lbWeekly"><i class="lbb-ico" aria-hidden="true">🎪</i><span class="lbb-body"><span class="lbb-head"><b>活動中心</b><small id="lbWeeklyTxt"></small></span><span class="lbb-bar"><i id="lbWeeklyBar"></i></span></span><em class="lb-chev" aria-hidden="true">›</em></button>
-      <div class="lb-team" id="lbTeam" aria-label="出戰陣容"></div>
-    </aside>
-
-    <aside class="lb-right">
-      <button class="lb-event" id="lbEvent"><img id="lbEventImg" alt=""><span class="lbe-tag">限定活動</span><span class="lbe-name" id="lbEventName"></span></button>
-      <div class="lb-tiles">
-        <button data-lb="gacha"><i>🎰</i><b>懸賞召喚</b></button>
-        <button data-lb="shop"><i>🛒</i><b>道具商店</b></button>
-        <button data-lb="navy"><i>⚓</i><b>海軍本部</b></button>
-        <button data-lb="treasure"><i>🗺</i><b>寶藏日誌</b></button>
-      </div>
-    </aside>
-
-    <nav class="lb-dock" aria-label="功能">
-      <button data-lb="bag"><i>🎒</i><b>背包</b></button>
-      <button data-lb="crew"><i>🧭</i><b>船員</b></button>
-      <button data-lb="train"><i>🏋</i><b>訓練營</b></button>
-      <button data-lb="codex"><i>📖</i><b>圖鑑</b></button>
-      <button data-lb="bounty"><i>📋</i><b>懸賞任務</b></button>
-      <button data-lb="titles" class="lb-dot-host"><i>🏆</i><b>成就</b></button>
-      <button data-lb="friends" class="lb-dot-host"><i>👥</i><b>好友</b></button>
-      <button data-lb="settings"><i>⚙️</i><b>設定</b></button>
+    <!-- 左側：公告、任務、活動等小圖示 -->
+    <nav class="l2-rail" aria-label="公告與任務">
+      <button class="l2-ic" id="lbNews"><i class="l2-svg" data-ic="news" aria-hidden="true"></i><b>公告</b><small id="lbNewsTitle" hidden></small></button>
+      <button class="l2-ic" id="lbBounty"><i class="l2-svg" data-ic="bounty" aria-hidden="true"></i><b>每日懸賞</b><small id="lbBountyTxt"></small><span class="l2-bar"><i id="lbBountyBar"></i></span></button>
+      <button class="l2-ic" id="lbWeekly"><i class="l2-svg" data-ic="event" aria-hidden="true"></i><b>活動中心</b><small id="lbWeeklyTxt"></small><span class="l2-bar"><i id="lbWeeklyBar"></i></span></button>
+      <button class="l2-ic" id="lbLogin"><i class="l2-svg" data-ic="login" aria-hidden="true"></i><b>七日登入</b><small id="lbLoginTxt"></small></button>
+      <button class="l2-ic" data-lb="titles"><i class="l2-svg" data-ic="trophy" aria-hidden="true"></i><b>成就</b></button>
+      <button class="l2-ic" data-lb="treasure"><i class="l2-svg" data-ic="map" aria-hidden="true"></i><b>寶藏日誌</b></button>
     </nav>
+    <div class="lb-backup l2-backup" id="lbBackup" hidden><i class="lb-new">新</i><span>好一陣子沒備份存檔了，換手機或清除瀏覽器資料會遺失進度。</span><button class="btn-gold sm" id="lbBackupBtn">匯出存檔</button></div>
 
-    <div class="lb-play">
-      <div class="lbp-bar">
-        <img class="lbp-bg" src="assets/ui/play_bar.webp?v=77" alt="" draggable="false">
-        <button class="lb-modes" id="lbModesBtn" aria-label="模式選擇：奪寶大冒險、勇者之塔、皇帝領海、登上虛空王座"><span><b>模式選擇</b><small>奪寶・勇者之塔・皇帝領海</small></span></button>
-        <button class="lb-go" id="lbGo" aria-label="關卡挑戰：前往海圖"><b>關卡挑戰</b><small id="lbGoSub"></small></button>
-      </div>
-    </div>
+    <!-- 左下：限定召喚 -->
+    <button class="l2-pick" id="lbEvent"><img id="lbEventImg" alt=""><span class="l2-pick-tag">限定召喚 UP</span><span class="l2-pick-name" id="lbEventName"></span></button>
+
+    <!-- 右側：主線任務、出戰陣容、皇帝領海 -->
+    <aside class="l2-side">
+      <button class="l2-mission" id="l2Mission"><span class="l2-m-h">▲ 主線航路</span><b id="l2MissionT"></b><small id="l2MissionS"></small><em aria-hidden="true">››</em></button>
+      <div class="l2-team" id="lbTeam" aria-label="出戰陣容"></div>
+      <button class="l2-emperor" id="l2Emperor" aria-label="皇帝領海"><img src="assets/ui/emperor_logo.webp?v=81" alt=""><b>皇帝領海</b><small id="l2EmpTxt">挑戰四皇</small></button>
+    </aside>
+
+    <!-- 下方導覽列：中間是出航 -->
+    <nav class="l2-nav" aria-label="主要功能">
+      <button data-lb="crew"><i class="l2-svg" data-ic="crew" aria-hidden="true"></i><b>船員</b></button>
+      <button data-lb="bag"><i class="l2-svg" data-ic="bag" aria-hidden="true"></i><b>背包</b></button>
+      <button data-lb="guild" class="lb-dot-host"><i class="l2-svg" data-ic="guild" aria-hidden="true"></i><b>船團</b></button>
+      <button class="l2-go" id="lbGo" aria-label="出航：關卡挑戰"><span class="l2-go-ring" aria-hidden="true"></span><span class="l2-go-wheel l2-svg" data-ic="wheel" aria-hidden="true"></span><b>出航</b><small id="lbGoSub"></small></button>
+      <button id="lbModesBtn" aria-label="冒險：奪寶大冒險、勇者之塔、皇帝領海、登上虛空王座"><i class="l2-svg" data-ic="sword" aria-hidden="true"></i><b>冒險</b></button>
+      <button data-lb="gacha"><i class="l2-svg" data-ic="summon" aria-hidden="true"></i><b>召喚</b></button>
+      <button data-lb="shop"><i class="l2-svg" data-ic="shop" aria-hidden="true"></i><b>商店</b></button>
+    </nav>
 
     <div class="lb-sheet" id="lbModes" role="dialog" aria-label="模式選擇" aria-hidden="true">
       <div class="lbs-card">
@@ -159,14 +155,14 @@
 
 <!-- ================= 皇帝領海 ================= -->
 <section class="screen hidden" id="emperorScreen">
-  <header class="topbar"><button class="btn-ghost ch-lobby" id="epBack" aria-label="回到遊戲大廳">‹ 大廳</button><h2 class="ep-title"><img src="assets/ui/emperor_logo.webp?v=77" alt="" class="ep-logo">皇帝領海</h2><div class="topbar-right"><div class="coin berry"><i class="berry-ico">B</i><b class="berryVal">0</b></div></div></header>
+  <header class="topbar"><button class="btn-ghost ch-lobby" id="epBack" aria-label="回到遊戲大廳">‹ 大廳</button><h2 class="ep-title"><img src="assets/ui/emperor_logo.webp?v=81" alt="" class="ep-logo">皇帝領海</h2><div class="topbar-right"><div class="coin berry"><i class="berry-ico">B</i><b class="berryVal">0</b></div></div></header>
   <div class="ep-bg" aria-hidden="true"></div>
   <div class="ep-wrap"><nav class="ep-list" id="epList" aria-label="四皇"></nav><section class="ep-main" id="epMain"></section></div>
 </section>
 
 <!-- ================= 虛空王座 ================= -->
 <section class="screen hidden" id="exchangeScreen">
-  <header class="topbar"><button class="btn-ghost ch-lobby" id="xcBack" aria-label="回到遊戲大廳">‹ 大廳</button><h2 class="xc-title"><img src="assets/ui/exchange_logo.webp?v=77" alt="" class="xc-logo">懸賞金交易所</h2><div class="topbar-right"><button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button></div></header>
+  <header class="topbar"><button class="btn-ghost ch-lobby" id="xcBack" aria-label="回到遊戲大廳">‹ 大廳</button><h2 class="xc-title"><img src="assets/ui/exchange_logo.webp?v=81" alt="" class="xc-logo">懸賞金交易所</h2><div class="topbar-right"><button class="icon-btn snd" data-snd aria-label="音樂開關">♪</button></div></header>
   <div class="mk-banner" id="mkBanner" role="status" aria-live="polite"></div>
   <div class="xc-body" id="xcBody"></div>
 </section>
@@ -363,7 +359,7 @@
   <div class="ev-main hidden" id="evPane" data-pane="summon"></div>
   <div class="g-main tavern" data-pane="summon">
     <div class="g-scene-wrap"><div class="g-scene" id="machine">
-      <img class="g-bg" src="assets/ui/gacha_tavern.webp?v=77" alt="海賊酒館裡的寶藏扭蛋機">
+      <img class="g-bg" src="assets/ui/gacha_tavern.webp?v=81" alt="海賊酒館裡的寶藏扭蛋機">
       <i class="g-lamp" style="--x:16.16%;--y:12.96%"></i><i class="g-lamp" style="--x:5.72%;--y:24.54%;--d:-.7s"></i><i class="g-lamp" style="--x:18.05%;--y:80.56%;--d:-1.3s"></i><i class="g-lamp" style="--x:57.58%;--y:70.83%;--d:-.3s"></i><i class="g-lamp" style="--x:65.66%;--y:45.68%;--d:-1.9s"></i>
       <div class="g-motes" aria-hidden="true"><i style="--x:0%;--s:2px;--t:6s;--d:-0.0s"></i><i style="--x:37%;--s:3px;--t:7s;--d:-0.7s"></i><i style="--x:74%;--s:4px;--t:8s;--d:-1.4s"></i><i style="--x:11%;--s:2px;--t:9s;--d:-2.1s"></i><i style="--x:48%;--s:3px;--t:10s;--d:-2.8s"></i><i style="--x:85%;--s:4px;--t:6s;--d:-3.5s"></i><i style="--x:22%;--s:2px;--t:7s;--d:-4.2s"></i><i style="--x:59%;--s:3px;--t:8s;--d:-4.9s"></i><i style="--x:96%;--s:4px;--t:9s;--d:-5.6s"></i><i style="--x:33%;--s:2px;--t:10s;--d:-6.3s"></i><i style="--x:70%;--s:3px;--t:6s;--d:-7.0s"></i><i style="--x:7%;--s:4px;--t:7s;--d:-7.7s"></i><i style="--x:44%;--s:2px;--t:8s;--d:-8.4s"></i><i style="--x:81%;--s:3px;--t:9s;--d:-9.1s"></i><i style="--x:18%;--s:4px;--t:10s;--d:-9.8s"></i><i style="--x:55%;--s:2px;--t:6s;--d:-10.5s"></i><i style="--x:92%;--s:3px;--t:7s;--d:-11.2s"></i><i style="--x:29%;--s:4px;--t:8s;--d:-11.9s"></i><i style="--x:66%;--s:2px;--t:9s;--d:-12.6s"></i><i style="--x:3%;--s:3px;--t:10s;--d:-13.3s"></i><i style="--x:40%;--s:4px;--t:6s;--d:-14.0s"></i><i style="--x:77%;--s:2px;--t:7s;--d:-14.7s"></i></div>
       <div class="g-globe"><canvas class="g-cv" id="gCv" aria-hidden="true"></canvas><div class="m-caps" id="mCaps"></div><i class="g-glass"></i></div>
@@ -467,7 +463,7 @@
 <div class="modal" id="newsModal" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
   <div class="modal-card">
     <header><h2 id="newsTitle">船上告示</h2><button class="icon-btn sm" data-close aria-label="關閉">×</button></header>
-    <div class="news-mascot"><img src="assets/chars/morgans_face.webp?v=77" alt="摩甘茲"><p><b>世界經濟新聞社長・摩甘茲</b><span>「大新聞！偉大航路的最新消息，全都在這裡！」</span></p></div>
+    <div class="news-mascot"><img src="assets/chars/morgans_face.webp?v=81" alt="摩甘茲"><p><b>世界經濟新聞社長・摩甘茲</b><span>「大新聞！偉大航路的最新消息，全都在這裡！」</span></p></div>
     <div class="news-full" id="newsFull"></div>
     <footer class="split"><button class="btn-ghost" id="newsEditBtn">管理公告</button><button class="btn-primary" data-close>關閉</button></footer>
   </div>
@@ -541,52 +537,55 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="loading" id="loading"><div class="ld-wheel"></div><span>載入中</span></div>
 
-<script src="js/data.js?v=77"></script>
-<script src="js/data_ext.js?v=77"></script>
-<script src="js/story_ext.js?v=77"></script>
-<script src="js/engine3d.js?v=77"></script>
-<script src="js/landmarks.js?v=77"></script>
-<script src="js/scenes.js?v=77"></script>
-<script src="js/world.js?v=77"></script>
+<script src="js/data.js?v=81"></script>
+<script src="js/data_ext.js?v=81"></script>
+<script src="js/story_ext.js?v=81"></script>
+<script src="js/engine3d.js?v=81"></script>
+<script src="js/landmarks.js?v=81"></script>
+<script src="js/scenes.js?v=81"></script>
+<script src="js/world.js?v=81"></script>
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
-<script type="module" src="js/e3three.js?v=77"></script>
-<script src="js/battle_core.js?v=77"></script>
-<script src="js/battle.js?v=77"></script>
-<script src="js/audio.js?v=77"></script>
-<script src="js/fx.js?v=77"></script>
-<script src="js/fx_choreo.js?v=77"></script>
-<script src="js/ext_effects.js?v=77"></script>
-<script src="js/fx_ult.js?v=77"></script>
-<script src="js/admin.js?v=77"></script>
-<script src="js/visual_admin.js?v=77"></script>
-<script src="js/app.js?v=77"></script>
-<script src="js/hardmode.js?v=77"></script>
-<script src="js/hub.js?v=77"></script>
-<script src="js/seer.js?v=77"></script>
-<script src="js/treasure.js?v=77"></script>
-<script src="js/crew.js?v=77"></script>
-<script src="js/icons.js?v=77"></script>
-<script src="js/home.js?v=77"></script>
-<script src="js/modes.js?v=77"></script>
-<script src="js/lobby.js?v=77"></script>
-<script src="js/timeguard.js?v=77"></script>
-<script src="js/daily.js?v=77"></script>
-<script src="js/achieve.js?v=77"></script>
-<script src="js/exchange_head.js?v=77"></script>
-<script src="js/exchange.js?v=77"></script>
-<script src="js/uiicons.js?v=77"></script>
-<script src="js/runner.js?v=77"></script>
-<script src="js/tower.js?v=77"></script>
-<script src="js/throne.js?v=77"></script>
-<script src="js/emperor.js?v=77"></script>
-<script src="js/cloud.js?v=77"></script>
-<script src="js/social.js?v=77"></script>
-<script src="js/live.js?v=77"></script>
-<script src="js/guild.js?v=77"></script>
-<script src="js/settings.js?v=77"></script>
-<script src="js/weekly.js?v=77"></script>
-<script src="js/event.js?v=77"></script>
-<script src="js/music.js?v=77"></script>
-<script src="js/loader.js?v=77"></script>
+<script type="module" src="js/e3three.js?v=81"></script>
+<script src="js/battle_core.js?v=81"></script>
+<script src="js/battle.js?v=81"></script>
+<script src="js/audio.js?v=81"></script>
+<script src="js/fx.js?v=81"></script>
+<script src="js/fx_choreo.js?v=81"></script>
+<script src="js/ext_effects.js?v=81"></script>
+<script src="js/fx_ult.js?v=81"></script>
+<script src="js/admin.js?v=81"></script>
+<script src="js/visual_admin.js?v=81"></script>
+<script src="js/app.js?v=81"></script>
+<script src="js/hardmode.js?v=81"></script>
+<script src="js/hub.js?v=81"></script>
+<script src="js/seer.js?v=81"></script>
+<script src="js/treasure.js?v=81"></script>
+<script src="js/crew.js?v=81"></script>
+<script src="js/icons.js?v=81"></script>
+<script src="js/home.js?v=81"></script>
+<script src="js/modes.js?v=81"></script>
+<script src="js/lobbyicons.js?v=81"></script>
+<script src="js/lobby.js?v=81"></script>
+<script src="js/timeguard.js?v=81"></script>
+<script src="js/daily.js?v=81"></script>
+<script src="js/achieve.js?v=81"></script>
+<script src="js/exchange_head.js?v=81"></script>
+<script src="js/exchange.js?v=81"></script>
+<script src="js/uiicons.js?v=81"></script>
+<script src="js/runner.js?v=81"></script>
+<script src="js/tower.js?v=81"></script>
+<script src="js/throne.js?v=81"></script>
+<script src="js/emperor.js?v=81"></script>
+<script src="js/emperor_hall.js?v=81"></script>
+<script src="js/ceremony.js?v=81"></script>
+<script src="js/cloud.js?v=81"></script>
+<script src="js/social.js?v=81"></script>
+<script src="js/live.js?v=81"></script>
+<script src="js/guild.js?v=81"></script>
+<script src="js/settings.js?v=81"></script>
+<script src="js/weekly.js?v=81"></script>
+<script src="js/event.js?v=81"></script>
+<script src="js/music.js?v=81"></script>
+<script src="js/loader.js?v=81"></script>
 </body>
 </html>

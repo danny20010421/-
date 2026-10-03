@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-008",
+  "title": "「社長」對應的角色",
+  "decision_question": "立繪縮放清單中的「社長」是哪位角色？",
+  "owner": "UC",
+  "status": "proposed",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "low",
+  "reversibility": "reversible",
+  "current_default_action": "摩甘茲（世界經濟新聞社長）",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "摩甘茲（世界經濟新聞社長）",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "克洛克達爾（巴洛克工作社社長）",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": null,
+  "rollback_trigger": ""
+}

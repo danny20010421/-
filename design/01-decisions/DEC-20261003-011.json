@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-011",
+  "title": "帳號登入方式",
+  "decision_question": "玩家要怎麼登入帳號？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "high",
+  "reversibility": "costly_to_reverse",
+  "current_default_action": "只用信箱登入，帳號名稱只用來加好友",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "只用信箱登入，帳號名稱只用來加好友",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "帳號名稱或信箱都能登入",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者決定：信箱不外流，帳號名稱純粹用來加好友（v67）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "若玩家大量反映忘記註冊信箱、無法登入，改回可用帳號名稱登入並重新評估信箱外流風險",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者決定：信箱不外流，帳號名稱純粹用來加好友（v67）"
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-007",
+  "title": "四皇奧義恢復技能次數的範圍",
+  "decision_question": "四皇奧義「使用後恢復全技能次數」是否包含奧義本身？",
+  "owner": "UC",
+  "status": "proposed",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "medium",
+  "reversibility": "reversible",
+  "current_default_action": "只恢復其他技能（奧義本身的次數限制不變）",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "只恢復其他技能（奧義本身的次數限制不變）",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "連奧義也恢復",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": null,
+  "rollback_trigger": ""
+}

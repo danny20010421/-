@@ -28,6 +28,12 @@
     $('lbGoSub').textContent = nextChapter() ? `${ch.name}・任務 ${Math.min(st ? st.step : 0, ch.steps.length)}/${ch.steps.length}` : `${CHAPTERS.length} 座島嶼已全數通關`;
     renderEvent();
     renderProfile();
+    /* 右側：主線航路 */
+    { const nc = nextChapter(); if ($('l2MissionT')) { if (nc) { const st2 = d.chapters[nc.id] || { step: 0 }, step = nc.steps[Math.min(st2.step || 0, nc.steps.length - 1)]; $('l2MissionT').textContent = nc.name; $('l2MissionS').textContent = `任務 ${Math.min(st2.step || 0, nc.steps.length)}/${nc.steps.length}・${step ? step.title : ''}`; } else { $('l2MissionT').textContent = '偉大航路已全數通關'; $('l2MissionS').textContent = '可以挑戰困難模式或其他冒險'; } } }
+    /* 皇帝領海進度 */
+    { const ES = SAVE.data.emperor || {}, n = (typeof EMPEROR_DOMAIN !== 'undefined' ? EMPEROR_DOMAIN.list : []).filter(e => (ES[e.id] || {}).phase > 3).length; if ($('l2EmpTxt')) $('l2EmpTxt').textContent = n ? `已擊敗 ${n}/4 位四皇` : '挑戰四皇'; }
+    /* 船長的對話泡泡：依目前狀態提醒 */
+    sayLine(pid); requestAnimationFrame(syncLayout);
     const L = SAVE.data.login || { day: 0 }, lc = typeof loginClaimable === 'function' && loginClaimable(); $('lbLoginTxt').textContent = lc ? `第 ${L.day + 1} 天獎勵可領取` : `今天已領取・明天第 ${(L.day % 7) + 1} 天`; $('lbLogin').classList.toggle('has-dot', !!lc);
     if (!evTimer) evTimer = setInterval(() => { if (currentScreen === 'modeScreen' && (typeof EVENT_POOLS !== 'undefined') && EVENT_POOLS.length > 1) { evIdx = (evIdx + 1) % EVENT_POOLS.length; renderEvent(true); } }, 5000);
   }
@@ -38,6 +44,19 @@
     const act = typeof eventSchedule === 'function' ? eventSchedule() : null, on = !act || act.active === P.id;
     img.src = P.banner; img.classList.add('in'); $('lbEventName').textContent = P.tab + (on ? '' : '・休息中'); $('lbEvent').classList.toggle('ev-rest', !on);
     $('lbEvent').dataset.pool = P.id;
+  }
+  /* 量出頂部列與限定召喚卡的實際位置，讓左右面板與船長立繪不會被遮住（各裝置字型、換行高度不同） */
+  function syncLayout() { const L = $('lobby'); if (!L || currentScreen !== 'modeScreen') return; const r0 = L.getBoundingClientRect(), tb = document.querySelector('#modeScreen .topbar'), ev = $('lbEvent');
+    if (tb) L.style.setProperty('--l2tb', Math.max(0, Math.round(tb.getBoundingClientRect().bottom - r0.top)) + 'px');
+    if (ev) L.style.setProperty('--l2eb', Math.max(0, Math.round(ev.getBoundingClientRect().bottom - r0.top)) + 'px'); }
+  window.lobbySyncLayout = syncLayout;
+  function sayLine(pid) {
+    const el = $('l2Say'); if (!el) return; const d = SAVE.data, c = CHARACTERS[pid], L = [];
+    if (typeof loginClaimable === 'function' && loginClaimable()) L.push('今天的登入獎勵還沒領喔！');
+    if (typeof bounties === 'function') { const B = bounties(); if (B.some(b => b.prog >= b.goal && !b.claimed)) L.push('每日懸賞有獎勵可以領了！'); else if (B.some(b => b.prog < b.goal)) L.push('今天的懸賞任務還沒完成喔。'); }
+    const nc = nextChapter(); if (nc) L.push(`下一站是「${nc.name}」，準備好就出航吧！`);
+    L.push('要不要去懸賞處看看限定召喚？', '船團的夥伴們在等你一起打 BOSS！', `我是${c.name}，今天也一起航向偉大航路吧！`);
+    const t = L[Math.floor(Date.now() / 9000) % L.length]; if (el.dataset.t === t) return; el.dataset.t = t; el.innerHTML = `<b>${esc(c.name)}</b><span>${esc(t)}</span>`; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
   }
   function openModesSheet(on) { const s = $('lbModes'); s.classList.toggle('show', on); s.setAttribute('aria-hidden', String(!on)); }
   function hub(tab) { openGacha('modeScreen'); if (tab && typeof switchHub === 'function') switchHub(tab); }
@@ -58,7 +77,7 @@
   }
   const ACT = {
     gacha: () => hub('summon'), shop: () => hub('shop'), navy: () => hub('navy'), bounty: () => hub('bounty'),
-    treasure: () => openTreasure(), titles: () => openAchievements(), friends: () => openSocial(), cloud: () => openCloud(), settings: () => openSettings(), bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
+    treasure: () => openTreasure(), guild: () => openGuild(), titles: () => openAchievements(), friends: () => openSocial(), cloud: () => openCloud(), settings: () => openSettings(), bag: () => openBag(), crew: () => openCrew('crew'), train: () => openCrew('train'), codex: () => openCrew('codex')
   };
 
   /* 跨過午夜時，大廳的懸賞進度自動換成新的一天 */
@@ -68,7 +87,11 @@
     if (!$('lobby')) return;
     document.querySelectorAll('[data-lb]').forEach(b => b.onclick = () => { const f = ACT[b.dataset.lb]; if (f) f(); });
     $('lbHero').onclick = () => openCrew('crew');
-    $('lbNews').onclick = () => openNews(); $('lbMail').onclick = () => openNews(); if ($('lbBell')) $('lbBell').onclick = () => hub('bounty');
+    if ($('l2Mission')) $('l2Mission').onclick = () => openChart();
+    addEventListener('resize', () => requestAnimationFrame(syncLayout)); if (window.ResizeObserver) { const ro = new ResizeObserver(() => syncLayout()); const tb = document.querySelector('#modeScreen .topbar'); if (tb) ro.observe(tb); if ($('lbEvent')) ro.observe($('lbEvent')); }
+    if ($('l2Emperor')) $('l2Emperor').onclick = () => (window.openEmperorHall ? openEmperorHall() : openEmperor());
+    setInterval(() => { if (currentScreen === 'modeScreen') { const d = SAVE.data, pid = [(d.lineup || [])[0], d.player].find(x => x && CHARACTERS[x] && owned(x)) || CHARACTER_ORDER[0]; sayLine(pid); } }, 9000);
+    $('lbNews').onclick = () => openNews(); $('lbMail').onclick = () => openNews(); if ($('lbBell')) $('lbBell').onclick = () => hub('bounty'); if ($('lbLogin') && !$('lbLogin').onclick) $('lbLogin').onclick = () => openLogin();
     $('lbBounty').onclick = () => hub('bounty');
     $('lbGo').onclick = () => openChart();
     $('lbModesBtn').onclick = () => openModesSheet(true);

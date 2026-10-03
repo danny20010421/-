@@ -53,7 +53,7 @@
 
 /* ---------- 模式選擇卡：皇帝領海 ---------- */
 .m-emperor .mc-art { background: url('../assets/ui/emperor_bg.webp?v=63') center 40%/cover !important; position: relative }
-.m-emperor .mc-art::before { content: ''; position: absolute; inset: 12% 30%; background: url('../assets/ui/emperor_logo.webp?v=63') center/contain no-repeat; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .6)) }
+
 .m-emperor .mc-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(8, 18, 32, .55)) }
 
 /* ---------- 皇帝領海畫面 ---------- */

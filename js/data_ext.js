@@ -295,6 +295,7 @@
   /* 原作順序：魚人島 → 龐克哈薩特 → 德雷斯羅薩 → 蛋糕島 → 和之國 */
   { const i = CHAPTERS.findIndex(c => c.id === 'dressrosa'), D = CHAPTERS.splice(i, 1)[0], j = CHAPTERS.findIndex(c => c.id === 'fishman'); CHAPTERS.splice(j + 1, 0, D); }
   DEFAULT_NEWS.unshift({ id: 'd1002', date: '2026-10-02', tag: '更新', title: '10/02 大型更新：皇帝領海、三個新篇章', body: '・新模式「皇帝領海」：挑戰白鬍子、BIG MOM、凱多、紅髮（隊長連戰 → 分身 → 真身），擊敗後四皇加入船隊；四皇升為 UR+，不再出現在召喚池\n・新篇章：恐怖三桅帆船篇、德雷斯羅薩篇（支線「SMILE 工廠」）、蛋頭島篇；蜂巢島篇改回原作，BOSS 為青雉\n・新角色：紅髮、白鬍子、多佛朗明哥、大熊、大熊（蛋頭島）、黃猿、青雉、貝加龐克、約克、砂糖、莫內、威爾可；約克新皮膚\n・關卡挑戰新增困難模式（★1～★3 評星與獎勵）\n・勇者之塔擴充到 250 層，伊姆移到第 200、250 層\n・懸賞金交易所改為全服同步行情：所有裝置、所有玩家看到的價格與新聞都一樣；新聞依原作設定撰寫\n・手機版：大廳頂部、交易所版面、奪寶大冒險開始畫面修正' });
+  DEFAULT_NEWS.unshift({ id: 'd1014', date: '2026-10-03', tag: '更新', title: '大廳改版與四皇展示頁', body: '・全新大廳：下方導覽列加入「船團」，中間是「出航」\n・皇帝領海新增四皇展示頁\n・通關與領獎時的「恭喜獲得」畫面\n・七日登入、船員個人頁重新設計\n・白鬍子新立繪' });
   DEFAULT_NEWS.unshift({ id: 'd1013', date: '2026-10-03', tag: '更新', title: '東海篇正式版', body: '・風車村全面重做：瑪琪諾的酒館、村長家、老漁夫的小屋、碼頭與魯夫的小船、海軍據點與摩根像、小溪與木橋\n・瑪琪諾、村長、摩根、克比等 NPC 外觀更貼近原作' });
   DEFAULT_NEWS.unshift({ id: 'd1012', date: '2026-10-03', tag: '更新', title: '各島地標登場', body: '・13 座島加上原作地標：阿爾巴那宮殿、黃金鐘、司法之塔與正義之門、龍宮城、鬼之島、寶樹亞當……\n・煙囪冒煙、空中光點、小花等環境細節\n・NPC 造型更圓滑' });
   DEFAULT_NEWS.unshift({ id: 'd1011', date: '2026-10-03', tag: '更新', title: '全新 3D 島嶼畫面', body: '・13 座島換上新版 3D 畫面：卡通光影、即時陰影、草地、海面浪花、泛光\n・島上的民宅與樹木細節全面升級\n・可在設定中切換回舊畫面' });
@@ -308,10 +309,11 @@
   DEFAULT_NEWS.unshift({ id: 'd1003', date: '2026-10-02', tag: '更新', title: '10/02 新篇章插圖與各裝置排版修正', body: '・恐怖三桅帆船篇、德雷斯羅薩篇、蛋頭島篇換上正式插圖；SMILE 工廠支線有專屬戰鬥背景\n・手機、平板、桌機排版檢查：島上探索頂部、大廳貨幣列、模式選擇卡片排列、皇帝領海橫式版面\n・召喚機率表數字顯示修正' });
   /* 東海篇：斧手摩根改用專屬造型（金色短髮、鐵下巴、斧頭手、海軍大衣） */
   { const E = CHAPTERS.find(c => c.id === 'east'); const m = E && E.npcs.find(n => n.id === 'morgan_n'); if (m) m.look = 'morgan'; }
+  /* 白鬍子新立繪 */ CHARACTERS.whitebeard.image = 'assets/chars/whitebeard.webp?v=78'; CHARACTERS.whitebeard.ultimateBg = CHARACTERS.whitebeard.image;
   /* 四皇的奧義：使用後恢復其他所有技能的次數 */
   ['whitebeard', 'shanks', 'kaido', 'bigmom'].forEach(id => { const u = CHARACTERS[id].skills[4]; u.effect.restoreAllPP = true; if (!/恢復其他所有技能/.test(u.desc)) u.desc += ' 使用後恢復其他所有技能的次數。'; });
   /* 立繪大小與面向（依玩家在「立繪調整」實測的數值寫入預設值，所有裝置一致） */
-  const VIS = { aokiji: [1.65], whitebeard: [2.65], vegapunk: [.45, true], mayor: [.65, true], morgans: [.7], kuma: [1.35], kuma_eh: [1.9], lordcoast: [2.35], lucci: [.9], shanks: [1.4], vergo: [1], ace: [null, true], marine: [.65] };
+  const VIS = { aokiji: [1.65], whitebeard: [1.8], vegapunk: [.45, true], mayor: [.65, true], morgans: [.7], kuma: [1.35], kuma_eh: [1.9], lordcoast: [2.35], lucci: [.9], shanks: [1.4], vergo: [1], ace: [null, true], marine: [.65] };
   Object.entries(VIS).forEach(([id, [bs, face]]) => { const c = CHARACTERS[id]; if (!c) return; if (bs != null) c.battleScale = bs; if (face !== undefined) c.faceLeft = face; });
   { const pf = CHARACTERS.marco.skills[4].effect.phoenixForm; if (pf) pf.scale = 2.35; }
   window.__V63_DATA = true;

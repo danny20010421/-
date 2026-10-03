@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-006",
+  "title": "皇帝領海規則",
+  "decision_question": "皇帝領海的挑戰規則？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "medium",
+  "reversibility": "reversible",
+  "current_default_action": "5 人出戰、8 位隊長、分身技能無限奧義 3 次、真身體力 12000 全能力+1 技能全無限",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "5 人出戰、8 位隊長、分身技能無限奧義 3 次、真身體力 12000 全能力+1 技能全無限",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "維持原規則",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者指定（v69）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者指定（v69）"
+}

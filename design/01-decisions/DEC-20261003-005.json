@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-005",
+  "title": "畫質與效能取捨",
+  "decision_question": "畫質和效能衝突時以哪個優先？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "medium",
+  "reversibility": "reversible",
+  "current_default_action": "畫質優先（未來做成 App）",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "畫質優先（未來做成 App）",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "效能優先",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者決定：未來考慮做成 App，往好的做而不是先考慮效能（v72）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者決定：未來考慮做成 App，往好的做而不是先考慮效能（v72）"
+}

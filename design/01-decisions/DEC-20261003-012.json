@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "decision_id": "DEC-20261003-012",
+  "title": "3D 場景中的角色呈現",
+  "decision_question": "登島 3D 場景的角色用什麼呈現？",
+  "owner": "UC",
+  "status": "accepted",
+  "decision_type": "prototype_direction",
+  "boundary_status": "near",
+  "stakes": "high",
+  "reversibility": "costly_to_reverse",
+  "current_default_action": "保留 2D 立繪（HD-2D）",
+  "options": [
+    {
+      "option_id": "OPT-001",
+      "action": "保留 2D 立繪（HD-2D）",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-002",
+      "action": "3D Q 版模型",
+      "expected_benefit": "",
+      "main_risk": ""
+    },
+    {
+      "option_id": "OPT-003",
+      "action": "原神等級 3D 模型",
+      "expected_benefit": "",
+      "main_risk": ""
+    }
+  ],
+  "evidence_refs": [],
+  "assumption_refs": [],
+  "experiment_refs": [],
+  "gate_refs": [],
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者決定：保留 2D 立繪（v72）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "若立繪與 3D 場景的融合度經玩家實測仍不可接受，試做 1～2 位 3D Q 版角色比較",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者決定：保留 2D 立繪（v72）"
+}

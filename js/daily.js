@@ -30,17 +30,20 @@
   }
   function openLogin(auto) {
     const L = loginState(), ok = canClaim();
-    const box = document.createElement('div'); box.className = 'dl-wrap'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '七日登入獎勵');
-    box.innerHTML = `<div class="dl-card"><img class="dl-hero" src="assets/ui/login_reward.webp?v=48" alt=""><header><h3>七日登入獎勵</h3><button class="icon-btn sm" data-x aria-label="關閉">×</button></header>
-      <p class="dl-sub">每天登入領一次，第 7 天領完後重新開始。${ok ? '' : '今天已經領過了，明天 00:00 再來！'}</p>
-      <div class="dl-grid">${LOGIN_REWARDS.map((R, i) => { const st = i < L.day ? 'got' : i === L.day ? (ok ? 'now' : 'next') : ''; return `<div class="dl-day ${st} ${R.big ? 'big' : ''}"><small>第 ${R.day} 天</small><b>${R.label}</b>${st === 'got' ? '<i>已領取</i>' : st === 'now' ? '<i>可領取</i>' : ''}</div>`; }).join('')}</div>
-      <button class="btn-gold big" id="dlClaim" ${ok ? '' : 'disabled'}>${ok ? `領取第 ${L.day + 1} 天獎勵` : '明天再來'}</button></div>`;
+    const icon = R => R.items ? (() => { const k = Object.keys(R.items)[0]; return ITEMS[k] ? itemIcon(ITEMS[k]) : '<em>🎁</em>'; })() : R.tickets ? '<em>🎟</em>' : R.tokens ? '<em>🪙</em>' : '<em>💰</em>';
+    const box = document.createElement('div'); box.className = 'dl-wrap lg7-wrap'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '七日登入獎勵');
+    box.innerHTML = `<div class="lg7"><button class="icon-btn sm lg7-x" data-x aria-label="關閉">×</button>
+      <header class="lg7-head"><img src="assets/ui/login_reward.webp?v=48" alt=""><div><h3><span>七</span>日之約</h3><p>每天登入領一次，第 7 天領完後重新開始。${ok ? '' : '<br><b>今天已經領過了，明天 00:00 再來！</b>'}</p></div></header>
+      <ol class="lg7-row">${LOGIN_REWARDS.map((R, i) => { const st = i < L.day ? 'got' : i === L.day ? (ok ? 'now' : 'next') : ''; return `<li class="lg7-day ${st} ${R.big || i === LOGIN_REWARDS.length - 1 ? 'big' : ''}" style="--d:${i * .06}s"><span class="lg7-n">${R.day}</span><span class="lg7-ic">${icon(R)}</span><b>${R.label}</b>${st === 'got' ? '<span class="lg7-ok" aria-label="已領取">✔</span>' : ''}${st === 'now' ? '<span class="lg7-now">今日可領</span>' : st === 'next' ? '<span class="lg7-nx">明天</span>' : ''}</li>`; }).join('')}</ol>
+      <div class="lg7-foot"><small>已累積登入 ${SAVE.data.loginTotal || 0} 天</small><button class="btn-gold big" id="dlClaim" ${ok ? '' : 'disabled'}>${ok ? `領取第 ${L.day + 1} 天獎勵` : '明天再來'}</button></div></div>`;
     document.body.appendChild(box); if (window.fixIcons) fixIcons(box);
     const close = () => box.remove();
     box.querySelector('[data-x]').onclick = close; box.onclick = e => { if (e.target === box) close(); };
     const c = box.querySelector('#dlClaim'); if (ok) c.onclick = () => {
       const R = LOGIN_REWARDS[L.day], got = grantReward(R); L.last = today(); L.day = (L.day + 1) % LOGIN_REWARDS.length; SAVE.data.loginTotal = (SAVE.data.loginTotal || 0) + 1; SAVE.save();
-      SFX.play('rare'); toast(`登入獎勵：${got.join('、')}`, 'gold'); close(); if (window.renderLobby) renderLobby();
+      close(); if (window.renderLobby) renderLobby();
+      const list = []; if (R.berry) list.push({ name: '貝里', count: R.berry, emoji: '💰' }); if (R.tokens) list.push({ name: '寶藏幣', count: R.tokens, emoji: '🪙', rar: 'SR' }); if (R.items) Object.entries(R.items).forEach(([k, n]) => list.push({ item: k, count: n })); if (R.tickets) list.push({ name: '活動抽獎券', count: R.tickets, emoji: '🎟', rar: 'SSR' });
+      if (window.showRewards) showRewards({ title: '恭喜獲得', sub: `七日登入・第 ${R.day} 天` }, list); else toast(`登入獎勵：${got.join('、')}`, 'gold');
     };
   }
   window.openLogin = openLogin; window.loginClaimable = canClaim;
