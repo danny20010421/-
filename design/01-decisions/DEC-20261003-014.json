@@ -1,25 +1,25 @@
 {
   "schema_version": "1.0.0",
-  "decision_id": "DEC-20261003-007",
-  "title": "四皇奧義恢復技能次數的範圍",
-  "decision_question": "四皇奧義「使用後恢復全技能次數」是否包含奧義本身？",
+  "decision_id": "DEC-20261003-014",
+  "title": "NPC 對話改為視覺小說式演出",
+  "decision_question": "NPC 對話要不要改成像 Larch 那樣的立繪舞台演出？",
   "owner": "UC",
   "status": "accepted",
   "decision_type": "prototype_direction",
   "boundary_status": "near",
   "stakes": "medium",
   "reversibility": "reversible",
-  "current_default_action": "只恢復其他技能（奧義本身的次數限制不變）",
+  "current_default_action": "改：立繪舞台＋進場與待機動畫＋每句特效，舊台詞自動套用",
   "options": [
     {
       "option_id": "OPT-001",
-      "action": "只恢復其他技能（奧義本身的次數限制不變）",
+      "action": "改：立繪舞台＋進場與待機動畫＋每句特效，舊台詞自動套用",
       "expected_benefit": "",
       "main_risk": ""
     },
     {
       "option_id": "OPT-002",
-      "action": "連奧義也恢復",
+      "action": "維持目前的下方對話框＋小頭像",
       "expected_benefit": "",
       "main_risk": ""
     }
@@ -31,10 +31,10 @@
   "decision_result": {
     "status": "accepted",
     "by": "UC（使用者）",
-    "reason": "使用者確認：只恢復其他技能，不恢復奧義",
+    "reason": "使用者要求台詞擴充並以立繪演出（v86）",
     "date": "2026-10-03"
   },
   "rollback_trigger": "",
   "accepted_by": "UC（使用者）",
-  "accepted_reason": "使用者確認：只恢復其他技能，不恢復奧義"
+  "accepted_reason": "使用者要求台詞擴充並以立繪演出（v86）"
 }

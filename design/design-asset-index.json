@@ -170,6 +170,32 @@
       "upstream_assets": [],
       "downstream_assets": [],
       "notes": "v1 Decision Object."
+    },
+    {
+      "asset_id": "ASSET-DECISION-014",
+      "asset_type": "decision",
+      "title": "NPC 對話改為視覺小說式演出",
+      "path": "01-decisions/DEC-20261003-014.json",
+      "format": "json",
+      "created_by": "human-agent",
+      "source_status": "private",
+      "review_status": "draft",
+      "upstream_assets": [],
+      "downstream_assets": [],
+      "notes": "v1 Decision Object."
+    },
+    {
+      "asset_id": "ASSET-DECISION-015",
+      "asset_type": "decision",
+      "title": "角色稀有度八階",
+      "path": "01-decisions/DEC-20261003-015.json",
+      "format": "json",
+      "created_by": "human-agent",
+      "source_status": "private",
+      "review_status": "draft",
+      "upstream_assets": [],
+      "downstream_assets": [],
+      "notes": "v1 Decision Object."
     }
   ]
 }

@@ -4,7 +4,7 @@
   "title": "瑪琪諾的配色",
   "decision_question": "瑪琪諾的 NPC 配色是否符合原作？",
   "owner": "UC",
-  "status": "proposed",
+  "status": "accepted",
   "decision_type": "prototype_direction",
   "boundary_status": "near",
   "stakes": "low",
@@ -28,6 +28,13 @@
   "assumption_refs": [],
   "experiment_refs": [],
   "gate_refs": [],
-  "decision_result": null,
-  "rollback_trigger": ""
+  "decision_result": {
+    "status": "accepted",
+    "by": "UC（使用者）",
+    "reason": "使用者提供官方風格立繪：深綠長髮、黃底花頭巾、藍條紋襯衫、紅長裙；NPC 配色已依立繪更新（v89）",
+    "date": "2026-10-03"
+  },
+  "rollback_trigger": "",
+  "accepted_by": "UC（使用者）",
+  "accepted_reason": "使用者提供官方風格立繪：深綠長髮、黃底花頭巾、藍條紋襯衫、紅長裙；NPC 配色已依立繪更新（v89）"
 }

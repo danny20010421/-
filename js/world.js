@@ -15,7 +15,7 @@
     }
     /* ---------- 載入篇章 ---------- */
     load(chapter, playerId, state) {
-      if (this.scene) { this.r.free(this.scene.staticMesh); this.r.free(this.scene.water); }
+      if (this.scene) { this.r.free(this.scene.staticMesh); this.r.free(this.scene.water); (this.scene.roofs || []).forEach(R => this.r.free(R.mesh)); }
       this.chapter = chapter; this.playerId = playerId;
       this.scene = SCENES.buildScene(this.r, chapter.id, (state && state.clear) || [], chapter.layout);
       const env = chapter.env; this.r.env = { sky: E3.hex(env.sky), ground: E3.hex(env.ground), fog: E3.hex(env.fog), fogR: env.fogR, sun: env.sun };
@@ -54,7 +54,7 @@
     _bind() {
       const c = this.canvas;
       const typing = (e) => /input|textarea|select/i.test(e.target.tagName);
-      window.addEventListener('keydown', e => { if (!this.running || typing(e)) return; const k = e.key.toLowerCase(); this.keys[k] = true; if ((k === 'e' || k === ' ' || k === 'enter') && !this.paused) { e.preventDefault(); this.interact(); } if (k === 'q') this.cam.tYaw += .5; if (k === 'r') this.cam.tYaw -= .5; if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault(); if (/^[wasd]$|^arrow/.test(k)) this.p.target = null; });
+      window.addEventListener('keydown', e => { if (!this.running || typing(e)) return; const k = e.key.toLowerCase(); this.keys[k] = true; if ((k === 'e' || k === 'enter') && !this.paused) { e.preventDefault(); this.interact(); } if (k === ' ' && !this.paused) { e.preventDefault(); this._jumpReq = true; } if (k === 'q') this.cam.tYaw += .5; if (k === 'r') this.cam.tYaw -= .5; if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault(); if (/^[wasd]$|^arrow/.test(k)) this.p.target = null; });
       window.addEventListener('keyup', e => { this.keys[e.key.toLowerCase()] = false; });
       window.addEventListener('blur', () => { this.keys = {}; });
       let down = null;
@@ -105,7 +105,7 @@
       if (pr && pr.x > 50 && pr.x < W - 50 && pr.y > 110 && pr.y < Hh - 80) { el.classList.remove('show'); return; }
       const e = this.r.eye, tg = this.r.target, fx = tg[0] - e[0], fz = tg[2] - e[2], fl = Math.hypot(fx, fz) || 1, R = this.r.right;
       const dx = g.x - p.x, dz = g.z - p.z, sx = dx * R[0] + dz * R[2], sy = (dx * fx + dz * fz) / fl, a = Math.atan2(-sy, sx);
-      const rx = W / 2 - 46, ry = Hh / 2 - 90; el.style.transform = `translate(${W / 2 + Math.cos(a) * rx}px, ${Hh / 2 + Math.sin(a) * ry}px)`;
+      const rx = W / 2 - 104, ry = Hh / 2 - 128, cy = Hh / 2 - 6; /* 避開上方任務卡、下方功能列、右側按鈕 */ el.style.transform = `translate(${W / 2 + Math.cos(a) * rx}px, ${cy + Math.sin(a) * ry}px)`;
       el.querySelector('i').style.transform = `rotate(${a}rad)`; el.querySelector('b').textContent = Math.round(dist) + 'm';
       el.classList.add('show');
     }
@@ -135,13 +135,18 @@
       if (p.moving) {
         let nx = p.x + p.vx * SPEED * dt, nz = p.z + p.vz * SPEED * dt;
         [nx, nz] = this._collide(nx, nz);
-        if (this.scene.H(nx, nz) > .35) { p.x = nx; p.z = nz; } else if (this.scene.H(nx, p.z) > .35) p.x = nx; else if (this.scene.H(p.x, nz) > .35) p.z = nz; else p.target = null;
+        const S1 = this.scene, ok = (x, z) => S1.H(x, z) > .35 || (S1.onPlat && S1.onPlat(x, z, p.y)); /* 地面或平台（橋、地板）都可以走 */
+        if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz; else p.target = null;
         const side = mx * rx + mz * rz; if (Math.abs(side) > .2) p.flip = side < 0;
         p.t += dt * 9 * Math.min(1, sp * 1.2);
         // 行進時鏡頭緩慢跟到背後
         if (!(ix || iz) && p.target) { const want = Math.atan2(-mx, -mz); let d = want - this.cam.tYaw; d = Math.atan2(Math.sin(d), Math.cos(d)); this.cam.tYaw += d * dt * .6; }
       }
-      p.y += (this.scene.H(p.x, p.z) - p.y) * Math.min(1, dt * 14);
+      /* 高度：地形或腳下的平台；跳躍與掉落有重力 */
+      { const S1 = this.scene, g = S1.G ? S1.G(p.x, p.z, p.y) : S1.H(p.x, p.z);
+        if (this._jumpReq) { this._jumpReq = false; if (Math.abs(p.y - g) < .25 && !p.vy) { p.vy = 10.5; if (window.SFX) try { SFX.play('whoosh'); } catch (e) { } } }
+        if (p.vy || p.y > g + .3) { p.vy = (p.vy || 0) - 30 * dt; p.y += p.vy * dt; if (p.y <= g) { p.y = g; p.vy = 0; } }
+        else if (g > p.y) p.y = g; /* 上樓梯：立刻貼齊，避免陡的樓梯跟不上而掉下去 */ else p.y += (g - p.y) * Math.min(1, dt * 14); }
       // 轉身翻面：寬度縮放模擬翻牌
       p.face = (p.face == null ? 1 : p.face) + ((p.flip ? -1 : 1) - (p.face == null ? 1 : p.face)) * Math.min(1, dt * 12);
       // 撿道具
@@ -175,6 +180,8 @@
       for (let i = 0; i < all.length; i++) { const o = all[i], dx = x - o[0], dz = z - o[1], d = Math.hypot(dx, dz), m = o[2] + pr; if (d < m && d > 1e-4) { x = o[0] + dx / d * m; z = o[1] + dz / d * m; } }
       for (const n of this.npcs) { const dx = x - n.x, dz = z - n.z, d = Math.hypot(dx, dz), m = SCENES.lookScale(n.look) * 1.1 + pr; if (d < m && d > 1e-4) { x = n.x + dx / d * m; z = n.z + dz / d * m; } }
       for (const e of this.enemies) { const dx = x - e.x, dz = z - e.z, d = Math.hypot(dx, dz), m = (e.boss && !this.bossUnlocked ? 13.5 : 1.8) + pr; if (d < m && d > 1e-4) { x = e.x + dx / d * m; z = e.z + dz / d * m; } }
+      /* 牆：身體高度和牆重疊才擋 */
+      const W2 = this.scene.walls; if (W2 && W2.length) { const y = this.p.y, r2 = .55; for (const w of W2) { if (y + 1.7 <= w.y0 || y + .3 >= w.y1) continue; if (x < w.x0 - r2 || x > w.x1 + r2 || z < w.z0 - r2 || z > w.z1 + r2) continue; const dl = x - (w.x0 - r2), dr = (w.x1 + r2) - x, dn = z - (w.z0 - r2), df = (w.z1 + r2) - z, m = Math.min(dl, dr, dn, df); if (m === dl) x = w.x0 - r2; else if (m === dr) x = w.x1 + r2; else if (m === dn) z = w.z0 - r2; else z = w.z1 + r2; } }
       const d = Math.hypot(x, z); if (d > 95) { x *= 95 / d; z *= 95 / d; }
       return [x, z];
     }
@@ -194,6 +201,7 @@
       r.begin();
       if (S.sky) r.draw(S.sky, M.trs(p.x, 0, p.z, 0, 1), { noFog: true, noCull: true, mat: 3 });
       r.draw(S.staticMesh, null, { mat: 1 });
+      /* 屋頂：玩家走進房子時不畫，才看得到室內 */ if (S.roofs) for (const R of S.roofs) { if (p.x > R.x0 && p.x < R.x1 && p.z > R.z0 && p.z < R.z1) continue; r.draw(R.mesh, null, { mat: 1 }); }
       if (S.blade) S.dyn.windmills.forEach(([x, y, z], i) => r.draw(S.blade, M.mul(M.mul(M.trs(x, y, z, 0, 1), M.rz(t * .8 + i)), M.rx(Math.PI / 2))));
       if (S.cloud) S.dyn.clouds.forEach(([x, y, z, s, ph]) => r.draw(S.cloud, M.trs(x + Math.sin(t * .1 + ph) * 6, y + Math.sin(t * .4 + ph), z, ph, s)));
       if (S.bird && this.chapter.id !== 'fishman') for (let i = 0; i < 7; i++) { const a = t * (.25 + i * .03) + i * 1.3, R = 30 + i * 9; r.draw(S.bird, M.mul(M.trs(Math.cos(a) * R, 24 + i * 2 + Math.sin(t * 2 + i) * 1.5, Math.sin(a) * R, -a, 1.3), M.rz(Math.sin(t * 9 + i) * .35)), { noCull: true, tint: this.chapter.id === 'dark' ? [.3, .25, .35, 1] : [1, 1, 1, 1] }); }
@@ -269,3 +277,13 @@
   function S0(w, n) { return w.scene.H(n.x, n.z); }
   global.World = World;
 })(window);
+/* 跳躍按鈕（手機）：按下就跳 */
+document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('jumpBtn'); if (b) b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (typeof WORLD !== 'undefined' && WORLD) WORLD._jumpReq = true; }); });
+/* 跳躍按鈕：和電話蟲按鈕上下置中對齊、放在它左邊（右手大拇指區），不同裝置都不會偏移 */
+(function () {
+  function place() { const j = document.getElementById('jumpBtn'), d = document.getElementById('denden'); if (!j || !d || !d.offsetParent || !j.offsetParent) return; const r = d.getBoundingClientRect(), pr = j.offsetParent.getBoundingClientRect(); if (!r.width) return;
+    const w = j.offsetWidth, h = j.offsetHeight; j.style.setProperty('top', Math.round(r.top + r.height / 2 - h / 2 - pr.top) + 'px', 'important'); j.style.setProperty('left', Math.round(r.left - 14 - w - pr.left) + 'px', 'important'); j.style.setProperty('bottom', 'auto', 'important'); j.style.setProperty('right', 'auto', 'important'); }
+  window.placeJumpBtn = place;
+  window.addEventListener('resize', () => requestAnimationFrame(place)); setInterval(place, 800);
+  window.addEventListener('DOMContentLoaded', () => { if (window.ResizeObserver) { const d = document.getElementById('denden'); if (d) new ResizeObserver(place).observe(d); } });
+})();

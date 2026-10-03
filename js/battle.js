@@ -231,12 +231,12 @@ async function applyItem(id) {
   const fw = $('bFL'); fw.classList.add('cast'); spawnSupport('L', true); await wait(420); fw.classList.remove('cast');
   if (ef.healRatio && healOk(p)) { const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp * ef.healRatio)); p.hp += heal; if (heal > 0) showHeal('L', heal); }
   if (ef.cleanse) { clearAbnormal(p); clearNegativeStages(p); log('異常狀態與負面能力全部清除。'); }
-  if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !s.locked) s.pp = Math.min(s.maxPP, s.pp + ef.ppAll); }); log(`所有技能使用次數 +${ef.ppAll}（不超過上限）`); }
+  if (ef.ppAll) { p.skills.forEach(s => { if (!(s.effect && s.effect.noRestore) && !(s.effect && s.effect.restoreOnce && s.__restored) && !s.locked) { const b = s.pp; s.pp = Math.min(s.maxPP, s.pp + ef.ppAll); if (s.effect && s.effect.restoreOnce && s.pp > b) s.__restored = true; } }); /* restoreOnce：藥水只能補一次 */ log(`所有技能使用次數 +${ef.ppAll}（不超過上限）`); }
   /* 技能補充劑：一次補 1 點、共 N 點；優先順序：用完的 > 剩餘最少的 > 用過的（同順位隨機），不超過上限 */
-  if (ef.ppSmart) { const got = {}; for (let k = 0; k < ef.ppSmart; k++) { const c = p.skills.filter(s => !s.locked && s.maxPP > 0 && s.pp < s.maxPP && !(s.effect && s.effect.noRestore)); if (!c.length) break;
-      const empty = c.filter(s => s.pp <= 0), min = Math.min(...c.map(s => s.pp)), pool = empty.length ? empty : c.filter(s => s.pp === min); const s = pool[Math.floor(Math.random() * pool.length)]; s.pp++; got[s.name] = (got[s.name] || 0) + 1; }
+  if (ef.ppSmart) { const got = {}; for (let k = 0; k < ef.ppSmart; k++) { const c = p.skills.filter(s => !s.locked && s.maxPP > 0 && s.pp < s.maxPP && !(s.effect && s.effect.noRestore) && !(s.effect && s.effect.restoreOnce && s.__restored)); if (!c.length) break;
+      const empty = c.filter(s => s.pp <= 0), min = Math.min(...c.map(s => s.pp)), pool = empty.length ? empty : c.filter(s => s.pp === min); const s = pool[Math.floor(Math.random() * pool.length)]; s.pp++; if (s.effect && s.effect.restoreOnce) s.__restored = true; got[s.name] = (got[s.name] || 0) + 1; }
     log(Object.keys(got).length ? `技能次數恢復：${Object.entries(got).map(([n, v]) => `${n} +${v}`).join('、')}` : '所有技能次數都是滿的'); }
-  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !s.locked) s.pp = Math.min(s.maxPP, s.pp + ef.ppUlt); }); }
+  if (ef.ppUlt) { p.skills.forEach(s => { if (s.ultimate && !(s.effect && s.effect.noRestore) && !(s.effect && s.effect.restoreOnce && s.__restored) && !s.locked) { const b = s.pp; s.pp = Math.min(s.maxPP, s.pp + ef.ppUlt); if (s.effect && s.effect.restoreOnce && s.pp > b) s.__restored = true; } }); }
   if (ef.atkUp) { p.buffs.atk = clamp(p.buffs.atk + ef.atkUp, -6, 6); log(`攻擊能力 +${ef.atkUp}`); }
   if (ef.shieldRatio) { const sh = Math.round(p.maxHp * ef.shieldRatio); p.status.shield += sh; log(`獲得 ${sh} 點護盾`); }
   if (ef.revive) { p.status.revive = ef.revive; log('不死鳥之羽守護著你。'); }

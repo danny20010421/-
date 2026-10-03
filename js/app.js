@@ -129,8 +129,8 @@ function setsDone() { return (typeof COLLECTION_SETS !== 'undefined' ? COLLECTIO
 /* 已開通的羈絆中，出戰陣容有 need 位以上成員者才生效 */
 const setNeed = S => Math.min(S.need || S.members.length, S.members.length);
 function setsActive(team) { team = team || SAVE.data.lineup || []; return setsDone().filter(S => S.members.filter(id => team.includes(id)).length >= setNeed(S)); }
-function setBonus(team) { const b = { hp: 0, atk: 0, def: 0, spd: 0 }; setsActive(team).forEach(S => Object.entries(S.bonus).forEach(([k, v]) => { b[k] = Math.min(SET_BONUS_CAP, (b[k] || 0) + v); })); return b; }
-function applySetBonus(f, team) { const b = setBonus(team); if (b.hp) { f.maxHp = Math.round(f.maxHp * (1 + b.hp / 100)); f.hp = f.maxHp; } if (b.atk) f.dmgMul = (f.dmgMul || 1) * (1 + b.atk / 100); if (b.def) f.def = Math.round((f.def || 0) * (1 + b.def / 100)); if (b.spd) f.baseSpeed = Math.round(f.baseSpeed * (1 + b.spd / 100)); return f; }
+function setBonus(team) { const b = { hp: 0, atk: 0, def: 0, spd: 0, dr: 0 }, free = {}; setsActive(team).forEach(S => Object.entries(S.bonus).forEach(([k, v]) => { if (S.capFree) free[k] = (free[k] || 0) + v; else b[k] = Math.min(SET_BONUS_CAP, (b[k] || 0) + v); })); Object.entries(free).forEach(([k, v]) => { b[k] = (b[k] || 0) + v; }); return b; } /* capFree 的羈絆不受 10% 上限限制 */
+function applySetBonus(f, team) { const b = setBonus(team); if (b.hp) { f.maxHp = Math.round(f.maxHp * (1 + b.hp / 100)); f.hp = f.maxHp; } if (b.atk) f.dmgMul = (f.dmgMul || 1) * (1 + b.atk / 100); if (b.def) f.def = Math.round((f.def || 0) * (1 + b.def / 100)); if (b.spd) f.baseSpeed = Math.round(f.baseSpeed * (1 + b.spd / 100)); if (b.dr) f.setDR = Math.min(.6, b.dr / 100); return f; }
 /* 增加經驗，回傳升級資訊 */
 /* noShare：經驗書、海軍本部傳承只給指定角色；戰鬥與任務則分享給未上陣的船員 */
 function gainExp(id, n, silent, noShare) {
@@ -479,7 +479,7 @@ function onInteract(n) {
     }
     const hint = s ? `（目前任務：${s.title}）` : '';
     const pool = n.chat && n.chat.length ? n.chat : ['路上小心，航海者。'];
-    say([[n.id, pool[Math.floor(Math.random() * pool.length)] + (hint && Math.random() < .5 ? ' ' + hint : '')]]);
+    say([[n.id, pool[(n._ci = ((n._ci == null ? -1 : n._ci) + 1) % pool.length)] /* 依序說完全部的閒聊 */ + (hint && Math.random() < .5 ? ' ' + hint : '')]]);
     return;
   }
   const lines = ENCOUNTER_LINES[n.id] || ['來吧！'];
@@ -594,8 +594,8 @@ const CHAR_RATE_BY_RARITY = { UR: 0.003, SSR: 0.009, SR: 0.018 };
    某一邊沒有角色時自動改抽另一邊 */
 const CHAR_DUP_RATE = 0.6;
 function rollChar() { const tot = Object.values(CHAR_RATE_BY_RARITY).reduce((a, b) => a + b, 0); let r = Math.random() * tot, tier = null;
-  for (const k of ['UR', 'SSR', 'SR']) { r -= CHAR_RATE_BY_RARITY[k]; if (r < 0 && gachaChars().some(id => CHAR_RARITY[id] === k)) { tier = k; break; } }
-  const all = gachaChars().filter(id => tier ? CHAR_RARITY[id] === tier : CHAR_RARITY[id] !== 'R'), own = all.filter(owned), fresh = all.filter(id => !owned(id));
+  for (const k of ['UR', 'SSR', 'SR', 'RRR', 'RR', 'U', 'C'].filter(k => CHAR_RATE_BY_RARITY[k])) { r -= CHAR_RATE_BY_RARITY[k]; if (r < 0 && gachaChars().some(id => CHAR_RARITY[id] === k)) { tier = k; break; } }
+  const all = gachaChars().filter(id => tier ? CHAR_RARITY[id] === tier : CHAR_RATE_BY_RARITY[CHAR_RARITY[id]]), own = all.filter(owned), fresh = all.filter(id => !owned(id));
   let pick = Math.random() < CHAR_DUP_RATE ? own : fresh; if (!pick.length) pick = own.length ? own : fresh; if (!pick.length) pick = all;
   return pick[Math.floor(Math.random() * pick.length)]; }
 /* 機率為絕對值：船員 charRate＋N／R／SR／SSR 合計 100% */

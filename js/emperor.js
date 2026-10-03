@@ -26,7 +26,7 @@ const EMPEROR_DOMAIN = {
   const EMP = new Set(E.list.map(x => x.id));
   /* 隊長補位：以皇帝 id 當 seed，固定挑出同一批角色 */
   function captainsOf(x) {
-    const taken = new Set(E.list.flatMap(e => e.captains)); const pool = CHARACTER_ORDER.filter(id => !EMP.has(id) && !taken.has(id) && id !== 'imu' && !STARTERS.includes(id) && !x.captains.includes(id) && !((CHAR_OBTAIN[id] || {}).npcOnly)); let seed = [...x.id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 2147483647 || 1; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+    const taken = new Set(E.list.flatMap(e => e.captains)); const pool = CHARACTER_ORDER.filter(id => !EMP.has(id) && !taken.has(id) && id !== 'imu' && !STARTERS.includes(id) && !x.captains.includes(id) && !((CHAR_OBTAIN[id] || {}).npcOnly) && ['SR', 'SSR', 'UR', 'UR+'].includes((typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'SR')); /* 隊長只從 SR 以上挑選 */ let seed = [...x.id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7) % 2147483647 || 1; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
     const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return [...x.captains, ...a.slice(0, x.fill)];
   }

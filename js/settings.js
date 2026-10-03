@@ -1,6 +1,6 @@
 /* 設定頁（大廳「設定」與首頁「設定」共用）＋ 新手教學（大廳聚光燈導覽）。
    設定存在 localStorage：op_gfx（畫質）、op_motion（減少動態）、op_bspeed（預設戰鬥速度）、op_vibe（震動回饋）、op_live_pop（即時對戰邀請通知）、op_text（文字大小）。 */
-const GAME_VERSION = 'v81';
+const GAME_VERSION = 'v94';
 (function () {
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, put = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } };
   /* ---------- 套用設定 ---------- */
@@ -88,6 +88,7 @@ const GUIDE = (function () {
     if (tgt) { let sc = tgt.parentElement; while (sc && sc !== document.body) { const cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 4) break; sc = sc.parentElement; }
       if (sc && sc !== document.body) { const r1 = tgt.getBoundingClientRect(), r0 = sc.getBoundingClientRect(); sc.scrollTop += (r1.top - r0.top) - (sc.clientHeight - r1.height) / 2; } }
     requestAnimationFrame(() => {
+      if (!el) return; /* 導覽已結束（快速連點時） */
       const r = tgt ? tgt.getBoundingClientRect() : null, pad = 6, vw = innerWidth, vh = innerHeight;
       const hole = el.querySelector('.gd-hole'), card = el.querySelector('.gd-card');
       if (r) Object.assign(hole.style, { display: 'block', left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' }); else hole.style.display = 'none';

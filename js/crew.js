@@ -1,6 +1,6 @@
 /* 角色背包：我的船員（只列已獲得）、角色圖鑑、訓練營 */
 (function () {
-  const RAR_COLOR = { N: '#9aa6b2', R: '#5fb8ff', SR: '#c58bff', SSR: '#ffcf5a', UR: '#ff7ad9', 'UR+': '#ff3b3b' };
+  const RAR_COLOR = { C: '#9aa0a6', U: '#7ac86a', N: '#9aa6b2', R: '#5fb8ff', RR: '#37c9c9', RRR: '#4f7dff', SR: '#c58bff', SSR: '#ffcf5a', UR: '#ff7ad9', 'UR+': '#ff3b3b' }; window.RAR_COLOR = RAR_COLOR;
   const rarOf = id => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[id]) || 'R';
   const noOf = id => 'No.' + (CHARACTERS[id].noText || String(CHARACTERS[id].no || 0).padStart(3, '0'));
   const ownedIds = () => CHARACTER_ORDER.filter(owned);
@@ -53,19 +53,34 @@
   window.renderCrew = function () { if (crewMode !== 'crew') { $('charModal').classList.remove('crew-v2'); return _old.apply(this, arguments); } render(); };
 
   function render() {
-    const tabs = [['crew', '我的船員'], ['codex', '角色圖鑑'], ['shard', '碎片'], ['train', '訓練營']];
+    const tabs = [['crew', '我的船員'], ['codex', '角色圖鑑'], ['skin', '皮膚圖鑑'], ['shard', '碎片'], ['train', '訓練營']];
     const ready = training().filter(t => Date.now() >= t.end).length;
-    $('crewTabs').innerHTML = tabs.map(([k, l]) => `<button class="${k === crewTab ? 'on' : ''}" data-k="${k}" role="tab" aria-selected="${k === crewTab}">${l}${k === 'train' && ready ? `<i class="cx-badge">${ready}</i>` : k === 'train' ? `<small>${training().length}/${TRAIN_SLOTS}</small>` : k === 'codex' ? `<small>${ownedIds().length}/${CHARACTER_ORDER.length}</small>` : k === 'shard' && window.eventState && (typeof EVENT_POOLS !== 'undefined' ? EVENT_POOLS : [EVENT_POOL]).some(pl => pl.shards.some(s => !owned(s.char) && eventState(pl).shards[s.char] >= pl.need)) ? '<i class="cx-badge">!</i>' : ''}</button>`).join('');
+    $('crewTabs').innerHTML = tabs.map(([k, l]) => `<button class="${k === crewTab ? 'on' : ''}" data-k="${k}" role="tab" aria-selected="${k === crewTab}">${l}${k === 'train' && ready ? `<i class="cx-badge">${ready}</i>` : k === 'train' ? `<small>${training().length}/${TRAIN_SLOTS}</small>` : k === 'codex' ? `<small>${ownedIds().length}/${CHARACTER_ORDER.length}</small>` : k === 'skin' ? `<small>${skinStats().own}/${skinStats().all}</small>` : k === 'shard' && window.eventState && (typeof EVENT_POOLS !== 'undefined' ? EVENT_POOLS : [EVENT_POOL]).some(pl => pl.shards.some(s => !owned(s.char) && eventState(pl).shards[s.char] >= pl.need)) ? '<i class="cx-badge">!</i>' : ''}</button>`).join('');
     $('crewTabs').querySelectorAll('button').forEach(b => b.onclick = () => { crewTab = b.dataset.k; trainPick = null; render(); const mc = document.querySelector('#charModal .modal-card'); if (mc) mc.scrollTop = 0; });
-    ['crew', 'codex', 'shard', 'train'].forEach(k => { const el = $('cxPane_' + k); if (el) el.classList.toggle('hidden', k !== crewTab); });
-    if (crewTab === 'crew') renderMine(); else if (crewTab === 'codex') renderCodex(); else if (crewTab === 'shard') { if (window.renderShardPane) renderShardPane($('cxPane_shard')); } else renderTrain();
+    ['crew', 'codex', 'skin', 'shard', 'train'].forEach(k => { const el = $('cxPane_' + k); if (el) el.classList.toggle('hidden', k !== crewTab); });
+    if (crewTab === 'crew') renderMine(); else if (crewTab === 'codex') renderCodex(); else if (crewTab === 'skin') renderSkins(); else if (crewTab === 'shard') { if (window.renderShardPane) renderShardPane($('cxPane_shard')); } else renderTrain();
+  }
+
+  /* ---------- 皮膚圖鑑：依角色分組，顯示已獲得／未獲得、取得方式，擁有角色與皮膚時可以直接換上 ---------- */
+  function skinStats() { const own = ((SAVE.data.skins || {}).owned || []), list = Object.entries(SKINS).filter(([, s]) => !s.soon); return { own: list.filter(([k]) => own.includes(k)).length, all: list.length }; }
+  function renderSkins() {
+    const P = $('cxPane_skin'), S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }; S.owned = S.owned || []; S.equip = S.equip || {};
+    const groups = {}; Object.entries(SKINS).forEach(([k, s]) => { (groups[s.char] = groups[s.char] || []).push([k, s]); });
+    const st = skinStats(), chars = CHARACTER_ORDER.filter(id => groups[id]).concat(Object.keys(groups).filter(id => !CHARACTER_ORDER.includes(id)));
+    P.innerHTML = `<p class="cx-note">收集進度 <b>${st.own}/${st.all}</b><span class="cx-cbar"><i style="width:${st.all ? st.own / st.all * 100 : 0}%"></i></span>擁有角色與皮膚時，可以在這裡直接換上；戰鬥、大廳與劇情都會使用換上的皮膚。</p>
+      <div class="sk-groups">${chars.map(id => { const c = CHARACTERS[id]; if (!c) return ''; return `<section class="sk-group"><h4><img src="${c.avatar}" alt=""><b>${c.name}</b><small>${groups[id].filter(([k]) => S.owned.includes(k)).length}/${groups[id].filter(([, s]) => !s.soon).length}</small></h4><div class="sk-row">
+        ${[[null, { name: '原始造型', image: c.image, how: '預設' }], ...groups[id]].map(([k, s]) => { const has = k === null || S.owned.includes(k), on = (S.equip[id] || null) === k, soon = s.soon;
+          return `<div class="sk-card ${has ? 'own' : ''} ${on ? 'on' : ''} ${soon ? 'soon' : ''}"><span class="sk-art">${soon ? '<em>？</em>' : `<img src="${s.image}" alt="" loading="lazy">`}</span><b>${s.name}</b><small>${soon ? '敬請期待' : has ? (on ? '使用中' : '已獲得') : (s.how || '未獲得')}</small>${has && !soon && owned(id) && !on ? `<button class="btn-gold sm" data-skeq="${id}" data-sk="${k || ''}">換上</button>` : ''}</div>`; }).join('')}</div></section>`; }).join('')}</div>`;
+    P.querySelectorAll('[data-skeq]').forEach(b => b.onclick = () => { const id = b.dataset.skeq, k = b.dataset.sk || null; if (k) S.equip[id] = k; else delete S.equip[id]; SAVE.save(); toast(k ? `已換上「${SKINS[k].name}」` : '已換回原始造型', 'gold'); renderSkins(); if (window.renderLobby) renderLobby(); });
   }
 
   /* ---------- 共用：角色卡 ---------- */
   function card(id, opts) {
     const c = CHARACTERS[id], own = owned(id), lv = own ? crewLv(id) : 0, r = rarOf(id), k = SAVE.data.lineup.indexOf(id), tr = isTraining(id);
     const tags = [k === 0 ? '<span class="c-team">先鋒</span>' : k > 0 ? `<span class="c-team">陣容 ${k + 1}</span>` : '', tr ? '<span class="c-badge train">訓練中</span>' : '', opts.codex && !own && !revealAll ? '<span class="c-badge off">未獲得</span>' : ''].join('');
-    return `<button class="char ${opts.on ? 'on' : ''} ${opts.codex && !own && !revealAll ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}"><img src="${c.image}" alt="" loading="lazy"><span class="rar c-rar r-${r}">${r}</span>${own ? `<span class="c-lv" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-lv cno-tag">${noOf(id)}</span>`}${tags ? `<span class="c-tags">${tags}</span>` : ''}<span class="c-name">${c.name}</span></button>`;
+    if (opts.codex && c.mystery && !own && !revealAll) return `<button class="char sil reserved" data-res="${c.no}" aria-label="${noOf(id)} ？？？"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">${noOf(id)}</span><span class="c-name">？？？</span></button>`; /* 伊姆：未獲得前保持神秘 */
+    /* v89：卡片分成三列——上方資訊列（稀有度、編號或等級）、中間立繪（以臉為中心裁切，不再被標籤擋住）、下方名字 */
+    return `<button class="char v2 r-${r} ${opts.on ? 'on' : ''} ${opts.codex && !own && !revealAll ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}" style="--rc:${RAR_COLOR[r] || '#5fb8ff'}"><span class="c-top"><span class="rar c-rar r-${r}">${r}</span>${own ? `<span class="c-lvt" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-not">${noOf(id)}</span>`}</span><span class="c-art"><img src="${c.image}" alt="" loading="lazy" style="object-position:${c.cardPos || '50% 12%'}"></span>${tags ? `<span class="c-tags">${tags}</span>` : ''}<span class="c-name">${c.name}</span></button>`;
   }
   function statTiles(c, lv) {
     const L = lvStats(c, lv), items = [['體力', L.hp, L.hp / 2100], ['速度', L.spd, L.spd / 150], ['傷害倍率', '×' + L.dmg.toFixed(2), L.dmg / 1], ['技能次數', L.ppAdj ? L.ppAdj : '滿', (L.ppAdj + 3) / 3]];
@@ -136,14 +151,15 @@ function openCxSheet() { const d = $('cxCodexDetail'); d.classList.add('open'); 
 function renderCodex() {
     if ($('cxCodexDetail')) $('cxCodexDetail').classList.remove('open');
     const all = CHARACTER_ORDER, got = all.filter(owned).length; if (!codexPick) codexPick = all[0];
-    const BN = { hp: '體力', atk: '傷害', def: '防禦', spd: '速度' };
+    const BN = { hp: '體力', atk: '傷害', def: '防禦', spd: '速度', dr: '減傷' };
     $('cxCodexNote').innerHTML = `<span class="cx-bondtip">羈絆：收集全部成員即開通，出戰陣容中有指定人數的成員時，戰鬥中獲得加成。</span>收集進度 <b>${got}/${all.length}</b><span class="cx-cbar"><i style="width:${got / all.length * 100}%"></i></span>` + (typeof COLLECTION_SETS !== 'undefined' ? `<details class="cx-setbox" ${innerWidth > 860 ? 'open' : ''}><summary>羈絆加成・生效中 ${typeof setsActive === 'function' ? setsActive().length : 0}／已開通 ${typeof setsDone === 'function' ? setsDone().length : 0}／共 ${COLLECTION_SETS.length}</summary><div class="cx-sets">${COLLECTION_SETS.map(S => { const n = S.members.filter(owned).length, done = n === S.members.length, need = Math.min(S.need || S.members.length, S.members.length), inTeam = S.members.filter(id => (SAVE.data.lineup || []).includes(id)).length, live = done && inTeam >= need; return `<span class="cx-set ${done ? 'done' : ''} ${live ? 'live' : ''}" title="${S.members.map(id => CHARACTERS[id].name + (owned(id) ? ' ✓' : '')).join('、')}"><b>${S.name}<em>${live ? '生效中' : done ? '已開通' : '未開通'}</em></b><span>收集 ${n}/${S.members.length}・出戰需 ${need} 位（目前 ${inTeam}）</span><small>${Object.entries(S.bonus).map(([k, v]) => `${BN[k]} +${v}%`).join('・') || S.note || ''}</small></span>`; }).join('')}</div></details>` : '');
     /* 預留編號：依編號插入「？？？」神秘剪影 */
     const RES = (typeof RESERVED_NOS !== 'undefined' ? RESERVED_NOS : []).filter(r => !all.some(id => CHARACTERS[id].no === r.no));
     const slots = [...all.map(id => ({ no: CHARACTERS[id].no || 0, id })), ...RES.map(r => ({ no: r.no, res: r }))].sort((a, b) => a.no - b.no);
-    $('cxCodexGrid').innerHTML = slots.map(x => x.id ? card(x.id, { codex: true, on: x.id === codexPick }) : `<button class="char sil reserved ${codexPick === 'res' + x.no ? 'on' : ''}" data-res="${x.no}" aria-label="No.${String(x.no).padStart(3, '0')} 尚未登場"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">No.${String(x.no).padStart(3, '0')}</span><span class="c-name">？？？</span></button>`).join('');
+    const rno = x => (x.res && x.res.hideNo ? 'No.???' : 'No.' + String(x.no).padStart(3, '0'));
+    $('cxCodexGrid').innerHTML = slots.map(x => x.id ? card(x.id, { codex: true, on: x.id === codexPick }) : `<button class="char sil reserved ${codexPick === 'res' + x.no ? 'on' : ''}" data-res="${x.no}" aria-label="${rno(x)} 尚未登場"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">${rno(x)}</span><span class="c-name">？？？</span></button>`).join('');
     $('cxCodexGrid').querySelectorAll('[data-res]').forEach(b => b.onclick = () => { codexPick = 'res' + b.dataset.res; renderCodex(); if (innerWidth <= 860) openCxSheet(); });
-    if (String(codexPick).startsWith('res')) { const r = RES.find(x => 'res' + x.no === codexPick); if (r) { $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:#8a93a6"><div class="cx-art sil reserved"><img src="${MYSTERY_SIL}" alt=""><span class="res-q big" aria-hidden="true">？</span><span class="cx-no">No.${String(r.no).padStart(3, '0')}</span></div><div class="cx-head"><h3>？？？<small>${r.group}</small></h3><p class="cx-desc">這個編號的船員還沒有登場。<br>也許在下一段航程中，就會在某座島上遇見。</p><div class="cx-src"><b>取得方式</b><span>尚未公開</span></div></div></div>`; return; } codexPick = all[0]; }
+    if (String(codexPick).startsWith('res')) { const r = RES.find(x => 'res' + x.no === codexPick) || (CHARACTERS.imu && CHARACTERS.imu.mystery && !owned('imu') && 'res' + CHARACTERS.imu.no === codexPick ? { no: CHARACTERS.imu.no, group: '最後的編號' } : null); if (r) { $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:#8a93a6"><div class="cx-art sil reserved"><img src="${MYSTERY_SIL}" alt=""><span class="res-q big" aria-hidden="true">？</span><span class="cx-no">${r.hideNo || (CHARACTERS.imu && r.no === CHARACTERS.imu.no) ? 'No.???' : 'No.' + String(r.no).padStart(3, '0')}</span></div><div class="cx-head"><h3>？？？<small>${r.hideNo ? '傳說中的人物' : r.group}</small></h3><p class="cx-desc">這個編號的船員還沒有登場。<br>也許在下一段航程中，就會在某座島上遇見。</p><div class="cx-src"><b>取得方式</b><span>尚未公開</span></div></div></div>`; return; } codexPick = all[0]; }
     $('cxCodexGrid').querySelectorAll('.char[data-id]').forEach(b => b.onclick = () => { codexPick = b.dataset.id; renderCodex(); if (innerWidth <= 860) openCxSheet(); });
     const id = codexPick, c = CHARACTERS[id], own = owned(id);
     $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:${RAR_COLOR[rarOf(id)]}">

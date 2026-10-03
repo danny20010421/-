@@ -1,5 +1,5 @@
 /* 資料版本：每次改動角色或劇情資料時加一。後台設定若來自舊版本會自動停用，避免舊劇情覆蓋新內容。 */
-const DATA_VERSION = 41;
+const DATA_VERSION = 42;
 /* 七日登入獎勵：第 7 天領完後從第 1 天重新開始 */
 const LOGIN_REWARDS = [
  {day:1, label:'貝里 5,000', berry:5000},

@@ -163,6 +163,7 @@ class R3 {
     this.SKY.uZen.value.copy(sky).multiplyScalar(this.dark ? .55 : .8); this.SKY.uHor.value.copy(fog); this.SKY.uFog.value.copy(fog); this.SKY.uSun.value.copy(sd); this.SKY.uSunCol.value.copy(this.sun.color); this.SKY.uCloud.value = this.chapterId === 'fishman' ? 0 : 1;
     if (this.WU) { this.WU.uSun.value.copy(sd); this.WU.uSunCol.value.copy(this.sun.color); this.WU.uSkyA.value.copy(this.SKY.uZen.value); this.WU.uSkyB.value.copy(fog); }
     const tg = new THREE.Vector3(...this.target); this.sun.target.position.copy(tg); this.sun.position.copy(tg).addScaledVector(sd, 180); this.sky.position.copy(this.camera.position);
+    { const bright = this.chapterId === 'skypiea' || this.chapterId === 'wholecake'; this.rd.toneMappingExposure = bright ? .8 : .95; this.bloom.threshold = bright ? 1.1 : .92; this.grade.uniforms.uCon.value = bright ? 1.14 : 1.06; } /* 白色雲海的島：降低曝光、提高對比，避免一片白 */
     this.grade.uniforms.uFlash.value = this.flash || 0; if (this.grass) this.grass.visible = true;
     this.composer.render();
   }

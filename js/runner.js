@@ -46,18 +46,20 @@
   }
 
   function spawn() {
-    const d = G.dist, lv = Math.min(1, d / 5000);
+    const d = G.dist, dd = Math.min(d, RN_HARD_CAP), lv = Math.min(1, dd / 5000); /* 2200 公尺後難度固定 */
+    if (G.nextGlowAt == null) G.nextGlowAt = 200 + Math.random() * 180;
     while (G.nextObs < d + 60) {
       const z = zoneAt(G.nextObs).i, r = Math.random(); let o;
       const far = G.nextObs >= 2000;
-      if (z >= 1 && r < (far ? .06 : .15)) o = { k: 'ship', lane: LANES[(Math.random() * 3) | 0], w: .46 };
+      if (G.nextObs >= G.nextGlowAt) { o = { k: 'barrel', lane: LANES[(Math.random() * 3) | 0], w: .32, glow: true }; G.nextGlowAt += 260 + Math.random() * 260; } /* 發光寶箱：排程出現，才能提前提示距離 */
+      else if (z >= 1 && r < (far ? .06 : .15)) o = { k: 'ship', lane: LANES[(Math.random() * 3) | 0], w: .46 };
       else if (z >= 2 && r < .3) o = { k: 'king', lane: LANES[(Math.random() * 3) | 0], w: .5 };
       else if (r < .45) { o = { k: 'whirl', lane: LANES[(Math.random() * 3) | 0], w: .42, soft: true }; if (far && Math.random() < .5) o.drift = { base: o.lane, amp: .45 + Math.random() * .2, sp: 1 + Math.random() * .8, ph: Math.random() * 6.28 }; }
-      else if (r < .7) o = { k: 'barrel', lane: LANES[(Math.random() * 3) | 0], w: .32, glow: Math.random() < .1 };
+      else if (r < .7) o = { k: 'barrel', lane: LANES[(Math.random() * 3) | 0], w: .32, glow: false };
       else o = { k: 'rock', lane: LANES[(Math.random() * 3) | 0], w: .4 };
       o.at = G.nextObs; G.objs.push(o);
       if (d > 600 && Math.random() < .25 + lv * .35) { const o2 = { k: 'rock', lane: LANES.filter(x => Math.abs(x - o.lane) > .5)[(Math.random() * 2) | 0] ?? 0, w: .38, at: G.nextObs + 1.5 }; G.objs.push(o2); }
-      G.nextObs += Math.max(8, 26 - d / 180) * (.8 + Math.random() * .5);
+      G.nextObs += Math.max(8, 26 - dd / 180) * (.8 + Math.random() * .5);
     }
     while (G.nextCoin < d + 60) { const lane = LANES[(Math.random() * 3) | 0], n = 5 + ((Math.random() * 4) | 0); for (let i = 0; i < n; i++) G.objs.push({ k: 'coin', lane, w: .15, at: G.nextCoin + i * 4.6 }); G.nextCoin += n * 4.6 + 12 + Math.random() * 14; }
     /* 箭頭道具：隨機出現，吃到後飛越 300 公尺 */
@@ -70,6 +72,7 @@
   }
 
   const RN_WARN = .3; /* 提醒線：目前速度上限的 30% */
+  const RN_HARD_CAP = 2200; /* 超過這個距離後，障礙物密度與速度上限不再增加，讓玩家可以一直挑戰下去 */
   /* 每日任務：依日期輪流三種條件，單局達成就給獎勵（每天一次） */
   function dailyQuest() { const k = [...today()].reduce((a, c) => a + c.charCodeAt(0), 0) % 3; return [{ k: 'dist', goal: 1500, text: '單局航行 1500 公尺' }, { k: 'coins', goal: 30, text: '單局收集 30 枚金幣' }, { k: 'chest', goal: 3, text: '單局打開 3 個發光寶箱' }][k]; }
   function checkDaily() { const q = dailyQuest(), R = SAVE.data.runner = SAVE.data.runner || {}; if (R.dqDay === today() || (window.timeLocked && timeLocked())) return; const v = q.k === 'dist' ? G.dist : q.k === 'coins' ? G.coins : (G.glowChests || 0); if (v >= q.goal) { R.dqDay = today(); SAVE.data.inventory.sweep = (SAVE.data.inventory.sweep || 0) + 3; addBerry(3000); SAVE.save(); milestone('今日任務完成！掃蕩卷 ×3、貝里 3,000'); SFX.play('rare'); } }
@@ -82,7 +85,7 @@
   function milestone(t) { const el = $('rnMile'); if (!el) return; el.textContent = t; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
   function update(dt) {
     G.t += dt; if (!G.started || G.over) return;
-    const cap = 24 + Math.min(12, G.dist / 450);
+    const cap = 24 + Math.min(12, Math.min(G.dist, RN_HARD_CAP) / 450);
     G.v = Math.max(0, Math.min(cap, G.v * (1 - .5 * dt) - .6 * dt));
     checkDaily();
     /* 首次突破 2000／3000／5000 公尺：各送一張限定皮膚選擇卷（每個距離一生只送一次） */
@@ -118,6 +121,9 @@
     if (G.v > 1) for (let i = 0; i < 2; i++) G.foam.push({ x: laneX(G.x) + (Math.random() - .5) * playW() * .08, y: boatY() + playW() * .12, vx: (Math.random() - .5) * 40, life: 1.2 + Math.random(), r: 2 + Math.random() * 3 });
     G.caps.forEach(c => { c.y += sp * .92; c.life -= dt; }); G.caps = G.caps.filter(c => c.life > 0 && c.y < H + 20); if (Math.random() < dt * 6) G.caps.push({ x: Math.random() * W, y: Math.random() * H * .8, life: 1.5 + Math.random() * 1.5, w: 10 + Math.random() * 26 });
     $('rnDist').textContent = Math.floor(G.dist) + ' m'; $('rnCoins').textContent = G.coins;
+    /* 前方提示：起飛箭頭、發光寶箱還有多遠 */ { const el = $('rnAhead'); if (el && !G.fly) { const d0 = G.dist, ar = Math.min(...G.objs.filter(o => o.k === 'arrow' && !o.gone && o.at > d0).map(o => o.at), G.nextArrow ?? 1e9) - d0, gl = Math.min(...G.objs.filter(o => o.k === 'barrel' && o.glow && !o.gone && o.at > d0).map(o => o.at), G.nextGlowAt ?? 1e9) - d0;
+      const chip = (cls, ic, name, m) => m < 400 ? `<span class="rn-ah ${cls} ${m < 60 ? 'near' : ''}"><i>${ic}</i>${name}<b>${Math.max(0, Math.round(m))} m</b></span>` : '';
+      const h = chip('fly', '🪽', '起飛箭頭', ar) + chip('gl', '✨', '發光寶箱', gl); if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; } } else if (el && el.innerHTML) { el.innerHTML = ''; el.dataset.h = ''; } }
     $('rnBar').style.width = Math.min(100, G.v / cap * 100) + '%'; const RR = $('rnRhythm'); RR.style.setProperty('--warn', (RN_WARN * 100) + '%'); RR.classList.toggle('low', !!G.low);
     $('rnHearts').innerHTML = [0, 1, 2].map(i => `<i class="${G.hearts >= i + 1 ? 'on' : G.hearts >= i + .5 ? 'half' : ''}">♥</i>`).join('');
   }
@@ -209,7 +215,7 @@
     panel(`<div class="rn-card"><h2>奪寶大冒險</h2>
       <p class="rn-lead">左右槳<b>交替</b>划船就會加速，節奏越穩連擊越高。<br>划左槳船會往左、划右槳往右，閃開礁石與軍艦，沿途搶金幣！</p>
       ${(() => { const q = dailyQuest(), R = SAVE.data.runner || {}; return `<div class="rn-daily ${R.dqDay === today() ? 'done' : ''}"><b>今日任務</b><span>${q.text}</span><em>${R.dqDay === today() ? '已完成' : '獎勵：掃蕩卷 ×3、貝里 3,000'}</em></div>`; })()}
-      <ul class="rn-rules"><li>🚨 速度條上的紅線是最低速度：低於紅線速度條會亮紅，船完全停下就扣 1 命</li><li>📦 寶箱：發光的 +1 命、普通的撞到扣 1 命</li><li>➤ 箭頭道具：船會飛越 300 公尺，落地點前後 25 公尺內沒有陷阱</li><li>🐉 海怪：撞到扣半顆心</li><li>💣 1200 公尺後：海軍軍艦會開砲，自己閃開</li><li>🌀 2000 公尺後：軍艦變少，但漩渦可能左右移動</li><li>🎟️ 首次突破 2000、3000、5000 公尺：各送一張「限定皮膚選擇卷」（泳裝佩羅娜、泳裝羅賓…）</li><li>🏆 到達 2500、5000 公尺：當下的錢幣各翻倍一次，可以繼續航行</li></ul>
+      <ul class="rn-rules"><li>🚨 速度條上的紅線是最低速度：低於紅線速度條會亮紅，船完全停下就扣 1 命</li><li>📦 寶箱：發光的 +1 命、普通的撞到扣 1 命</li><li>➤ 箭頭道具：船會飛越 300 公尺，落地點前後 25 公尺內沒有陷阱</li><li>🐉 海怪：撞到扣半顆心</li><li>💣 1200 公尺後：海軍軍艦會開砲，自己閃開</li><li>🌀 2000 公尺後：軍艦變少，但漩渦可能左右移動</li><li>🎟️ 首次突破 2000、3000、5000 公尺：各送一張「限定皮膚選擇卷」（泳裝佩羅娜、泳裝羅賓…）</li><li>🏆 到達 2500、5000 公尺：當下的錢幣各翻倍一次，可以繼續航行</li><li>🧭 2200 公尺後：障礙物數量與速度上限不再增加，可以一直挑戰下去</li><li>🪽✨ 畫面上方會提示前方多遠有「起飛箭頭」與「發光寶箱」</li></ul>
       <div class="rn-keys"><span><kbd>←</kbd><kbd>A</kbd> 左槳</span><span><kbd>→</kbd><kbd>D</kbd> 右槳</span><span>手機：點左右大按鈕</span></div>
       <p class="rn-best">最遠紀錄：<b>${r.best || 0} m</b>　累計航行：${Math.floor(r.total || 0)} m</p>
       <div class="rn-btns"><button class="btn-primary big" id="rnGo">開始航行</button><button class="btn-ghost" id="rnQuit">返回</button></div></div>`);

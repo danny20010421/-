@@ -11,7 +11,7 @@
   });
   ABN.stun = { name: '暈眩', icon: '💫', desc: '無法使用技能' }; if (!CC_KEYS.includes('stun')) CC_KEYS.push('stun');
   VOID_PCT_KEYS.push('selfLostHpDamage');
-  const RANK = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'UR+': 5 };
+  const RANK = { C: -.5, U: -.25, N: 0, R: 1, RR: 1.33, RRR: 1.66, SR: 2, SSR: 3, UR: 4, 'UR+': 5 };
   const rarOf = f => (typeof CHAR_RARITY !== 'undefined' && CHAR_RARITY[f.id]) || 'SSR';
   const sideOf = f => (battle && f === battle.enemy) ? 'R' : 'L';
   const isBossTarget = t => battle && battle.isBoss && t === battle.enemy && !t.voidImmune;
