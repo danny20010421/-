@@ -75,12 +75,15 @@
   }
 
   /* ---------- 共用：角色卡 ---------- */
+  /* 角色卡（v96）：所有卡片同一個結構、同一個高度——上方資訊列（稀有度｜狀態｜等級或編號）、中間立繪、下方名字；資訊都不壓在立繪上 */
+  const resCard = (no, label, on) => `<button class="char v2 res ${on ? 'on' : ''}" data-res="${no}" aria-label="${label} ？？？"><span class="c-top"><span class="c-rar-blank"></span><span class="c-st"></span><span class="c-not">${label}</span></span><span class="c-art"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span></span><span class="c-name">？？？</span></button>`;
+  window.__resCard = resCard;
   function card(id, opts) {
     const c = CHARACTERS[id], own = owned(id), lv = own ? crewLv(id) : 0, r = rarOf(id), k = SAVE.data.lineup.indexOf(id), tr = isTraining(id);
-    const tags = [k === 0 ? '<span class="c-team">先鋒</span>' : k > 0 ? `<span class="c-team">陣容 ${k + 1}</span>` : '', tr ? '<span class="c-badge train">訓練中</span>' : '', opts.codex && !own && !revealAll ? '<span class="c-badge off">未獲得</span>' : ''].join('');
-    if (opts.codex && c.mystery && !own && !revealAll) return `<button class="char sil reserved" data-res="${c.no}" aria-label="${noOf(id)} ？？？"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">${noOf(id)}</span><span class="c-name">？？？</span></button>`; /* 伊姆：未獲得前保持神秘 */
-    /* v89：卡片分成三列——上方資訊列（稀有度、編號或等級）、中間立繪（以臉為中心裁切，不再被標籤擋住）、下方名字 */
-    return `<button class="char v2 r-${r} ${opts.on ? 'on' : ''} ${opts.codex && !own && !revealAll ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}" style="--rc:${RAR_COLOR[r] || '#5fb8ff'}"><span class="c-top"><span class="rar c-rar r-${r}">${r}</span>${own ? `<span class="c-lvt" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-not">${noOf(id)}</span>`}</span><span class="c-art"><img src="${c.image}" alt="" loading="lazy" style="object-position:${c.cardPos || '50% 12%'}"></span>${tags ? `<span class="c-tags">${tags}</span>` : ''}<span class="c-name">${c.name}</span></button>`;
+    if (opts.codex && c.mystery && !own && !revealAll) return resCard(c.no, noOf(id), opts.on); /* 伊姆：未獲得前保持神秘 */
+    const st = k === 0 ? '<span class="c-st team">先鋒</span>' : k > 0 ? `<span class="c-st team">陣容${k + 1}</span>` : tr ? '<span class="c-st train">訓練中</span>' : '<span class="c-st"></span>';
+    const dim = opts.codex && !own && !revealAll;
+    return `<button class="char v2 r-${r} ${opts.on ? 'on' : ''} ${dim ? 'sil' : ''}" data-id="${id}" aria-pressed="${!!opts.on}" aria-label="${c.name}${dim ? '（未獲得）' : ''}" style="--rc:${RAR_COLOR[r] || '#5fb8ff'}"><span class="c-top"><span class="rar c-rar r-${r}">${r}</span>${st}${own ? `<span class="c-lvt" style="--c:${TIERS[tierOf(lv)].color}">LV ${lv}</span>` : `<span class="c-not">${noOf(id)}</span>`}</span><span class="c-art"><img src="${c.image}" alt="" loading="lazy" style="object-position:${c.cardPos || '50% 12%'}"></span><span class="c-name">${c.name}</span></button>`;
   }
   function statTiles(c, lv) {
     const L = lvStats(c, lv), items = [['體力', L.hp, L.hp / 2100], ['速度', L.spd, L.spd / 150], ['傷害倍率', '×' + L.dmg.toFixed(2), L.dmg / 1], ['技能次數', L.ppAdj ? L.ppAdj : '滿', (L.ppAdj + 3) / 3]];
@@ -105,7 +108,7 @@
   }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-skin]'); if (!b) return; const S = SAVE.data.skins = SAVE.data.skins || { owned: [], equip: {} }; const k = b.dataset.skin, ch = SKINS[k].char; S.equip = S.equip || {}; if (S.equip[ch] === k) delete S.equip[ch]; else S.equip[ch] = k; SAVE.save(); toast(S.equip[ch] ? `已裝備「${SKINS[k].name}」` : '已卸下皮膚'); renderMine(); });
   function tile(id, sel) { const ch = CHARACTERS[id], lv = crewLv(id), tr = isTraining(id), k = SAVE.data.lineup.indexOf(id);
-    return `<button class="sb-tile ${sel ? 'on' : ''}" data-id="${id}" style="--rc:${RAR_COLOR[rarOf(id)]}"><img src="${charArt(id, 'avatar')}" alt=""><em>LV.${lv}</em>${k === 0 ? '<i class="sb-lead">先鋒</i>' : ''}${tr ? '<i class="sb-tr">訓練中</i>' : ''}<span>${ch.name}</span></button>`; }
+    return `<button class="sb-tile v2 ${sel ? 'on' : ''}" data-id="${id}" style="--rc:${RAR_COLOR[rarOf(id)]}"><span class="t-top"><em>LV ${lv}</em>${k === 0 ? '<i class="sb-lead">先鋒</i>' : tr ? '<i class="sb-tr">訓練中</i>' : ''}</span><span class="t-art"><img src="${charArt(id, 'avatar')}" alt=""></span><span class="t-name">${ch.name}</span></button>`; } /* 等級與狀態在頭像上方、名字在下方，不壓在角色臉上 */
   function renderMine() {
     const ids = ownedIds(); if (!owned(pickChar)) pickChar = ids[0];
     if (!pickChar) return; /* 還沒有任何船員（尚未完成入門）時不顯示 */
@@ -157,7 +160,7 @@ function renderCodex() {
     const RES = (typeof RESERVED_NOS !== 'undefined' ? RESERVED_NOS : []).filter(r => !all.some(id => CHARACTERS[id].no === r.no));
     const slots = [...all.map(id => ({ no: CHARACTERS[id].no || 0, id })), ...RES.map(r => ({ no: r.no, res: r }))].sort((a, b) => a.no - b.no);
     const rno = x => (x.res && x.res.hideNo ? 'No.???' : 'No.' + String(x.no).padStart(3, '0'));
-    $('cxCodexGrid').innerHTML = slots.map(x => x.id ? card(x.id, { codex: true, on: x.id === codexPick }) : `<button class="char sil reserved ${codexPick === 'res' + x.no ? 'on' : ''}" data-res="${x.no}" aria-label="${rno(x)} 尚未登場"><img src="${MYSTERY_SIL}" alt=""><span class="res-q" aria-hidden="true">？</span><span class="c-lv cno-tag">${rno(x)}</span><span class="c-name">？？？</span></button>`).join('');
+    $('cxCodexGrid').innerHTML = slots.map(x => x.id ? card(x.id, { codex: true, on: x.id === codexPick }) : resCard(x.no, rno(x), codexPick === 'res' + x.no)).join('');
     $('cxCodexGrid').querySelectorAll('[data-res]').forEach(b => b.onclick = () => { codexPick = 'res' + b.dataset.res; renderCodex(); if (innerWidth <= 860) openCxSheet(); });
     if (String(codexPick).startsWith('res')) { const r = RES.find(x => 'res' + x.no === codexPick) || (CHARACTERS.imu && CHARACTERS.imu.mystery && !owned('imu') && 'res' + CHARACTERS.imu.no === codexPick ? { no: CHARACTERS.imu.no, group: '最後的編號' } : null); if (r) { $('cxCodexDetail').innerHTML = `<div class="cx-hero" style="--rc:#8a93a6"><div class="cx-art sil reserved"><img src="${MYSTERY_SIL}" alt=""><span class="res-q big" aria-hidden="true">？</span><span class="cx-no">${r.hideNo || (CHARACTERS.imu && r.no === CHARACTERS.imu.no) ? 'No.???' : 'No.' + String(r.no).padStart(3, '0')}</span></div><div class="cx-head"><h3>？？？<small>${r.hideNo ? '傳說中的人物' : r.group}</small></h3><p class="cx-desc">這個編號的船員還沒有登場。<br>也許在下一段航程中，就會在某座島上遇見。</p><div class="cx-src"><b>取得方式</b><span>尚未公開</span></div></div></div>`; return; } codexPick = all[0]; }
     $('cxCodexGrid').querySelectorAll('.char[data-id]').forEach(b => b.onclick = () => { codexPick = b.dataset.id; renderCodex(); if (innerWidth <= 860) openCxSheet(); });

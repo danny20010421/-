@@ -40,7 +40,7 @@
   });
   /* 已經通關的玩家：補發這次新增的通關獎勵角色 */
   window.addEventListener('DOMContentLoaded', () => setTimeout(() => { try { const d = SAVE.data, got = []; [['tama', 'wano'], ['koza', 'alabasta']].forEach(([cid, ch]) => { const st = d.chapters && d.chapters[ch]; if (st && st.cleared && !owned(cid)) { addCrew(cid, 10); got.push({ char: cid }); } });
-    if (got.length) { SAVE.save(); setTimeout(() => window.showRewards && showRewards({ title: '新船員加入', sub: '你已經通關的篇章，有新的夥伴來報到了！' }, got), 600); } } catch (e) { } }, 3600));
+    if (got.length) { SAVE.save(); if (window.queueWelcome) queueWelcome(got); } } catch (e) { } }, 2500));
   const after = (a, ids) => { ids.forEach(id => { const k = CHARACTER_ORDER.indexOf(id); if (k >= 0) CHARACTER_ORDER.splice(k, 1); }); const i = CHARACTER_ORDER.indexOf(a); CHARACTER_ORDER.splice(i < 0 ? CHARACTER_ORDER.length : i + 1, 0, ...ids); };
   after('moria', ['brook']); after('kinemon', ['tama']); after('loki', ['dorry']); after('vivi', ['koza']);
 })();

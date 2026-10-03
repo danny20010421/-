@@ -28,7 +28,13 @@
     const ok = () => { box.classList.add('out'); setTimeout(() => { box.remove(); if (done) done(); }, 250); };
     box.querySelector('.cer-ok').onclick = ok;
   }
-  window.showRewards = show;
+  /* 同時只顯示一個儀式畫面，其他的排隊 */
+  let busy = false; const Q = [];
+  function showQ(opt, list, done) { if (busy) { Q.push([opt, list, done]); return; } busy = true; show(opt, list, () => { busy = false; if (done) done(); const n = Q.shift(); if (n) setTimeout(() => showQ(...n), 250); }); }
+  window.showRewards = showQ;
+  /* 新船員報到：先記下來，等玩家真的進到遊戲大廳才一次顯示（不會在標題畫面跳出來） */
+  const W = []; window.queueWelcome = list => { list.forEach(x => { if (!W.some(y => y.char === x.char)) W.push(x); }); };
+  setInterval(() => { if (!W.length || busy || typeof currentScreen === 'undefined' || currentScreen !== 'modeScreen' || document.querySelector('.modal.show, .modal.open, .gd-wrap')) return; const list = W.splice(0); showQ({ title: '新船員加入', sub: '你已經通關的篇章，有新的夥伴來報到了！' }, list); }, 1200);
   window.addEventListener('DOMContentLoaded', () => {
     /* 進島時記下目前的狀態 */
     if (typeof enterChapter === 'function') { const _e = enterChapter; window.enterChapter = function (id) { if (!snap || snap.id !== id) take(id); return _e.apply(this, arguments); }; }

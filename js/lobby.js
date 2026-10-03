@@ -48,7 +48,10 @@
   /* 量出頂部列與限定召喚卡的實際位置，讓左右面板與船長立繪不會被遮住（各裝置字型、換行高度不同） */
   function syncLayout() { const L = $('lobby'); if (!L || currentScreen !== 'modeScreen') return; const r0 = L.getBoundingClientRect(), tb = document.querySelector('#modeScreen .topbar'), ev = $('lbEvent');
     if (tb) L.style.setProperty('--l2tb', Math.max(0, Math.round(tb.getBoundingClientRect().bottom - r0.top)) + 'px');
-    if (ev) L.style.setProperty('--l2eb', Math.max(0, Math.round(ev.getBoundingClientRect().bottom - r0.top)) + 'px'); }
+    if (ev) L.style.setProperty('--l2eb', Math.max(0, Math.round(ev.getBoundingClientRect().bottom - r0.top)) + 'px');
+    /* 右側欄底部（對話泡泡放在下面）、名牌上緣（船長立繪不被名牌蓋住） */ const sd = document.querySelector('#lobby .l2-side'), pl = $('lbPlate'); if (sd) L.style.setProperty('--l2sb', Math.round(sd.getBoundingClientRect().bottom - r0.top) + 'px');
+    if (pl && pl.offsetParent) L.style.setProperty('--l2pb', Math.round(r0.bottom - pl.getBoundingClientRect().top + 6) + 'px');
+    /* 備份提醒改成左側的小圖示，不再蓋住其他按鈕 */ const bk = $('lbBackup'), bi = $('l2BackupIc'); if (bk && bi) { bi.hidden = bk.hidden; if (!bi.onclick) bi.onclick = () => { const b = $('lbBackupBtn'); if (b) b.click(); }; } }
   window.lobbySyncLayout = syncLayout;
   function sayLine(pid) {
     const el = $('l2Say'); if (!el) return; const d = SAVE.data, c = CHARACTERS[pid], L = [];
